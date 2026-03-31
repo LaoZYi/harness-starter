@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .initializer import TEMPLATE_ROOT, prepare_initialization
-from .models import UpgradePlanResult
+from .models import UpgradeExecutionResult, UpgradePlanResult
 from .templating import render_templates
 
 
@@ -46,4 +47,36 @@ def plan_upgrade(target_root: Path, answers: dict[str, object]) -> UpgradePlanRe
         update_files=update_files,
         unchanged_files=unchanged_files,
         checklist=checklist,
+    )
+
+
+def execute_upgrade(target_root: Path, answers: dict[str, object]) -> UpgradeExecutionResult:
+    target_root = target_root.resolve()
+    plan = plan_upgrade(target_root, answers)
+    _, _, context = prepare_initialization(target_root, answers)
+    rendered = render_templates(TEMPLATE_ROOT, context)
+
+    backup_root: Path | None = None
+    if plan.update_files:
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        backup_root = target_root / ".agent-harness" / "backups" / timestamp
+
+    for relative_path in plan.update_files:
+        source_path = target_root / relative_path
+        backup_path = backup_root / relative_path if backup_root else None
+        if backup_path is not None:
+            backup_path.parent.mkdir(parents=True, exist_ok=True)
+            backup_path.write_text(source_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    for relative_path in plan.create_files + plan.update_files:
+        output_path = target_root / relative_path
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered[relative_path], encoding="utf-8")
+
+    return UpgradeExecutionResult(
+        target_root=str(target_root),
+        created_files=plan.create_files,
+        updated_files=plan.update_files,
+        unchanged_files=plan.unchanged_files,
+        backup_root=str(backup_root) if backup_root is not None else None,
     )

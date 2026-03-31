@@ -53,3 +53,12 @@ class UpgradePlanResult:
     update_files: list[str] = field(default_factory=list)
     unchanged_files: list[str] = field(default_factory=list)
     checklist: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class UpgradeExecutionResult:
+    target_root: str
+    created_files: list[str] = field(default_factory=list)
+    updated_files: list[str] = field(default_factory=list)
+    unchanged_files: list[str] = field(default_factory=list)
+    backup_root: str | None = None

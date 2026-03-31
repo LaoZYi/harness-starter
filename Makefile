@@ -1,7 +1,7 @@
 PYTHON ?= python3
 PACKAGE = src/agent_harness
 
-.PHONY: test check ci discover assess upgrade-plan init
+.PHONY: test check ci discover assess upgrade-plan upgrade-apply init
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests -v
@@ -20,6 +20,9 @@ assess:
 
 upgrade-plan:
 	$(PYTHON) scripts/plan_upgrade.py --target "$(TARGET)" $(ARGS)
+
+upgrade-apply:
+	$(PYTHON) scripts/apply_upgrade.py --target "$(TARGET)" $(ARGS)
 
 init:
 	$(PYTHON) scripts/init_project.py --target "$(TARGET)" $(ARGS)

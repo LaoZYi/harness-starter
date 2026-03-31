@@ -5,6 +5,7 @@
 - `src/agent_harness/discovery.py`：扫描目标项目并给出第一版画像。
 - `src/agent_harness/assessment.py`：根据画像给出接入评分、缺口和建议。
 - `src/agent_harness/upgrade.py`：比较模板生成结果与现有仓库文件，给出升级计划。
+- `scripts/apply_upgrade.py`：执行升级并把被覆盖文件备份到 `.agent-harness/backups/`。
 - `src/agent_harness/initializer.py`：整合探测结果、预设和用户输入，生成文件。
 - `src/agent_harness/templating.py`：模板渲染和落盘。
 - `templates/common/`：真正会写入目标项目的模板。
@@ -26,4 +27,5 @@
 - 想增加新项目类型：先加 `presets/*.json`，再补模板、评估逻辑和测试。
 - 想增加新生成文件：先加模板，再补初始化测试和仓库自检。
 - 想调整升级策略：先改 `src/agent_harness/upgrade.py`，再补升级规划测试。
+- 想调整自动升级策略：必须保留可恢复路径，不能绕过备份逻辑。
 - 想增加新命令：先改 `Makefile`，再补脚本和 `docs/runbook.md`。

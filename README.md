@@ -27,6 +27,12 @@ python scripts/assess_project.py /path/to/repo
 python scripts/plan_upgrade.py --target /path/to/repo
 ```
 
+确认没问题后，可以直接执行升级：
+
+```bash
+python scripts/apply_upgrade.py --target /path/to/repo
+```
+
 再初始化 harness：
 
 ```bash
@@ -87,6 +93,7 @@ python scripts/init_project.py \
 - `scripts/discover_project.py`：命令行探测入口
 - `scripts/assess_project.py`：命令行评估入口
 - `scripts/plan_upgrade.py`：升级规划入口
+- `scripts/apply_upgrade.py`：自动升级执行入口
 - `scripts/init_project.py`：命令行初始化入口
 - `scripts/check_repo.py`：框架仓库自检
 - `examples/init-config.example.json`：配置文件初始化示例

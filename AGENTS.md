@@ -38,6 +38,7 @@ make ci
 make discover TARGET=.
 make assess TARGET=.
 make upgrade-plan TARGET=/path/to/repo ARGS="--config examples/init-config.example.json"
+make upgrade-apply TARGET=/path/to/repo ARGS="--config examples/init-config.example.json"
 make init TARGET=/path/to/repo ARGS="--config examples/init-config.example.json --non-interactive"
 ```
 
