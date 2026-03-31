@@ -1,5 +1,5 @@
 PYTHON ?= python3
-PACKAGE = src/triage_bot
+PACKAGE = src/ticket_router
 
 .PHONY: test check ci run
 
@@ -13,5 +13,4 @@ check:
 ci: check test
 
 run:
-	PYTHONPATH=src $(PYTHON) -m triage_bot.cli
-
+	PYTHONPATH=src $(PYTHON) -m ticket_router.cli

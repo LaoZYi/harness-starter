@@ -4,7 +4,7 @@
 
 - `models.py`：只放领域数据结构和基础枚举，不写业务决策。
 - `router.py`：只负责工单分流逻辑。
-- `cli.py`：只负责演示入口和序列化输出，不承载规则。
+- `cli.py`：只负责本地入口、参数解析和序列化输出，不承载规则。
 - `tests/`：行为样例和回归保护。
 - `scripts/check_repo.py`：仓库结构、文档链接和规则守卫。
 
@@ -19,6 +19,5 @@
 ## 推荐扩展方式
 
 - 想增加新队列：先改 `models.py`，再改 `router.py`，最后补测试和 `docs/product.md`。
-- 想增加新命令：先改 `Makefile`，再决定是否需要新脚本。
+- 想增加新命令：先改 `Makefile`，再决定是否需要新脚本，并同步更新 `docs/runbook.md`。
 - 想增加新 agent 适配层：内容必须只引用 `AGENTS.md` 和 `docs/`。
-

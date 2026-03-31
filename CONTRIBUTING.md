@@ -7,6 +7,7 @@
 1. `AGENTS.md`
 2. `docs/workflow.md`
 3. 任务相关的 `docs/` 文档
+4. 涉及运行方式时读 `docs/runbook.md`
 
 ## 标准流程
 
@@ -29,8 +30,8 @@
 - 不要把长期规则只写进某个工具的 memory。
 - 不要发明新的隐藏命令。
 - 不要只改代码不补文档或测试。
+- 不要修改运行方式却不更新 `docs/runbook.md`。
 
 ## 发布前阅读
 
 发布相关操作请参考 `docs/release.md`。
-

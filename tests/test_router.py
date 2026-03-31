@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import unittest
 
-from triage_bot.models import Priority, QueueName, Ticket
-from triage_bot.router import route_ticket
+from ticket_router.models import Priority, QueueName, Ticket
+from ticket_router.router import route_ticket
 
 
 class RouteTicketTests(unittest.TestCase):

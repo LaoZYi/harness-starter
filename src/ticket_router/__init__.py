@@ -1,4 +1,4 @@
-"""Example package for the agent harness demo."""
+"""Production-oriented starter package for ticket routing."""
 
 from .models import Priority, QueueName, Ticket, TriageResult
 from .router import route_ticket
@@ -10,4 +10,3 @@ __all__ = [
     "TriageResult",
     "route_ticket",
 ]
-

@@ -8,7 +8,8 @@
 2. 改业务行为前，读 `docs/product.md`。
 3. 改代码结构前，读 `docs/architecture.md`。
 4. 准备提交改动前，读 `docs/workflow.md`。
-5. 准备提 PR 或发版本前，读 `CONTRIBUTING.md` 和 `docs/release.md`。
+5. 运行或排障前，读 `docs/runbook.md`。
+6. 准备提 PR 或发版本前，读 `CONTRIBUTING.md` 和 `docs/release.md`。
 
 ## 默认工作流
 
@@ -24,6 +25,7 @@
 - `AGENTS.md` 保持简短，超过 120 行就该拆分。
 - 行为变化必须更新 `docs/product.md`。
 - 架构变化必须更新 `docs/architecture.md`。
+- 运行方式变化必须更新 `docs/runbook.md`。
 - 新脚本要接入 `Makefile`，不要发明隐藏命令。
 - 新规则优先写成可执行校验，不要只写成口头提醒。
 
@@ -38,9 +40,11 @@ make run
 
 ## 快速地图
 
-- `src/triage_bot/router.py`：分流决策。
-- `src/triage_bot/models.py`：领域模型。
+- `src/ticket_router/router.py`：分流决策。
+- `src/ticket_router/models.py`：领域模型。
+- `src/ticket_router/cli.py`：本地入口。
 - `tests/test_router.py`：核心行为样例。
 - `scripts/check_repo.py`：文档和结构守卫。
 - `CONTRIBUTING.md`：贡献说明。
 - `docs/release.md`：发布清单。
+- `docs/runbook.md`：运行手册。

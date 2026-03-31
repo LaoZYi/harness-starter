@@ -19,6 +19,7 @@ REQUIRED_FILES = [
     ROOT / "docs" / "architecture.md",
     ROOT / "docs" / "workflow.md",
     ROOT / "docs" / "release.md",
+    ROOT / "docs" / "runbook.md",
 ]
 
 MARKDOWN_LINK_PATTERN = re.compile(r"`([^`]+\.md)`")
@@ -60,10 +61,16 @@ def check_command_surface() -> None:
 
 
 def check_module_sizes() -> None:
-    for relative_path in ["src/triage_bot/router.py", "src/triage_bot/models.py"]:
+    for relative_path in ["src/ticket_router/router.py", "src/ticket_router/models.py"]:
         path = ROOT / relative_path
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         assert_true(line_count <= 220, f"{relative_path} 过长: {line_count} 行")
+
+
+def check_runbook_mentions_main_commands() -> None:
+    runbook_text = (ROOT / "docs" / "runbook.md").read_text(encoding="utf-8")
+    for command in ("make check", "make test", "make ci", "make run"):
+        assert_true(command in runbook_text, f"运行手册缺少命令说明: {command}")
 
 
 def check_github_templates() -> None:
@@ -82,6 +89,7 @@ def main() -> None:
     check_markdown_references()
     check_command_surface()
     check_module_sizes()
+    check_runbook_mentions_main_commands()
     check_github_templates()
     print("repository checks passed")
 

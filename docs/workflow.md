@@ -17,6 +17,7 @@
 
 - 小改动：至少运行 `make check`。
 - 改业务规则：运行 `make ci`。
+- 改运行方式：运行 `make check` 和一次 `make run`。
 - 改文档但不改代码：运行 `make check`。
 
 ## 提交前检查
@@ -26,3 +27,4 @@
 3. 是否有文档同步。
 4. 是否新增了隐藏命令或隐式约束。
 5. 是否符合 `CONTRIBUTING.md` 和 `.github/PULL_REQUEST_TEMPLATE.md` 的提交流程。
+6. 如果动了 CLI 或命令入口，是否同步更新了 `docs/runbook.md`。
