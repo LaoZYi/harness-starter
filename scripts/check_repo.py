@@ -14,6 +14,7 @@ REQUIRED_FILES = [
     ROOT / "scripts" / "discover_project.py",
     ROOT / "scripts" / "assess_project.py",
     ROOT / "scripts" / "init_project.py",
+    ROOT / "examples" / "init-config.example.json",
     ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
     ROOT / ".github" / "ISSUE_TEMPLATE" / "bug_report.md",
     ROOT / ".github" / "ISSUE_TEMPLATE" / "feature_request.md",
@@ -32,6 +33,7 @@ REQUIRED_FILES = [
     ROOT / "tests" / "test_discovery.py",
     ROOT / "tests" / "test_assessment.py",
     ROOT / "tests" / "test_initializer.py",
+    ROOT / "tests" / "test_init_script.py",
     ROOT / "templates" / "common" / "AGENTS.md.tmpl",
     ROOT / "templates" / "common" / "CLAUDE.md.tmpl",
     ROOT / "templates" / "common" / "CONTRIBUTING.md.tmpl",
@@ -44,6 +46,7 @@ REQUIRED_FILES = [
     ROOT / "templates" / "common" / "docs" / "workflow.md.tmpl",
     ROOT / "templates" / "common" / "docs" / "release.md.tmpl",
     ROOT / "templates" / "common" / "docs" / "runbook.md.tmpl",
+    ROOT / "templates" / "common" / ".agent-harness" / "init-summary.md.tmpl",
     ROOT / "templates" / "common" / ".agent-harness" / "project.json.tmpl",
     ROOT / "presets" / "backend-service.json",
     ROOT / "presets" / "web-app.json",
@@ -123,6 +126,15 @@ def check_framework_has_no_sample_service() -> None:
     assert_true(not sample_sources, "框架仓库不应保留样例业务代码")
 
 
+def check_example_config_is_valid_json() -> None:
+    import json
+
+    config_text = (ROOT / "examples" / "init-config.example.json").read_text(encoding="utf-8")
+    data = json.loads(config_text)
+    for key in ("project_name", "project_type", "run_command", "test_command", "check_command", "ci_command"):
+        assert_true(key in data, f"示例配置缺少字段: {key}")
+
+
 def main() -> None:
     check_required_files()
     check_agents_length()
@@ -133,6 +145,7 @@ def main() -> None:
     check_runbook_mentions_main_commands()
     check_github_templates()
     check_framework_has_no_sample_service()
+    check_example_config_is_valid_json()
     print("repository checks passed")
 
 

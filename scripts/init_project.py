@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -9,6 +11,14 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from agent_harness.discovery import discover_project
 from agent_harness.initializer import initialize_project
+
+
+def _load_config(path: Path) -> dict[str, object]:
+    if path.suffix == ".json":
+        return json.loads(path.read_text(encoding="utf-8"))
+    if path.suffix == ".toml":
+        return tomllib.loads(path.read_text(encoding="utf-8"))
+    raise SystemExit("配置文件仅支持 .json 或 .toml")
 
 
 def _prompt(label: str, default: str) -> str:
@@ -28,6 +38,7 @@ def _prompt_bool(label: str, default: bool) -> bool:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Initialize Codex/Claude Code harness files in a repository.")
     parser.add_argument("--target", default=".", help="Target repository path")
+    parser.add_argument("--config", help="Path to a JSON or TOML config file")
     parser.add_argument("--project-name")
     parser.add_argument("--project-slug")
     parser.add_argument("--summary")
@@ -51,6 +62,7 @@ def main() -> None:
     if not args.dry_run:
         target.mkdir(parents=True, exist_ok=True)
     profile = discover_project(target)
+    config = _load_config(Path(args.config).resolve()) if args.config else {}
 
     answers: dict[str, object] = {}
     string_fields = [
@@ -71,6 +83,8 @@ def main() -> None:
     for key, label, current, default in string_fields:
         if current is not None:
             answers[key] = current
+        elif key in config:
+            answers[key] = config[key]
         elif args.non_interactive:
             answers[key] = default
         else:
@@ -80,6 +94,8 @@ def main() -> None:
         answers["has_production"] = True
     elif args.no_production:
         answers["has_production"] = False
+    elif "has_production" in config:
+        answers["has_production"] = bool(config["has_production"])
     elif args.non_interactive:
         answers["has_production"] = profile.has_production
     else:
@@ -94,6 +110,8 @@ def main() -> None:
         print(f"skipped: {len(result.skipped_files)}")
         for path in result.skipped_files:
             print(f"= {path}")
+    if result.summary_path:
+        print(f"summary: {result.summary_path}")
 
 
 if __name__ == "__main__":

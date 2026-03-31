@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
+from .assessment import assess_project
 from .discovery import discover_project
 from .models import InitializationResult
 from .templating import materialize_templates
@@ -50,7 +52,6 @@ def initialize_project(
     if not dry_run:
         target_root.mkdir(parents=True, exist_ok=True)
     profile = discover_project(target_root)
-
     project_name = str(answers.get("project_name") or profile.project_name or target_root.name)
     project_slug = str(answers.get("project_slug") or profile.project_slug or _slugify(project_name))
     project_type = str(answers.get("project_type") or profile.project_type)
@@ -66,6 +67,23 @@ def initialize_project(
     deploy_target = str(answers.get("deploy_target") or profile.deploy_target or "未定")
     has_production = bool(answers.get("has_production") if "has_production" in answers else profile.has_production)
     sensitivity = str(answers.get("sensitivity") or profile.sensitivity or "standard")
+    effective_profile = replace(
+        profile,
+        project_name=project_name,
+        project_slug=project_slug,
+        summary=summary,
+        project_type=project_type,
+        language=language,
+        package_manager=package_manager,
+        run_command=run_command,
+        test_command=test_command,
+        check_command=check_command,
+        ci_command=ci_command,
+        deploy_target=deploy_target,
+        has_production=has_production,
+        sensitivity=sensitivity,
+    )
+    assessment = assess_project(effective_profile)
 
     context = {
         "project_name": project_name,
@@ -88,6 +106,14 @@ def initialize_project(
         "ci_paths_bullets": _bullet_list(profile.ci_paths, fallback="待补充 CI 入口"),
         "external_systems_bullets": _bullet_list(profile.external_systems, fallback="当前未探测到显式外部系统"),
         "notes_bullets": _bullet_list(profile.notes, fallback="当前探测结果可直接作为第一版初始化信息"),
+        "assessment_score": str(assessment.score),
+        "assessment_readiness": assessment.readiness,
+        "assessment_strengths_bullets": _bullet_list(assessment.strengths, fallback="当前没有额外优势项"),
+        "assessment_gaps_bullets": _bullet_list(assessment.gaps, fallback="当前没有明显缺口"),
+        "assessment_recommendations_bullets": _bullet_list(
+            assessment.recommendations,
+            fallback="初始化完成后可以直接开始补充项目细节。",
+        ),
         "source_paths_inline": _inline_list(profile.source_paths, fallback="待补充"),
         "test_paths_inline": _inline_list(profile.test_paths, fallback="待补充"),
         "docs_paths_inline": _inline_list(profile.docs_paths, fallback="待补充"),
@@ -130,4 +156,5 @@ def initialize_project(
         written_files=written,
         skipped_files=skipped,
         dry_run=dry_run,
+        summary_path=".agent-harness/init-summary.md",
     )

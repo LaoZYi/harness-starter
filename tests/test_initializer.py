@@ -35,12 +35,15 @@ class InitializeProjectTests(unittest.TestCase):
             agents_text = (root / "AGENTS.md").read_text(encoding="utf-8")
             project_json = json.loads((root / ".agent-harness" / "project.json").read_text(encoding="utf-8"))
             runbook_exists = (root / "docs" / "runbook.md").exists()
+            summary_text = (root / ".agent-harness" / "init-summary.md").read_text(encoding="utf-8")
 
         self.assertTrue(result.written_files)
         self.assertIn("Acme API", agents_text)
         self.assertEqual(project_json["project_name"], "Acme API")
         self.assertEqual(project_json["commands"]["test"], "uv run pytest")
         self.assertTrue(runbook_exists)
+        self.assertIn("初始化摘要", summary_text)
+        self.assertIn("Acme API", summary_text)
 
     def test_dry_run_does_not_write_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

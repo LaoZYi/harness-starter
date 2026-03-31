@@ -34,6 +34,7 @@ class InitializationResult:
     written_files: list[str]
     skipped_files: list[str]
     dry_run: bool = False
+    summary_path: str | None = None
 
 
 @dataclass(slots=True)

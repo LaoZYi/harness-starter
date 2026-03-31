@@ -15,6 +15,7 @@
 python scripts/discover_project.py /path/to/repo
 python scripts/assess_project.py /path/to/repo
 python scripts/init_project.py --target /path/to/repo
+python scripts/init_project.py --target /path/to/repo --config examples/init-config.example.json --non-interactive
 ```
 
 ## 初始化建议流程
@@ -23,7 +24,7 @@ python scripts/init_project.py --target /path/to/repo
 2. 再跑 `scripts/assess_project.py` 看接入缺口和建议。
 3. 如有需要先用 `--dry-run` 预演初始化结果。
 4. 再运行 `scripts/init_project.py`，补充项目目标、命令和部署信息。
-5. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/` 和 `.agent-harness/project.json`。
+5. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/`、`.agent-harness/project.json` 和 `.agent-harness/init-summary.md`。
 
 ## 常见问题
 
@@ -33,3 +34,5 @@ python scripts/init_project.py --target /path/to/repo
    这属于框架允许的情况，初始化阶段应该人工确认关键字段。
 3. 新项目类型不适配
    先补 `presets/`，再补模板和测试。
+4. 团队想把初始化参数标准化
+   直接维护一个 JSON/TOML 配置文件，并通过 `--config` 执行初始化。

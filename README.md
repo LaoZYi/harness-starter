@@ -33,6 +33,12 @@ python scripts/init_project.py --target /path/to/repo
 python scripts/init_project.py --target /path/to/repo --dry-run
 ```
 
+如果你希望把初始化参数固化到配置文件：
+
+```bash
+python scripts/init_project.py --target /path/to/repo --config examples/init-config.example.json --non-interactive
+```
+
 如果你希望一次性无交互初始化：
 
 ```bash
@@ -76,6 +82,7 @@ python scripts/init_project.py \
 - `scripts/assess_project.py`：命令行评估入口
 - `scripts/init_project.py`：命令行初始化入口
 - `scripts/check_repo.py`：框架仓库自检
+- `examples/init-config.example.json`：配置文件初始化示例
 
 ## 为什么做成框架而不是样例项目
 

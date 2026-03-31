@@ -1,0 +1,15 @@
+{
+  "project_name": "Acme API",
+  "project_slug": "acme-api",
+  "summary": "Handle internal automation requests.",
+  "project_type": "backend-service",
+  "language": "python",
+  "package_manager": "uv",
+  "run_command": "uv run python -m acme_api",
+  "test_command": "uv run pytest",
+  "check_command": "uv run ruff check .",
+  "ci_command": "make ci",
+  "deploy_target": "docker",
+  "has_production": true,
+  "sensitivity": "internal"
+}

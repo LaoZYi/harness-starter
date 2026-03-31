@@ -37,7 +37,7 @@ make test
 make ci
 make discover TARGET=.
 make assess TARGET=.
-make init TARGET=/path/to/repo ARGS="--non-interactive ..."
+make init TARGET=/path/to/repo ARGS="--config examples/init-config.example.json --non-interactive"
 ```
 
 ## 快速地图
@@ -47,8 +47,10 @@ make init TARGET=/path/to/repo ARGS="--non-interactive ..."
 - `src/agent_harness/initializer.py`：初始化主流程。
 - `templates/common/`：生成到目标项目里的骨架文件。
 - `presets/`：项目类型预设。
+- `examples/init-config.example.json`：初始化配置示例。
 - `tests/test_discovery.py`：探测逻辑回归。
 - `tests/test_initializer.py`：初始化逻辑回归。
+- `tests/test_init_script.py`：脚本入口回归。
 - `scripts/check_repo.py`：框架仓库守卫。
 - `CONTRIBUTING.md`：贡献说明。
 - `docs/release.md`：发布清单。
