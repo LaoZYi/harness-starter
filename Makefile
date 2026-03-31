@@ -1,7 +1,7 @@
 PYTHON ?= python3
-PACKAGE = src/ticket_router
+PACKAGE = src/agent_harness
 
-.PHONY: test check ci run
+.PHONY: test check ci discover init
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests -v
@@ -12,5 +12,8 @@ check:
 
 ci: check test
 
-run:
-	PYTHONPATH=src $(PYTHON) -m ticket_router.cli
+discover:
+	$(PYTHON) scripts/discover_project.py $(TARGET)
+
+init:
+	$(PYTHON) scripts/init_project.py --target "$(TARGET)" $(ARGS)

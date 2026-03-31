@@ -1,0 +1,11 @@
+{
+  "behavior_change_definition": "任何会影响公开 API、默认值、错误行为或兼容性的改动，都算行为变化。",
+  "architecture_focus": "优先描述公开 API、内部实现、兼容性边界和测试契约。",
+  "release_checks": [
+    "确认对外 API 变化已记录",
+    "确认兼容性或迁移说明已经准备",
+    "确认版本发布说明准确"
+  ],
+  "workflow_notes": "如果存在破坏性变更，务必在 release 文档和 PR 里显式写出迁移路径。"
+}
+

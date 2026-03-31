@@ -2,22 +2,25 @@
 
 ## 模块职责
 
-- `models.py`：只放领域数据结构和基础枚举，不写业务决策。
-- `router.py`：只负责工单分流逻辑。
-- `cli.py`：只负责本地入口、参数解析和序列化输出，不承载规则。
-- `tests/`：行为样例和回归保护。
-- `scripts/check_repo.py`：仓库结构、文档链接和规则守卫。
+- `src/agent_harness/discovery.py`：扫描目标项目并给出第一版画像。
+- `src/agent_harness/initializer.py`：整合探测结果、预设和用户输入，生成文件。
+- `src/agent_harness/templating.py`：模板渲染和落盘。
+- `templates/common/`：真正会写入目标项目的模板。
+- `presets/`：按项目类型提供默认文案和关注点。
+- `scripts/*.py`：命令行封装层。
+- `tests/`：框架级回归测试。
+- `scripts/check_repo.py`：框架仓库的守卫脚本。
 
 ## 约束
 
-1. 分流规则必须集中在 `router.py`，不要把关键词散落到 CLI 或测试里。
-2. `router.py` 和 `models.py` 都应保持小文件，超过 220 行说明职责可能失衡。
+1. 模板内容必须尽量通用，不能再引入样例业务。
+2. 脚本逻辑和模板文本分离，不要把长文案塞进 Python 代码里。
 3. 长期规则必须写回仓库文件，不要只留在某个工具的 memory 里。
-4. 跨工具适配文件只做薄封装，不能演化成第二套真规则。
-5. 自检脚本要优先检查“文档是否存在”和“入口是否指向单一知识源”。
+4. Claude 适配层只做薄封装，不能演化成第二套真规则。
+5. 自检脚本要优先检查“模板是否存在”“脚本是否连通”“文档是否指向真实入口”。
 
 ## 推荐扩展方式
 
-- 想增加新队列：先改 `models.py`，再改 `router.py`，最后补测试和 `docs/product.md`。
-- 想增加新命令：先改 `Makefile`，再决定是否需要新脚本，并同步更新 `docs/runbook.md`。
-- 想增加新 agent 适配层：内容必须只引用 `AGENTS.md` 和 `docs/`。
+- 想增加新项目类型：先加 `presets/*.json`，再补模板和测试。
+- 想增加新生成文件：先加模板，再补初始化测试和仓库自检。
+- 想增加新命令：先改 `Makefile`，再补脚本和 `docs/runbook.md`。

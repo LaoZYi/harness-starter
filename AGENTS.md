@@ -1,14 +1,14 @@
 # AGENTS
 
-把这个文件当成入口，不要把它写成百科全书。详细信息放到 `docs/`。
+把这个文件当成入口，不要把它写成百科全书。详细信息放到 `docs/`、`templates/` 和 `src/agent_harness/`。
 
 ## 开始前先看什么
 
 1. 先读 `README.md` 了解仓库目标和主命令。
-2. 改业务行为前，读 `docs/product.md`。
-3. 改代码结构前，读 `docs/architecture.md`。
+2. 改初始化逻辑前，读 `docs/product.md`。
+3. 改模板或目录结构前，读 `docs/architecture.md`。
 4. 准备提交改动前，读 `docs/workflow.md`。
-5. 运行或排障前，读 `docs/runbook.md`。
+5. 运行脚本或排障前，读 `docs/runbook.md`。
 6. 准备提 PR 或发版本前，读 `CONTRIBUTING.md` 和 `docs/release.md`。
 
 ## 默认工作流
@@ -23,9 +23,9 @@
 ## 硬规则
 
 - `AGENTS.md` 保持简短，超过 120 行就该拆分。
-- 行为变化必须更新 `docs/product.md`。
-- 架构变化必须更新 `docs/architecture.md`。
-- 运行方式变化必须更新 `docs/runbook.md`。
+- 框架行为变化必须更新 `docs/product.md`。
+- 模板结构变化必须更新 `docs/architecture.md`。
+- 初始化或探测命令变化必须更新 `docs/runbook.md`。
 - 新脚本要接入 `Makefile`，不要发明隐藏命令。
 - 新规则优先写成可执行校验，不要只写成口头提醒。
 
@@ -35,16 +35,19 @@
 make check
 make test
 make ci
-make run
+make discover TARGET=.
+make init TARGET=/path/to/repo ARGS="--non-interactive ..."
 ```
 
 ## 快速地图
 
-- `src/ticket_router/router.py`：分流决策。
-- `src/ticket_router/models.py`：领域模型。
-- `src/ticket_router/cli.py`：本地入口。
-- `tests/test_router.py`：核心行为样例。
-- `scripts/check_repo.py`：文档和结构守卫。
+- `src/agent_harness/discovery.py`：项目探测。
+- `src/agent_harness/initializer.py`：初始化主流程。
+- `templates/common/`：生成到目标项目里的骨架文件。
+- `presets/`：项目类型预设。
+- `tests/test_discovery.py`：探测逻辑回归。
+- `tests/test_initializer.py`：初始化逻辑回归。
+- `scripts/check_repo.py`：框架仓库守卫。
 - `CONTRIBUTING.md`：贡献说明。
 - `docs/release.md`：发布清单。
 - `docs/runbook.md`：运行手册。

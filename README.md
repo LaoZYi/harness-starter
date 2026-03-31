@@ -1,68 +1,71 @@
-# agent-harness-starter
+# agent-harness-framework
 
-这是一个面向生产项目的 starter，用来给 Codex 和 Claude Code 提供一套可直接工作的仓库骨架。它不是 prompt 集合，而是把 agent 的工作环境拆成四层：
+这是一个通用初始化框架，用来给 Codex 和 Claude Code 在任意项目里落一套稳定的 agent harness。它不自带业务案例，而是提供三种能力：
 
-1. `AGENTS.md` 只保留短入口和执行规则。
-2. `docs/` 承载产品、架构和协作细节。
-3. `scripts/check_repo.py` 把关键约束变成机器可校验规则。
-4. `Makefile` 和 CI 保证改动能快速自证。
+1. 探测项目现状
+2. 生成第一版项目知识骨架
+3. 把协作约束落成文档和模板
 
-## 快速开始
+## 典型使用方式
 
-```bash
-cd /Users/bochun/Documents/work/agent-harness-starter
-make check
-make test
-```
-
-本地跑一个真实输入：
+先看现有项目长什么样：
 
 ```bash
-printf '{"title":"service down","description":"api is unavailable","customer_tier":"enterprise","channel":"email"}' | make run
+python scripts/discover_project.py /path/to/repo
 ```
 
-## 这个仓库里有什么
+再初始化 harness：
 
-- 一个可扩展的服务骨架：`ticket_router` 会根据工单内容做路由决策。
-- 一套适合 Codex 和 Claude Code 的文档入口。
-- 一条最小但完整的验证链。
-- 一组能直接进入团队协作的模板文件。
+```bash
+python scripts/init_project.py --target /path/to/repo
+```
 
-## 目录
+如果你希望一次性无交互初始化：
 
-- `AGENTS.md`：仓库级执行入口。
-- `CONTRIBUTING.md`：贡献和提交流程。
-- `CLAUDE.md`：给 Claude Code 的薄适配层。
-- `docs/product.md`：业务行为定义。
-- `docs/architecture.md`：模块边界和约束。
-- `docs/workflow.md`：人类和 agent 的协作流程。
-- `docs/release.md`：发布前后检查清单。
-- `docs/runbook.md`：本地运行和排障手册。
-- `src/ticket_router/`：服务代码。
-- `tests/`：回归测试。
-- `scripts/check_repo.py`：仓库自检。
+```bash
+python scripts/init_project.py \
+  --target /path/to/repo \
+  --project-name "Acme API" \
+  --summary "Handle internal automation requests." \
+  --project-type backend-service \
+  --language python \
+  --package-manager uv \
+  --run-command "uv run python -m acme_api" \
+  --test-command "uv run pytest" \
+  --check-command "uv run ruff check ." \
+  --ci-command "make ci" \
+  --deploy-target docker \
+  --has-production \
+  --sensitivity internal \
+  --non-interactive
+```
 
-## 适合拿去起什么项目
+## 初始化后会生成什么
 
-- 内部工具服务
-- 后台自动化任务
-- 规则引擎类 Python 服务
-- 需要 agent 长期协作维护的中小型仓库
+- `AGENTS.md`
+- `CLAUDE.md`
+- `CONTRIBUTING.md`
+- `docs/product.md`
+- `docs/architecture.md`
+- `docs/workflow.md`
+- `docs/runbook.md`
+- `docs/release.md`
+- `.agent-harness/project.json`
+- `.github/PULL_REQUEST_TEMPLATE.md`
+- `.github/ISSUE_TEMPLATE/*`
 
-## 为什么这算一个可生产化 starter
+## 框架仓库结构
 
-- 入口短。`AGENTS.md` 只讲怎么开始，不背整本手册。
-- 规则实。行为变化要补文档，文档漂移会被脚本拦住。
-- 命令少。只保留 `make check`、`make test`、`make ci` 三条主命令。
-- 结构清。业务规则、协作规则、验证逻辑分开存放。
-- 工具中立。真正的知识在仓库里，不锁死在某个 agent 产品里。
-- 工具范围清晰。当前只维护 Codex 和 Claude Code 两条入口，不额外兼容 Cursor。
-- 入口可跑。`make run` 接受真实 JSON 输入，而不是只能运行固定样例。
+- `templates/common/`：生成到目标项目中的模板文件
+- `presets/`：按项目类型给出默认文案和检查重点
+- `src/agent_harness/`：探测、初始化和模板渲染逻辑
+- `scripts/discover_project.py`：命令行探测入口
+- `scripts/init_project.py`：命令行初始化入口
+- `scripts/check_repo.py`：框架仓库自检
 
-## Starter 级协作入口
+## 为什么做成框架而不是样例项目
 
-- `CONTRIBUTING.md`：给新协作者和新 agent 的统一上手入口。
-- `.github/ISSUE_TEMPLATE/`：强制问题和需求都带上下文与验收标准。
-- `.github/PULL_REQUEST_TEMPLATE.md`：把验证、文档同步和风险说明变成默认项。
-- `docs/release.md`：把发布检查显式化，防止靠记忆发布。
-- `docs/runbook.md`：把运行命令和常见排障显式化，减少口头传承。
+- 避免样例业务代码污染真实项目上下文
+- 让新项目和存量项目都能接入
+- 让“初始化项目认知”成为显式步骤
+- 让后续需求迭代都落在同一套仓库内知识源上

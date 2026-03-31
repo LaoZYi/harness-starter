@@ -1,0 +1,36 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(slots=True)
+class ProjectProfile:
+    root: str
+    project_name: str
+    project_slug: str
+    summary: str
+    project_type: str
+    language: str
+    package_manager: str
+    run_command: str
+    test_command: str
+    check_command: str
+    ci_command: str
+    deploy_target: str
+    has_production: bool
+    sensitivity: str
+    source_paths: list[str] = field(default_factory=list)
+    test_paths: list[str] = field(default_factory=list)
+    docs_paths: list[str] = field(default_factory=list)
+    ci_paths: list[str] = field(default_factory=list)
+    external_systems: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class InitializationResult:
+    target_root: str
+    context: dict[str, str]
+    written_files: list[str]
+    skipped_files: list[str]
+

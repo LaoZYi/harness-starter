@@ -11,6 +11,8 @@ REQUIRED_FILES = [
     ROOT / "AGENTS.md",
     ROOT / "CONTRIBUTING.md",
     ROOT / "CLAUDE.md",
+    ROOT / "scripts" / "discover_project.py",
+    ROOT / "scripts" / "init_project.py",
     ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
     ROOT / ".github" / "ISSUE_TEMPLATE" / "bug_report.md",
     ROOT / ".github" / "ISSUE_TEMPLATE" / "feature_request.md",
@@ -20,6 +22,31 @@ REQUIRED_FILES = [
     ROOT / "docs" / "workflow.md",
     ROOT / "docs" / "release.md",
     ROOT / "docs" / "runbook.md",
+    ROOT / "src" / "agent_harness" / "__init__.py",
+    ROOT / "src" / "agent_harness" / "models.py",
+    ROOT / "src" / "agent_harness" / "discovery.py",
+    ROOT / "src" / "agent_harness" / "templating.py",
+    ROOT / "src" / "agent_harness" / "initializer.py",
+    ROOT / "tests" / "test_discovery.py",
+    ROOT / "tests" / "test_initializer.py",
+    ROOT / "templates" / "common" / "AGENTS.md.tmpl",
+    ROOT / "templates" / "common" / "CLAUDE.md.tmpl",
+    ROOT / "templates" / "common" / "CONTRIBUTING.md.tmpl",
+    ROOT / "templates" / "common" / ".github" / "PULL_REQUEST_TEMPLATE.md.tmpl",
+    ROOT / "templates" / "common" / ".github" / "ISSUE_TEMPLATE" / "bug_report.md.tmpl",
+    ROOT / "templates" / "common" / ".github" / "ISSUE_TEMPLATE" / "feature_request.md.tmpl",
+    ROOT / "templates" / "common" / ".github" / "ISSUE_TEMPLATE" / "config.yml.tmpl",
+    ROOT / "templates" / "common" / "docs" / "product.md.tmpl",
+    ROOT / "templates" / "common" / "docs" / "architecture.md.tmpl",
+    ROOT / "templates" / "common" / "docs" / "workflow.md.tmpl",
+    ROOT / "templates" / "common" / "docs" / "release.md.tmpl",
+    ROOT / "templates" / "common" / "docs" / "runbook.md.tmpl",
+    ROOT / "templates" / "common" / ".agent-harness" / "project.json.tmpl",
+    ROOT / "presets" / "backend-service.json",
+    ROOT / "presets" / "web-app.json",
+    ROOT / "presets" / "cli-tool.json",
+    ROOT / "presets" / "library.json",
+    ROOT / "presets" / "worker.json",
 ]
 
 MARKDOWN_LINK_PATTERN = re.compile(r"`([^`]+\.md)`")
@@ -56,20 +83,24 @@ def check_markdown_references() -> None:
 
 def check_command_surface() -> None:
     makefile_text = (ROOT / "Makefile").read_text(encoding="utf-8")
-    for target in ("check:", "test:", "ci:"):
+    for target in ("check:", "test:", "ci:", "discover:", "init:"):
         assert_true(target in makefile_text, f"Makefile 缺少目标: {target[:-1]}")
 
 
 def check_module_sizes() -> None:
-    for relative_path in ["src/ticket_router/router.py", "src/ticket_router/models.py"]:
+    for relative_path in [
+        "src/agent_harness/discovery.py",
+        "src/agent_harness/initializer.py",
+        "src/agent_harness/templating.py",
+    ]:
         path = ROOT / relative_path
         line_count = len(path.read_text(encoding="utf-8").splitlines())
-        assert_true(line_count <= 220, f"{relative_path} 过长: {line_count} 行")
+        assert_true(line_count <= 280, f"{relative_path} 过长: {line_count} 行")
 
 
 def check_runbook_mentions_main_commands() -> None:
     runbook_text = (ROOT / "docs" / "runbook.md").read_text(encoding="utf-8")
-    for command in ("make check", "make test", "make ci", "make run"):
+    for command in ("make check", "make test", "make ci", "make discover", "make init"):
         assert_true(command in runbook_text, f"运行手册缺少命令说明: {command}")
 
 
@@ -82,6 +113,12 @@ def check_github_templates() -> None:
     assert_true("验收标准" in feature_text, "功能模板必须要求验收标准")
 
 
+def check_framework_has_no_sample_service() -> None:
+    sample_root = ROOT / "src" / "ticket_router"
+    sample_sources = list(sample_root.glob("*.py")) if sample_root.exists() else []
+    assert_true(not sample_sources, "框架仓库不应保留样例业务代码")
+
+
 def main() -> None:
     check_required_files()
     check_agents_length()
@@ -91,6 +128,7 @@ def main() -> None:
     check_module_sizes()
     check_runbook_mentions_main_commands()
     check_github_templates()
+    check_framework_has_no_sample_service()
     print("repository checks passed")
 
 

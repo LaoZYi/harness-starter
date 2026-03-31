@@ -1,0 +1,25 @@
+# 贡献指南
+
+这个项目已经接入 agent harness。无论是人类还是 agent，都请沿着仓库内文档协作，而不是依赖口头共识。
+
+## 建议阅读顺序
+
+1. `AGENTS.md`
+2. `.agent-harness/project.json`
+3. `docs/workflow.md`
+4. 任务相关的 `docs/` 文档
+
+## 最小提交流程
+
+1. 明确本次改动目标。
+2. 完成最小实现。
+3. 补测试和文档。
+4. 运行 `{{check_command}}`。
+5. 需要完整验证时运行 `{{ci_command}}`。
+
+## 不要这样做
+
+- 不要修改行为却不更新 `docs/product.md`。
+- 不要修改运行方式却不更新 `docs/runbook.md`。
+- 不要新增隐式命令或仓库外规则。
+

@@ -3,11 +3,11 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-harness-starter"
+name = "agent-harness-framework"
 version = "0.1.0"
-description = "A production-oriented starter repository for an AI agent-friendly Python service."
+description = "A framework that discovers project context and initializes Codex/Claude Code harness files."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "OpenAI Codex" }]
 
 [tool.setuptools.packages.find]

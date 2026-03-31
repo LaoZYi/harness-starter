@@ -1,0 +1,38 @@
+# AGENTS
+
+把这个文件当成入口，不要把它写成百科全书。长期知识统一写回 `docs/` 和 `.agent-harness/project.json`。
+
+## 开始前先看什么
+
+1. `README.md`，如果项目已有对外说明。
+2. `.agent-harness/project.json`，快速了解项目元信息。
+3. `docs/product.md`，理解什么行为变化需要同步说明。
+4. `docs/architecture.md`，理解模块边界和禁区。
+5. `docs/runbook.md`，理解运行、测试和排障入口。
+
+## 默认工作流
+
+1. 先用一句话重述本次要改什么。
+2. 只打开和任务相关的文件，不要全仓乱扫。
+3. 先做最小改动，再补测试，再补文档。
+4. 先跑 `{{check_command}}`。
+5. 再跑 `{{test_command}}`。
+6. 需要整体验证时跑 `{{ci_command}}`。
+
+## 硬规则
+
+- 行为变化必须同步更新 `docs/product.md`。
+- 架构变化必须同步更新 `docs/architecture.md`。
+- 运行方式变化必须同步更新 `docs/runbook.md`。
+- 长期规则不要只写进聊天记录或工具 memory。
+- 新约束优先落成脚本检查，而不是口头提醒。
+
+## 当前项目快照
+
+- 项目名：`{{project_name}}`
+- 项目类型：`{{project_type}}`
+- 主要语言：`{{language}}`
+- 包管理器：`{{package_manager}}`
+- 源码目录：{{source_paths_inline}}
+- 测试目录：{{test_paths_inline}}
+

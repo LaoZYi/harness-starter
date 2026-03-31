@@ -1,33 +1,23 @@
 # 产品规则
 
-`ticket_router` 是一个支持工单路由服务。输入是一张待处理工单，输出是一个明确的队列、优先级和解释。
+这个仓库的目标不是承载某个具体业务，而是把“项目认知初始化”和“agent 协作入口”产品化。
 
-## 输入字段
+## 框架提供什么
 
-- `title`：工单标题。
-- `description`：工单正文。
-- `customer_tier`：`free`、`pro`、`enterprise`。
-- `channel`：`email`、`chat`、`web`。
+1. 扫描目标项目，产出第一版结构化画像。
+2. 根据项目类型和探测结果生成文档骨架。
+3. 为 Codex 和 Claude Code 生成统一入口文件。
+4. 把 issue、PR、runbook、release checklist 一起落到目标项目。
 
-## 输出字段
+## 什么算行为变化
 
-- `queue`：`billing`、`support`、`security`、`product`。
-- `priority`：`low`、`medium`、`high`、`critical`。
-- `reasons`：命中的规则说明，便于人工复核。
-
-## 当前行为
-
-1. 标题和正文会被统一转成小写后匹配关键词。
-2. 出现 `breach`、`data leak`、`security`、`vulnerability` 之一时，直接进入 `security` 队列，优先级至少是 `high`。
-3. 出现 `invoice`、`refund`、`payment`、`charge` 之一时，进入 `billing` 队列。
-4. 出现 `feature`、`roadmap`、`integration` 之一时，进入 `product` 队列。
-5. 出现 `outage`、`service down`、`unavailable`、`latency` 之一时，进入 `support` 队列，但默认优先级提升到 `high`。
-6. 其他情况进入 `support` 队列。
-7. `enterprise` 客户的优先级会提升一级，但不会超过 `critical`。
-8. 通过 `chat` 渠道提交且正文长度超过 280 个字符时，优先级会提升一级，因为这通常意味着问题复杂且沟通成本高。
+- 影响探测结果字段的改动
+- 影响模板生成内容的改动
+- 影响初始化默认值或交互流程的改动
+- 影响生成文件列表或目录结构的改动
 
 ## 变更原则
 
-- 只要改了匹配规则、优先级算法或输出结构，就要同步更新本文件。
-- 新规则必须有至少一个测试样例。
-- 如果新增输入字段或运行参数，也要同步更新 `docs/runbook.md`。
+- 只要改了初始化输出，就要补对应测试。
+- 只要改了探测字段，就要同步更新文档和模板。
+- 只要改了脚本入口或命令方式，就要同步更新 `docs/runbook.md`。
