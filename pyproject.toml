@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-harness-demo"
+version = "0.1.0"
+description = "A concrete example repository that demonstrates a good AI agent harness."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "OpenAI Codex" }]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
