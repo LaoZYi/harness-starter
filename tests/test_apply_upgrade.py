@@ -42,6 +42,38 @@ class ApplyUpgradeTests(unittest.TestCase):
         self.assertIsNotNone(backup_root)
         self.assertTrue(backup_exists)
 
+    def test_can_apply_only_selected_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "upgrade-target"
+            answers = {
+                "project_name": "Upgrade Target",
+                "project_slug": "upgrade-target",
+                "summary": "Project to test selective upgrade apply",
+                "project_type": "backend-service",
+                "language": "python",
+                "package_manager": "uv",
+                "run_command": "uv run python -m upgrade_target",
+                "test_command": "uv run pytest",
+                "check_command": "uv run ruff check .",
+                "ci_command": "make ci",
+                "deploy_target": "docker",
+                "has_production": False,
+                "sensitivity": "internal",
+            }
+            initialize_project(root, answers)
+            agents_path = root / "AGENTS.md"
+            product_path = root / "docs" / "product.md"
+            agents_path.write_text(agents_path.read_text(encoding="utf-8") + "\n# local change\n", encoding="utf-8")
+            product_path.write_text(product_path.read_text(encoding="utf-8") + "\n# product change\n", encoding="utf-8")
+
+            result = execute_upgrade(root, answers, only_files=["AGENTS.md"])
+            agents_text = agents_path.read_text(encoding="utf-8")
+            product_text = product_path.read_text(encoding="utf-8")
+
+        self.assertEqual(result.updated_files, ["AGENTS.md"])
+        self.assertNotIn("# local change", agents_text)
+        self.assertIn("# product change", product_text)
+
 
 if __name__ == "__main__":
     unittest.main()

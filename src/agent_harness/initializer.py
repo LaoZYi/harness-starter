@@ -12,6 +12,7 @@ from .templating import materialize_templates
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_ROOT = REPO_ROOT / "templates" / "common"
 PRESET_ROOT = REPO_ROOT / "presets"
+FRAMEWORK_VERSION = (REPO_ROOT / "VERSION").read_text(encoding="utf-8").strip()
 
 
 def _load_preset(project_type: str) -> dict[str, object]:
@@ -106,6 +107,7 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
             assessment.recommendations,
             fallback="初始化完成后可以直接开始补充项目细节。",
         ),
+        "harness_version": FRAMEWORK_VERSION,
         "source_paths_inline": _inline_list(profile.source_paths, fallback="待补充"),
         "test_paths_inline": _inline_list(profile.test_paths, fallback="待补充"),
         "docs_paths_inline": _inline_list(profile.docs_paths, fallback="待补充"),

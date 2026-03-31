@@ -17,7 +17,10 @@
 python scripts/discover_project.py /path/to/repo
 python scripts/assess_project.py /path/to/repo
 python scripts/plan_upgrade.py --target /path/to/repo
+python scripts/plan_upgrade.py --target /path/to/repo --show-diff
+python scripts/plan_upgrade.py --target /path/to/repo --only AGENTS.md
 python scripts/apply_upgrade.py --target /path/to/repo
+python scripts/apply_upgrade.py --target /path/to/repo --only AGENTS.md
 python scripts/init_project.py --target /path/to/repo
 python scripts/init_project.py --target /path/to/repo --config examples/init-config.example.json --non-interactive
 ```
@@ -27,10 +30,12 @@ python scripts/init_project.py --target /path/to/repo --config examples/init-con
 1. 先跑 `scripts/discover_project.py` 看预填信息。
 2. 再跑 `scripts/assess_project.py` 看接入缺口和建议。
 3. 如果仓库已经接入过旧版本 harness，先跑 `scripts/plan_upgrade.py` 看哪些文件会变。
-4. 如果接受这些变化，再运行 `scripts/apply_upgrade.py`，它会先备份被覆盖文件。
-5. 如有需要先用 `--dry-run` 预演初始化结果。
-6. 再运行 `scripts/init_project.py`，补充项目目标、命令和部署信息。
-7. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/`、`.agent-harness/project.json` 和 `.agent-harness/init-summary.md`。
+4. 如果需要先 review 内容差异，加 `--show-diff`。
+5. 如果只想先升级部分文件，使用 `--only`。
+6. 如果接受这些变化，再运行 `scripts/apply_upgrade.py`，它会先备份被覆盖文件。
+7. 如有需要先用 `--dry-run` 预演初始化结果。
+8. 再运行 `scripts/init_project.py`，补充项目目标、命令和部署信息。
+9. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/`、`.agent-harness/project.json` 和 `.agent-harness/init-summary.md`。
 
 ## 常见问题
 

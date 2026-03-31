@@ -48,6 +48,7 @@ class InitScriptTests(unittest.TestCase):
 
         self.assertIn("summary: .agent-harness/init-summary.md", result.stdout)
         self.assertEqual(project_json["project_name"], "Configured API")
+        self.assertIn("harness_version", project_json)
         self.assertEqual(project_json["commands"]["run"], "uv run python -m configured_api")
 
 

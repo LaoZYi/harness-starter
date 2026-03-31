@@ -38,6 +38,7 @@ def main() -> None:
     parser.add_argument("--sensitivity", choices=["standard", "internal", "high"])
     parser.add_argument("--has-production", action="store_true")
     parser.add_argument("--no-production", action="store_true")
+    parser.add_argument("--only", action="append", default=[], help="Only upgrade specific managed files")
     args = parser.parse_args()
 
     target = Path(args.target).resolve()
@@ -76,7 +77,7 @@ def main() -> None:
     else:
         answers["has_production"] = profile.has_production
 
-    result = execute_upgrade(target, answers)
+    result = execute_upgrade(target, answers, only_files=args.only or None)
     print(f"upgraded: {result.target_root}")
     print(f"created: {len(result.created_files)}")
     for path in result.created_files:
@@ -89,6 +90,8 @@ def main() -> None:
         print(f"= {path}")
     if result.backup_root:
         print(f"backup: {result.backup_root}")
+    if result.selected_files:
+        print(f"selected: {', '.join(result.selected_files)}")
 
 
 if __name__ == "__main__":

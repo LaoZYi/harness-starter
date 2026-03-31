@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from difflib import unified_diff
 from pathlib import Path
 
 from .initializer import TEMPLATE_ROOT, prepare_initialization
@@ -8,14 +9,39 @@ from .models import UpgradeExecutionResult, UpgradePlanResult
 from .templating import render_templates
 
 
-def plan_upgrade(target_root: Path, answers: dict[str, object]) -> UpgradePlanResult:
+def _filter_rendered(rendered: dict[str, str], only_files: list[str] | None) -> dict[str, str]:
+    if not only_files:
+        return rendered
+
+    allowed = set(only_files)
+    return {path: content for path, content in rendered.items() if path in allowed}
+
+
+def _build_diff(relative_path: str, current_content: str, expected_content: str) -> str:
+    return "".join(
+        unified_diff(
+            current_content.splitlines(keepends=True),
+            expected_content.splitlines(keepends=True),
+            fromfile=f"a/{relative_path}",
+            tofile=f"b/{relative_path}",
+        )
+    )
+
+
+def plan_upgrade(
+    target_root: Path,
+    answers: dict[str, object],
+    *,
+    only_files: list[str] | None = None,
+) -> UpgradePlanResult:
     target_root = target_root.resolve()
     _, _, context = prepare_initialization(target_root, answers)
-    rendered = render_templates(TEMPLATE_ROOT, context)
+    rendered = _filter_rendered(render_templates(TEMPLATE_ROOT, context), only_files)
 
     create_files: list[str] = []
     update_files: list[str] = []
     unchanged_files: list[str] = []
+    diffs: dict[str, str] = {}
 
     for relative_path, expected_content in rendered.items():
         path = target_root / relative_path
@@ -28,6 +54,7 @@ def plan_upgrade(target_root: Path, answers: dict[str, object]) -> UpgradePlanRe
             unchanged_files.append(relative_path)
         else:
             update_files.append(relative_path)
+            diffs[relative_path] = _build_diff(relative_path, current_content, expected_content)
 
     checklist: list[str] = []
     if create_files:
@@ -47,14 +74,20 @@ def plan_upgrade(target_root: Path, answers: dict[str, object]) -> UpgradePlanRe
         update_files=update_files,
         unchanged_files=unchanged_files,
         checklist=checklist,
+        diffs=diffs,
     )
 
 
-def execute_upgrade(target_root: Path, answers: dict[str, object]) -> UpgradeExecutionResult:
+def execute_upgrade(
+    target_root: Path,
+    answers: dict[str, object],
+    *,
+    only_files: list[str] | None = None,
+) -> UpgradeExecutionResult:
     target_root = target_root.resolve()
-    plan = plan_upgrade(target_root, answers)
+    plan = plan_upgrade(target_root, answers, only_files=only_files)
     _, _, context = prepare_initialization(target_root, answers)
-    rendered = render_templates(TEMPLATE_ROOT, context)
+    rendered = _filter_rendered(render_templates(TEMPLATE_ROOT, context), only_files)
 
     backup_root: Path | None = None
     if plan.update_files:
@@ -79,4 +112,5 @@ def execute_upgrade(target_root: Path, answers: dict[str, object]) -> UpgradeExe
         updated_files=plan.update_files,
         unchanged_files=plan.unchanged_files,
         backup_root=str(backup_root) if backup_root is not None else None,
+        selected_files=sorted(rendered.keys()),
     )

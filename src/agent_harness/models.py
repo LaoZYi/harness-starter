@@ -53,6 +53,7 @@ class UpgradePlanResult:
     update_files: list[str] = field(default_factory=list)
     unchanged_files: list[str] = field(default_factory=list)
     checklist: list[str] = field(default_factory=list)
+    diffs: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -62,3 +63,4 @@ class UpgradeExecutionResult:
     updated_files: list[str] = field(default_factory=list)
     unchanged_files: list[str] = field(default_factory=list)
     backup_root: str | None = None
+    selected_files: list[str] = field(default_factory=list)

@@ -36,3 +36,31 @@ class UpgradePlanTests(unittest.TestCase):
         self.assertIn("AGENTS.md", result.update_files)
         self.assertIn("docs/product.md", result.unchanged_files)
         self.assertTrue(result.checklist)
+        self.assertIn("AGENTS.md", result.diffs)
+
+    def test_can_limit_upgrade_plan_to_specific_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "upgrade-target"
+            answers = {
+                "project_name": "Upgrade Target",
+                "project_slug": "upgrade-target",
+                "summary": "Project to test selective planning",
+                "project_type": "backend-service",
+                "language": "python",
+                "package_manager": "uv",
+                "run_command": "uv run python -m upgrade_target",
+                "test_command": "uv run pytest",
+                "check_command": "uv run ruff check .",
+                "ci_command": "make ci",
+                "deploy_target": "docker",
+                "has_production": False,
+                "sensitivity": "internal",
+            }
+            initialize_project(root, answers)
+            agents_path = root / "AGENTS.md"
+            agents_path.write_text(agents_path.read_text(encoding="utf-8") + "\n# local change\n", encoding="utf-8")
+
+            result = plan_upgrade(root, answers, only_files=["AGENTS.md"])
+
+        self.assertEqual(result.update_files, ["AGENTS.md"])
+        self.assertFalse(result.create_files)

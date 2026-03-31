@@ -38,6 +38,8 @@ def main() -> None:
     parser.add_argument("--sensitivity", choices=["standard", "internal", "high"])
     parser.add_argument("--has-production", action="store_true")
     parser.add_argument("--no-production", action="store_true")
+    parser.add_argument("--only", action="append", default=[], help="Only plan specific managed files")
+    parser.add_argument("--show-diff", action="store_true", help="Print unified diffs for files that would update")
     parser.add_argument("--json", action="store_true", help="Print raw JSON")
     args = parser.parse_args()
 
@@ -77,7 +79,7 @@ def main() -> None:
     else:
         answers["has_production"] = profile.has_production
 
-    result = plan_upgrade(target, answers)
+    result = plan_upgrade(target, answers, only_files=args.only or None)
 
     if args.json:
         print(
@@ -88,6 +90,7 @@ def main() -> None:
                     "update_files": result.update_files,
                     "unchanged_files": result.unchanged_files,
                     "checklist": result.checklist,
+                    "diffs": result.diffs,
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -108,6 +111,11 @@ def main() -> None:
     print("checklist:")
     for item in result.checklist:
         print(f"- {item}")
+    if args.show_diff and result.diffs:
+        print("diffs:")
+        for path, diff_text in result.diffs.items():
+            print(f"--- {path} ---")
+            print(diff_text.rstrip())
 
 
 if __name__ == "__main__":

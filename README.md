@@ -27,10 +27,28 @@ python scripts/assess_project.py /path/to/repo
 python scripts/plan_upgrade.py --target /path/to/repo
 ```
 
+如果想直接看会改什么内容：
+
+```bash
+python scripts/plan_upgrade.py --target /path/to/repo --show-diff
+```
+
+如果只想升级某几个托管文件：
+
+```bash
+python scripts/plan_upgrade.py --target /path/to/repo --only AGENTS.md --only .agent-harness/project.json
+```
+
 确认没问题后，可以直接执行升级：
 
 ```bash
 python scripts/apply_upgrade.py --target /path/to/repo
+```
+
+也可以只执行部分升级：
+
+```bash
+python scripts/apply_upgrade.py --target /path/to/repo --only AGENTS.md
 ```
 
 再初始化 harness：

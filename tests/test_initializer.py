@@ -40,6 +40,7 @@ class InitializeProjectTests(unittest.TestCase):
         self.assertTrue(result.written_files)
         self.assertIn("Acme API", agents_text)
         self.assertEqual(project_json["project_name"], "Acme API")
+        self.assertIn("harness_version", project_json)
         self.assertEqual(project_json["commands"]["test"], "uv run pytest")
         self.assertTrue(runbook_exists)
         self.assertIn("初始化摘要", summary_text)

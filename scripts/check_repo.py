@@ -58,6 +58,7 @@ REQUIRED_FILES = [
     ROOT / "presets" / "cli-tool.json",
     ROOT / "presets" / "library.json",
     ROOT / "presets" / "worker.json",
+    ROOT / "VERSION",
 ]
 
 MARKDOWN_LINK_PATTERN = re.compile(r"`([^`]+\.md)`")
