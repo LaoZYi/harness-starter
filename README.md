@@ -20,14 +20,13 @@ make test
 - 一个真实的小业务模块：`triage_bot` 会根据工单内容做分流。
 - 一套适合 agent 的文档入口。
 - 一条最小但完整的验证链。
-- 跨工具的轻量适配文件，避免把规则散落在不同产品里。
+- 面向 Codex 和 Claude Code 的轻量适配文件，避免把规则散落在工具外。
 
 ## 目录
 
 - `AGENTS.md`：仓库级执行入口。
 - `CONTRIBUTING.md`：贡献和提交流程。
 - `CLAUDE.md`：给 Claude Code 的薄适配层。
-- `.cursor/rules/00-repo.mdc`：给 Cursor 的薄适配层。
 - `docs/product.md`：业务行为定义。
 - `docs/architecture.md`：模块边界和约束。
 - `docs/workflow.md`：人类和 agent 的协作流程。
@@ -43,6 +42,7 @@ make test
 - 命令少。只保留 `make check`、`make test`、`make ci` 三条主命令。
 - 结构清。业务规则、协作规则、验证逻辑分开存放。
 - 工具中立。真正的知识在仓库里，不锁死在某个 agent 产品里。
+- 工具范围清晰。当前只维护 Codex 和 Claude Code 两条入口，不额外兼容 Cursor。
 
 ## Starter 级协作入口
 

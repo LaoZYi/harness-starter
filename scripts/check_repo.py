@@ -11,7 +11,6 @@ REQUIRED_FILES = [
     ROOT / "AGENTS.md",
     ROOT / "CONTRIBUTING.md",
     ROOT / "CLAUDE.md",
-    ROOT / ".cursor" / "rules" / "00-repo.mdc",
     ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
     ROOT / ".github" / "ISSUE_TEMPLATE" / "bug_report.md",
     ROOT / ".github" / "ISSUE_TEMPLATE" / "feature_request.md",
@@ -43,9 +42,7 @@ def check_agents_length() -> None:
 
 def check_adapter_files_point_to_agents() -> None:
     claude_text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
-    cursor_text = (ROOT / ".cursor" / "rules" / "00-repo.mdc").read_text(encoding="utf-8")
     assert_true("AGENTS.md" in claude_text, "CLAUDE.md 必须引用 AGENTS.md")
-    assert_true("AGENTS.md" in cursor_text, "Cursor 规则必须引用 AGENTS.md")
 
 
 def check_markdown_references() -> None:
