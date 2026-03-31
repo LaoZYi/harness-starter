@@ -44,3 +44,12 @@ class AssessmentResult:
     strengths: list[str] = field(default_factory=list)
     gaps: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class UpgradePlanResult:
+    target_root: str
+    create_files: list[str] = field(default_factory=list)
+    update_files: list[str] = field(default_factory=list)
+    unchanged_files: list[str] = field(default_factory=list)
+    checklist: list[str] = field(default_factory=list)

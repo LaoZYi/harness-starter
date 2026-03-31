@@ -21,6 +21,12 @@ python scripts/discover_project.py /path/to/repo
 python scripts/assess_project.py /path/to/repo
 ```
 
+如果这个项目已经接入过旧版本 harness，先看升级会影响哪些文件：
+
+```bash
+python scripts/plan_upgrade.py --target /path/to/repo
+```
+
 再初始化 harness：
 
 ```bash
@@ -80,6 +86,7 @@ python scripts/init_project.py \
 - `src/agent_harness/`：探测、初始化和模板渲染逻辑
 - `scripts/discover_project.py`：命令行探测入口
 - `scripts/assess_project.py`：命令行评估入口
+- `scripts/plan_upgrade.py`：升级规划入口
 - `scripts/init_project.py`：命令行初始化入口
 - `scripts/check_repo.py`：框架仓库自检
 - `examples/init-config.example.json`：配置文件初始化示例

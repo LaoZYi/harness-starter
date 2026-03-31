@@ -37,6 +37,7 @@ make test
 make ci
 make discover TARGET=.
 make assess TARGET=.
+make upgrade-plan TARGET=/path/to/repo ARGS="--config examples/init-config.example.json"
 make init TARGET=/path/to/repo ARGS="--config examples/init-config.example.json --non-interactive"
 ```
 
@@ -44,6 +45,7 @@ make init TARGET=/path/to/repo ARGS="--config examples/init-config.example.json 
 
 - `src/agent_harness/discovery.py`：项目探测。
 - `src/agent_harness/assessment.py`：接入评估。
+- `src/agent_harness/upgrade.py`：升级规划。
 - `src/agent_harness/initializer.py`：初始化主流程。
 - `templates/common/`：生成到目标项目里的骨架文件。
 - `presets/`：项目类型预设。
@@ -51,6 +53,7 @@ make init TARGET=/path/to/repo ARGS="--config examples/init-config.example.json 
 - `tests/test_discovery.py`：探测逻辑回归。
 - `tests/test_initializer.py`：初始化逻辑回归。
 - `tests/test_init_script.py`：脚本入口回归。
+- `tests/test_upgrade.py`：升级规划回归。
 - `scripts/check_repo.py`：框架仓库守卫。
 - `CONTRIBUTING.md`：贡献说明。
 - `docs/release.md`：发布清单。

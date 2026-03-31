@@ -13,6 +13,7 @@ REQUIRED_FILES = [
     ROOT / "CLAUDE.md",
     ROOT / "scripts" / "discover_project.py",
     ROOT / "scripts" / "assess_project.py",
+    ROOT / "scripts" / "plan_upgrade.py",
     ROOT / "scripts" / "init_project.py",
     ROOT / "examples" / "init-config.example.json",
     ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
@@ -28,10 +29,12 @@ REQUIRED_FILES = [
     ROOT / "src" / "agent_harness" / "models.py",
     ROOT / "src" / "agent_harness" / "discovery.py",
     ROOT / "src" / "agent_harness" / "assessment.py",
+    ROOT / "src" / "agent_harness" / "upgrade.py",
     ROOT / "src" / "agent_harness" / "templating.py",
     ROOT / "src" / "agent_harness" / "initializer.py",
     ROOT / "tests" / "test_discovery.py",
     ROOT / "tests" / "test_assessment.py",
+    ROOT / "tests" / "test_upgrade.py",
     ROOT / "tests" / "test_initializer.py",
     ROOT / "tests" / "test_init_script.py",
     ROOT / "templates" / "common" / "AGENTS.md.tmpl",
@@ -89,7 +92,7 @@ def check_markdown_references() -> None:
 
 def check_command_surface() -> None:
     makefile_text = (ROOT / "Makefile").read_text(encoding="utf-8")
-    for target in ("check:", "test:", "ci:", "discover:", "assess:", "init:"):
+    for target in ("check:", "test:", "ci:", "discover:", "assess:", "upgrade-plan:", "init:"):
         assert_true(target in makefile_text, f"Makefile 缺少目标: {target[:-1]}")
 
 
@@ -97,6 +100,7 @@ def check_module_sizes() -> None:
     for relative_path in [
         "src/agent_harness/discovery.py",
         "src/agent_harness/assessment.py",
+        "src/agent_harness/upgrade.py",
         "src/agent_harness/initializer.py",
         "src/agent_harness/templating.py",
     ]:
@@ -107,7 +111,7 @@ def check_module_sizes() -> None:
 
 def check_runbook_mentions_main_commands() -> None:
     runbook_text = (ROOT / "docs" / "runbook.md").read_text(encoding="utf-8")
-    for command in ("make check", "make test", "make ci", "make discover", "make assess", "make init"):
+    for command in ("make check", "make test", "make ci", "make discover", "make assess", "make upgrade-plan", "make init"):
         assert_true(command in runbook_text, f"运行手册缺少命令说明: {command}")
 
 
