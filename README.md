@@ -1,10 +1,11 @@
 # agent-harness-framework
 
-这是一个通用初始化框架，用来给 Codex 和 Claude Code 在任意项目里落一套稳定的 agent harness。它不自带业务案例，而是提供三种能力：
+这是一个通用初始化框架，用来给 Codex 和 Claude Code 在任意项目里落一套稳定的 agent harness。它不自带业务案例，而是提供四种能力：
 
 1. 探测项目现状
-2. 生成第一版项目知识骨架
-3. 把协作约束落成文档和模板
+2. 评估接入缺口和风险
+3. 生成第一版项目知识骨架
+4. 把协作约束落成文档和模板
 
 ## 典型使用方式
 
@@ -14,10 +15,22 @@
 python scripts/discover_project.py /path/to/repo
 ```
 
+再做一次接入评估：
+
+```bash
+python scripts/assess_project.py /path/to/repo
+```
+
 再初始化 harness：
 
 ```bash
 python scripts/init_project.py --target /path/to/repo
+```
+
+如果想先预演、不直接写文件：
+
+```bash
+python scripts/init_project.py --target /path/to/repo --dry-run
 ```
 
 如果你希望一次性无交互初始化：
@@ -60,6 +73,7 @@ python scripts/init_project.py \
 - `presets/`：按项目类型给出默认文案和检查重点
 - `src/agent_harness/`：探测、初始化和模板渲染逻辑
 - `scripts/discover_project.py`：命令行探测入口
+- `scripts/assess_project.py`：命令行评估入口
 - `scripts/init_project.py`：命令行初始化入口
 - `scripts/check_repo.py`：框架仓库自检
 

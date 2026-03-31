@@ -36,12 +36,14 @@ make check
 make test
 make ci
 make discover TARGET=.
+make assess TARGET=.
 make init TARGET=/path/to/repo ARGS="--non-interactive ..."
 ```
 
 ## 快速地图
 
 - `src/agent_harness/discovery.py`：项目探测。
+- `src/agent_harness/assessment.py`：接入评估。
 - `src/agent_harness/initializer.py`：初始化主流程。
 - `templates/common/`：生成到目标项目里的骨架文件。
 - `presets/`：项目类型预设。

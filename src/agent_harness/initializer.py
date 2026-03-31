@@ -39,9 +39,16 @@ def _json_value(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2)
 
 
-def initialize_project(target_root: Path, answers: dict[str, object], *, force: bool = False) -> InitializationResult:
+def initialize_project(
+    target_root: Path,
+    answers: dict[str, object],
+    *,
+    force: bool = False,
+    dry_run: bool = False,
+) -> InitializationResult:
     target_root = target_root.resolve()
-    target_root.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        target_root.mkdir(parents=True, exist_ok=True)
     profile = discover_project(target_root)
 
     project_name = str(answers.get("project_name") or profile.project_name or target_root.name)
@@ -110,11 +117,17 @@ def initialize_project(target_root: Path, answers: dict[str, object], *, force: 
         "notes_json": _json_value(profile.notes),
     }
 
-    written, skipped = materialize_templates(TEMPLATE_ROOT, target_root, context, force=force)
+    written, skipped = materialize_templates(
+        TEMPLATE_ROOT,
+        target_root,
+        context,
+        force=force,
+        dry_run=dry_run,
+    )
     return InitializationResult(
         target_root=str(target_root),
         context=context,
         written_files=written,
         skipped_files=skipped,
+        dry_run=dry_run,
     )
-

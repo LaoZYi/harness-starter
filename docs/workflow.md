@@ -2,7 +2,7 @@
 
 ## 对 agent 的期望
 
-1. 先判断本次改动属于探测、模板、预设还是命令入口。
+1. 先判断本次改动属于探测、评估、模板、预设还是命令入口。
 2. 只读取必要文件。
 3. 优先做小步可验证改动。
 4. 把重复错误前移成脚本或模板。
@@ -16,7 +16,7 @@
 ## 命令规范
 
 - 小改动：至少运行 `make check`。
-- 改初始化逻辑或模板：运行 `make ci`。
+- 改评估、初始化逻辑或模板：运行 `make ci`。
 - 改运行方式：运行 `make check`，并实际跑一次 `scripts/discover_project.py` 或 `scripts/init_project.py`。
 - 改文档但不改代码：运行 `make check`。
 
@@ -29,3 +29,4 @@
 5. 是否符合 `CONTRIBUTING.md` 和 `.github/PULL_REQUEST_TEMPLATE.md` 的提交流程。
 6. 如果动了 CLI 或命令入口，是否同步更新了 `docs/runbook.md`。
 7. 如果动了模板，是否验证了生成结果。
+8. 如果动了评估逻辑，是否验证了评估输出。

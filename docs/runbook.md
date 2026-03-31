@@ -6,20 +6,24 @@
 - `make test`：运行框架级回归测试。
 - `make ci`：串联 `check` 和 `test`。
 - `make discover TARGET=/path/to/repo`：扫描目标项目。
+- `make assess TARGET=/path/to/repo`：输出接入评估和建议。
 - `make init TARGET=/path/to/repo ARGS="..."`：初始化目标项目。
 
 ## 直接运行脚本
 
 ```bash
 python scripts/discover_project.py /path/to/repo
+python scripts/assess_project.py /path/to/repo
 python scripts/init_project.py --target /path/to/repo
 ```
 
 ## 初始化建议流程
 
 1. 先跑 `scripts/discover_project.py` 看预填信息。
-2. 再运行 `scripts/init_project.py`，补充项目目标、命令和部署信息。
-3. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/` 和 `.agent-harness/project.json`。
+2. 再跑 `scripts/assess_project.py` 看接入缺口和建议。
+3. 如有需要先用 `--dry-run` 预演初始化结果。
+4. 再运行 `scripts/init_project.py`，补充项目目标、命令和部署信息。
+5. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/` 和 `.agent-harness/project.json`。
 
 ## 常见问题
 

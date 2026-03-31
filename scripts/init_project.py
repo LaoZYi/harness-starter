@@ -41,13 +41,15 @@ def main() -> None:
     parser.add_argument("--deploy-target")
     parser.add_argument("--sensitivity", choices=["standard", "internal", "high"])
     parser.add_argument("--force", action="store_true", help="Overwrite existing generated files")
+    parser.add_argument("--dry-run", action="store_true", help="Preview generated files without writing them")
     parser.add_argument("--non-interactive", action="store_true", help="Do not prompt for missing values")
     parser.add_argument("--has-production", action="store_true", help="Mark the project as having production")
     parser.add_argument("--no-production", action="store_true", help="Mark the project as not having production")
     args = parser.parse_args()
 
     target = Path(args.target).resolve()
-    target.mkdir(parents=True, exist_ok=True)
+    if not args.dry_run:
+        target.mkdir(parents=True, exist_ok=True)
     profile = discover_project(target)
 
     answers: dict[str, object] = {}
@@ -83,8 +85,8 @@ def main() -> None:
     else:
         answers["has_production"] = _prompt_bool("是否已有生产环境", profile.has_production)
 
-    result = initialize_project(target, answers, force=args.force)
-    print(f"initialized: {result.target_root}")
+    result = initialize_project(target, answers, force=args.force, dry_run=args.dry_run)
+    print(f"{'previewed' if result.dry_run else 'initialized'}: {result.target_root}")
     print(f"written: {len(result.written_files)}")
     for path in result.written_files:
         print(f"+ {path}")
@@ -96,4 +98,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

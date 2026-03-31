@@ -3,6 +3,7 @@
 ## 模块职责
 
 - `src/agent_harness/discovery.py`：扫描目标项目并给出第一版画像。
+- `src/agent_harness/assessment.py`：根据画像给出接入评分、缺口和建议。
 - `src/agent_harness/initializer.py`：整合探测结果、预设和用户输入，生成文件。
 - `src/agent_harness/templating.py`：模板渲染和落盘。
 - `templates/common/`：真正会写入目标项目的模板。
@@ -21,6 +22,6 @@
 
 ## 推荐扩展方式
 
-- 想增加新项目类型：先加 `presets/*.json`，再补模板和测试。
+- 想增加新项目类型：先加 `presets/*.json`，再补模板、评估逻辑和测试。
 - 想增加新生成文件：先加模板，再补初始化测试和仓库自检。
 - 想增加新命令：先改 `Makefile`，再补脚本和 `docs/runbook.md`。

@@ -42,6 +42,36 @@ class InitializeProjectTests(unittest.TestCase):
         self.assertEqual(project_json["commands"]["test"], "uv run pytest")
         self.assertTrue(runbook_exists)
 
+    def test_dry_run_does_not_write_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "preview-only"
+            result = initialize_project(
+                root,
+                {
+                    "project_name": "Preview Only",
+                    "summary": "Preview harness output",
+                    "project_type": "backend-service",
+                    "language": "python",
+                    "package_manager": "pip",
+                    "run_command": "TODO",
+                    "test_command": "TODO",
+                    "check_command": "TODO",
+                    "ci_command": "TODO",
+                    "deploy_target": "未定",
+                    "has_production": False,
+                    "sensitivity": "standard",
+                },
+                dry_run=True,
+            )
+
+            root_exists = root.exists()
+            agents_exists = (root / "AGENTS.md").exists()
+
+        self.assertTrue(result.dry_run)
+        self.assertTrue(result.written_files)
+        self.assertFalse(root_exists)
+        self.assertFalse(agents_exists)
+
 
 if __name__ == "__main__":
     unittest.main()

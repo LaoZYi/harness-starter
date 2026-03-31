@@ -33,4 +33,13 @@ class InitializationResult:
     context: dict[str, str]
     written_files: list[str]
     skipped_files: list[str]
+    dry_run: bool = False
 
+
+@dataclass(slots=True)
+class AssessmentResult:
+    score: int
+    readiness: str
+    strengths: list[str] = field(default_factory=list)
+    gaps: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
