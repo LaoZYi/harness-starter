@@ -35,27 +35,27 @@
 make check
 make test
 make ci
+harness init /path/to/repo
 harness init /path/to/repo --assess-only
-harness init /path/to/repo --non-interactive
 harness upgrade plan /path/to/repo
 harness upgrade apply /path/to/repo
+harness doctor /path/to/repo
+harness export /path/to/repo
+harness stats /path/to/repo
 ```
 
 ## 快速地图
 
+- `src/agent_harness/cli.py`：统一 CLI 入口。
+- `src/agent_harness/init_flow.py`：交互/非交互初始化流程。
+- `src/agent_harness/doctor.py`：健康检查。
+- `src/agent_harness/export.py`：项目画像导出。
+- `src/agent_harness/stats.py`：任务统计。
 - `src/agent_harness/discovery.py`：项目探测。
 - `src/agent_harness/assessment.py`：接入评估。
-- `src/agent_harness/upgrade.py`：升级规划。
-- `src/agent_harness/initializer.py`：初始化主流程。
-- `templates/common/`：生成到目标项目里的骨架文件。
-- `presets/`：项目类型预设。
-- `examples/init-config.example.json`：初始化配置示例。
-- `tests/test_discovery.py`：探测逻辑回归。
-- `tests/test_initializer.py`：初始化逻辑回归。
-- `src/agent_harness/cli.py`：统一 CLI 入口。
-- `tests/test_cli.py`：CLI 集成回归。
-- `tests/test_upgrade.py`：升级规划回归。
+- `src/agent_harness/upgrade.py`：升级规划和验证。
+- `src/agent_harness/initializer.py`：初始化主流程（含插件渲染）。
+- `templates/common/`：生成到目标项目的骨架文件（含 .claude/rules/）。
+- `presets/`：8 种项目类型预设。
+- `tests/test_cli.py`：CLI 集成回归（64 个测试）。
 - `scripts/check_repo.py`：框架仓库守卫。
-- `CONTRIBUTING.md`：贡献说明。
-- `docs/release.md`：发布清单。
-- `docs/runbook.md`：运行手册。

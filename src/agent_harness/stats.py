@@ -31,6 +31,10 @@ def run_stats(target: Path) -> None:
     from rich.panel import Panel
 
     target = target.resolve()
+    if not (target / ".agent-harness").is_dir() and not (target / "AGENTS.md").exists():
+        raise SystemExit(f"错误：{target} 尚未初始化 harness。请先运行 harness init {target}")
+
+    target = target.resolve()
     tl = target / ".agent-harness" / "task-log.md"
     ll = target / ".agent-harness" / "lessons.md"
 

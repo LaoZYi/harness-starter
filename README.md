@@ -107,28 +107,44 @@ harness init /path/to/repo \
   --non-interactive
 ```
 
+## 日常运维命令
+
+初始化完成后，可以用以下命令管理 harness：
+
+```bash
+# 健康检查：task-log 使用率、教训积累、待补充数
+harness doctor /path/to/repo
+
+# 导出项目画像（给新人或换 agent 时用）
+harness export /path/to/repo
+harness export /path/to/repo -o snapshot.md
+harness export /path/to/repo --json
+
+# 任务数据统计：总数、返工率、活跃度
+harness stats /path/to/repo
+```
+
+## 插件机制
+
+在目标项目中创建 `.harness-plugins/` 目录，可添加自定义规则和模板：
+
+```
+.harness-plugins/
+  rules/
+    team-security.md     # 初始化时合并到 .claude/rules/
+  templates/
+    docs/custom-guide.md # 初始化时渲染到项目中
+```
+
+插件文件支持 `{{project_name}}` 等模板变量。
+
 ## 初始化后会生成什么
 
-- `AGENTS.md`
-- `CLAUDE.md`
-- `CONTRIBUTING.md`
-- `docs/product.md`
-- `docs/architecture.md`
-- `docs/workflow.md`
-- `docs/runbook.md`
-- `docs/release.md`
-- `.agent-harness/project.json`
-- `.github/PULL_REQUEST_TEMPLATE.md`
-- `.github/ISSUE_TEMPLATE/*`
-
-## 框架仓库结构
-
-- `src/agent_harness/cli.py`：统一 CLI 入口（`harness` 命令）
-- `src/agent_harness/`：探测、初始化和模板渲染逻辑
-- `templates/common/`：生成到目标项目中的模板文件
-- `presets/`：按项目类型给出默认文案和检查重点
-- `scripts/check_repo.py`：框架仓库自检
-- `examples/init-config.example.json`：配置文件初始化示例
+- `AGENTS.md` / `CLAUDE.md` / `CLAUDE.local.md.example` / `CONTRIBUTING.md`
+- `docs/`：product、architecture、workflow、runbook、release
+- `.claude/rules/`：safety、database、api、testing、autonomy
+- `.agent-harness/`：project.json、current-task、task-log、lessons、init-summary
+- `.github/`：PR 模板、Issue 模板
 
 ## 配置自动发现
 

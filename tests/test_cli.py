@@ -9,19 +9,38 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+_TEST_CONFIG = {
+    "project_name": "Test Project",
+    "project_slug": "test-project",
+    "summary": "For testing",
+    "project_type": "backend-service",
+    "language": "python",
+    "package_manager": "pip",
+    "run_command": "python -m app",
+    "test_command": "pytest",
+    "check_command": "ruff check .",
+    "ci_command": "make ci",
+    "deploy_target": "docker",
+    "has_production": False,
+    "sensitivity": "standard",
+}
 
-def _run_harness(*args: str, env_extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+
+def _run_harness(*args: str) -> subprocess.CompletedProcess[str]:
     import os
-
     env = {**os.environ, "PYTHONPATH": str(REPO_ROOT / "src")}
-    if env_extra:
-        env.update(env_extra)
     return subprocess.run(
         [sys.executable, "-m", "agent_harness", *args],
-        capture_output=True,
-        text=True,
-        env=env,
+        capture_output=True, text=True, env=env,
     )
+
+
+def _init_test_project(target: Path, **overrides: object) -> subprocess.CompletedProcess[str]:
+    config = {**_TEST_CONFIG, **overrides}
+    target.mkdir(parents=True, exist_ok=True)
+    cfg_path = target / "_test_config.json"
+    cfg_path.write_text(json.dumps(config), encoding="utf-8")
+    return _run_harness("init", str(target), "--config", str(cfg_path), "--non-interactive", "--no-git-commit")
 
 
 class InitAssessOnlyTests(unittest.TestCase):
@@ -45,89 +64,31 @@ class InitWithConfigTests(unittest.TestCase):
     def test_init_with_config_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             target = Path(tmpdir) / "configured-project"
-            config_path = Path(tmpdir) / "init.json"
-            config_path.write_text(
-                json.dumps({
-                    "project_name": "CLI Test",
-                    "project_slug": "cli-test",
-                    "summary": "Test from CLI",
-                    "project_type": "backend-service",
-                    "language": "python",
-                    "package_manager": "uv",
-                    "run_command": "uv run python -m cli_test",
-                    "test_command": "uv run pytest",
-                    "check_command": "uv run ruff check .",
-                    "ci_command": "make ci",
-                    "deploy_target": "docker",
-                    "has_production": True,
-                    "sensitivity": "internal",
-                }),
-                encoding="utf-8",
-            )
-
-            result = _run_harness("init", str(target), "--config", str(config_path), "--non-interactive")
+            result = _init_test_project(target, project_name="CLI Test")
             self.assertEqual(result.returncode, 0, result.stderr)
-
-            project_json = json.loads((target / ".agent-harness" / "project.json").read_text(encoding="utf-8"))
-            self.assertEqual(project_json["project_name"], "CLI Test")
+            pj = json.loads((target / ".agent-harness" / "project.json").read_text(encoding="utf-8"))
+            self.assertEqual(pj["project_name"], "CLI Test")
 
 
 class AutoConfigDiscoveryTests(unittest.TestCase):
     def test_auto_discovers_harness_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             target = Path(tmpdir)
-            (target / ".harness.json").write_text(
-                json.dumps({
-                    "project_name": "Auto Discovered",
-                    "project_slug": "auto-discovered",
-                    "summary": "Found via .harness.json",
-                    "project_type": "cli-tool",
-                    "language": "go",
-                    "package_manager": "go",
-                    "run_command": "go run .",
-                    "test_command": "go test ./...",
-                    "check_command": "golangci-lint run",
-                    "ci_command": "make ci",
-                    "deploy_target": "binary",
-                    "has_production": False,
-                    "sensitivity": "standard",
-                }),
-                encoding="utf-8",
-            )
-
-            result = _run_harness("init", str(target), "--non-interactive")
+            (target / ".harness.json").write_text(json.dumps({**_TEST_CONFIG, "project_name": "Auto Found"}), encoding="utf-8")
+            result = _run_harness("init", str(target), "--non-interactive", "--no-git-commit")
             self.assertEqual(result.returncode, 0, result.stderr)
-
-            project_json = json.loads((target / ".agent-harness" / "project.json").read_text(encoding="utf-8"))
-            self.assertEqual(project_json["project_name"], "Auto Discovered")
+            pj = json.loads((target / ".agent-harness" / "project.json").read_text(encoding="utf-8"))
+            self.assertEqual(pj["project_name"], "Auto Found")
 
 
 class UpgradePlanTests(unittest.TestCase):
     def test_upgrade_plan_after_init(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             target = Path(tmpdir)
-            config_path = target / "cfg.json"
-            config_path.write_text(
-                json.dumps({
-                    "project_name": "Upgrade Test",
-                    "project_slug": "upgrade-test",
-                    "summary": "For upgrade",
-                    "project_type": "library",
-                    "language": "python",
-                    "package_manager": "pip",
-                    "run_command": "python -m lib",
-                    "test_command": "pytest",
-                    "check_command": "ruff check .",
-                    "ci_command": "make ci",
-                    "deploy_target": "pypi",
-                    "has_production": False,
-                    "sensitivity": "standard",
-                }),
-                encoding="utf-8",
-            )
-
-            _run_harness("init", str(target), "--config", str(config_path), "--non-interactive")
-            result = _run_harness("upgrade", "plan", str(target), "--config", str(config_path))
+            cfg_path = target / "_test_config.json"
+            cfg_path.write_text(json.dumps(_TEST_CONFIG), encoding="utf-8")
+            _run_harness("init", str(target), "--config", str(cfg_path), "--non-interactive", "--no-git-commit")
+            result = _run_harness("upgrade", "plan", str(target), "--config", str(cfg_path))
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("未变", result.stdout)
 
@@ -136,30 +97,138 @@ class UpgradeApplyTests(unittest.TestCase):
     def test_upgrade_apply_dry_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             target = Path(tmpdir)
-            config_path = target / "cfg.json"
-            config_path.write_text(
-                json.dumps({
-                    "project_name": "Apply Test",
-                    "project_slug": "apply-test",
-                    "summary": "For apply",
-                    "project_type": "web-app",
-                    "language": "typescript",
-                    "package_manager": "npm",
-                    "run_command": "npm start",
-                    "test_command": "npm test",
-                    "check_command": "npm run lint",
-                    "ci_command": "npm run ci",
-                    "deploy_target": "vercel",
-                    "has_production": True,
-                    "sensitivity": "standard",
-                }),
-                encoding="utf-8",
-            )
-
-            _run_harness("init", str(target), "--config", str(config_path), "--non-interactive")
-            result = _run_harness("upgrade", "apply", str(target), "--config", str(config_path), "--dry-run")
+            cfg_path = target / "_test_config.json"
+            cfg_path.write_text(json.dumps(_TEST_CONFIG), encoding="utf-8")
+            _run_harness("init", str(target), "--config", str(cfg_path), "--non-interactive", "--no-git-commit")
+            result = _run_harness("upgrade", "apply", str(target), "--config", str(cfg_path), "--dry-run")
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("预演完成", result.stdout)
+
+
+class DoctorTests(unittest.TestCase):
+    def test_doctor_on_initialized_project(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            _init_test_project(target)
+            result = _run_harness("doctor", str(target))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("健康检查", result.stdout)
+            self.assertIn("AGENTS.md", result.stdout)
+
+    def test_doctor_on_uninitialized_project(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = _run_harness("doctor", tmpdir)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("尚未初始化", result.stderr)
+
+
+class ExportTests(unittest.TestCase):
+    def test_export_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            _init_test_project(target)
+            result = _run_harness("export", str(target))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("项目画像", result.stdout)
+            self.assertIn("Test Project", result.stdout)
+
+    def test_export_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            _init_test_project(target)
+            result = _run_harness("export", str(target), "--json")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertIn("project", data)
+
+    def test_export_to_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            _init_test_project(target)
+            out_file = Path(tmpdir) / "snapshot.md"
+            result = _run_harness("export", str(target), "-o", str(out_file))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(out_file.exists())
+            self.assertIn("项目画像", out_file.read_text(encoding="utf-8"))
+
+    def test_export_on_uninitialized_project(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = _run_harness("export", tmpdir)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("尚未初始化", result.stderr)
+
+
+class StatsTests(unittest.TestCase):
+    def test_stats_empty_log(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            _init_test_project(target)
+            result = _run_harness("stats", str(target))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("没有记录", result.stdout)
+
+    def test_stats_with_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            _init_test_project(target)
+            tl = target / ".agent-harness" / "task-log.md"
+            tl.write_text("# Task Log\n\n## 2025-04-01 添加登录\n- 需求：登录功能\n\n## 2025-04-02 返工：登录修复\n- 用户反馈：有 bug\n", encoding="utf-8")
+            result = _run_harness("stats", str(target))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("任务统计", result.stdout)
+
+    def test_stats_on_uninitialized_project(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = _run_harness("stats", tmpdir)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("尚未初始化", result.stderr)
+
+
+class PluginTests(unittest.TestCase):
+    def test_plugin_rules_rendered(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            rules_dir = target / ".harness-plugins" / "rules"
+            rules_dir.mkdir(parents=True)
+            (rules_dir / "custom.md").write_text("# Custom\n项目：{{project_name}}", encoding="utf-8")
+            _init_test_project(target)
+            custom = target / ".claude" / "rules" / "custom.md"
+            self.assertTrue(custom.exists())
+            self.assertIn("Test Project", custom.read_text(encoding="utf-8"))
+
+    def test_plugin_templates_rendered(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            tmpl_dir = target / ".harness-plugins" / "templates" / "docs"
+            tmpl_dir.mkdir(parents=True)
+            (tmpl_dir / "custom-guide.md").write_text("# Guide for {{project_name}}", encoding="utf-8")
+            _init_test_project(target)
+            guide = target / "docs" / "custom-guide.md"
+            self.assertTrue(guide.exists())
+            self.assertIn("Test Project", guide.read_text(encoding="utf-8"))
+
+
+class GitCommitTests(unittest.TestCase):
+    def test_no_git_commit_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            subprocess.run(["git", "init", str(target)], capture_output=True)
+            _init_test_project(target)
+            log = subprocess.run(["git", "-C", str(target), "log", "--oneline"], capture_output=True, text=True)
+            self.assertNotIn("initialize agent harness", log.stdout)
+
+    def test_git_commit_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            subprocess.run(["git", "init", str(target)], capture_output=True)
+            subprocess.run(["git", "-C", str(target), "config", "user.email", "test@test.com"], capture_output=True)
+            subprocess.run(["git", "-C", str(target), "config", "user.name", "Test"], capture_output=True)
+            cfg_path = target / "_test_config.json"
+            cfg_path.write_text(json.dumps(_TEST_CONFIG), encoding="utf-8")
+            result = _run_harness("init", str(target), "--config", str(cfg_path), "--non-interactive", "--git-commit")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            log = subprocess.run(["git", "-C", str(target), "log", "--oneline"], capture_output=True, text=True)
+            self.assertIn("initialize agent harness", log.stdout)
 
 
 class NoSubcommandTests(unittest.TestCase):

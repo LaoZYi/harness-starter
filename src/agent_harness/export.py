@@ -84,6 +84,8 @@ def _render_markdown(snapshot: dict[str, object]) -> str:
 
 def run_export(target: Path, *, output: str | None = None, as_json: bool = False) -> None:
     target = target.resolve()
+    if not (target / ".agent-harness").is_dir() and not (target / "AGENTS.md").exists():
+        raise SystemExit(f"错误：{target} 尚未初始化 harness。请先运行 harness init {target}")
     snapshot = _build_snapshot(target)
 
     if as_json:
@@ -94,5 +96,7 @@ def run_export(target: Path, *, output: str | None = None, as_json: bool = False
     if output:
         Path(output).write_text(text, encoding="utf-8")
         console.print(f"[green]已导出到[/green] {output}")
+    elif as_json:
+        print(text)
     else:
         console.print(text)

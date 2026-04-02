@@ -24,6 +24,10 @@ harness upgrade apply /path/to/repo
 harness upgrade apply /path/to/repo --only AGENTS.md
 harness init /path/to/repo
 harness init /path/to/repo --config examples/init-config.example.json --non-interactive
+harness doctor /path/to/repo
+harness export /path/to/repo
+harness export /path/to/repo -o snapshot.md --json
+harness stats /path/to/repo
 ```
 
 未安装时也可通过 `PYTHONPATH=src python -m agent_harness` 替代 `harness`。

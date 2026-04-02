@@ -27,10 +27,16 @@ def _count_pattern_in_dir(root: Path, pattern: re.Pattern[str], glob: str = "*.m
     return count
 
 
+def _require_harness(target: Path) -> None:
+    if not (target / ".agent-harness").is_dir() and not (target / "AGENTS.md").exists():
+        raise SystemExit(f"错误：{target} 尚未初始化 harness。请先运行 harness init {target}")
+
+
 def run_doctor(target: Path) -> None:
     from rich.table import Table
 
     target = target.resolve()
+    _require_harness(target)
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="dim", min_width=20)
     table.add_column()
