@@ -1,50 +1,11 @@
 from __future__ import annotations
 
-import sys
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 
-_COLOR = sys.stdout.isatty()
-
-_RESET = "\033[0m"
-_BOLD = "\033[1m"
-_DIM = "\033[2m"
-_GREEN = "\033[32m"
-_YELLOW = "\033[33m"
-_RED = "\033[31m"
-_CYAN = "\033[36m"
-
-
-def _wrap(code: str, text: str) -> str:
-    return f"{code}{text}{_RESET}" if _COLOR else text
-
-
-def green(text: str) -> str:
-    return _wrap(_GREEN, text)
-
-
-def yellow(text: str) -> str:
-    return _wrap(_YELLOW, text)
-
-
-def red(text: str) -> str:
-    return _wrap(_RED, text)
-
-
-def cyan(text: str) -> str:
-    return _wrap(_CYAN, text)
-
-
-def bold(text: str) -> str:
-    return _wrap(_BOLD, text)
-
-
-def dim(text: str) -> str:
-    return _wrap(_DIM, text)
-
-
-def step(current: int, total: int, label: str) -> None:
-    prefix = f"[{current}/{total}]"
-    print(f"{cyan(prefix)} {label}")
-
+console = Console()
 
 LANGUAGE_DEFAULTS: dict[str, dict[str, str]] = {
     "python": {"package_manager": "pip", "run_command": "python -m {slug}", "test_command": "pytest", "check_command": "ruff check .", "ci_command": "make ci"},
@@ -58,111 +19,106 @@ LANGUAGE_DEFAULTS: dict[str, dict[str, str]] = {
 }
 
 
-def prompt_choice(label: str, options: list[str], default: str) -> str:
-    print(f"{label}:")
-    default_idx = 0
-    for i, opt in enumerate(options, 1):
-        marker = cyan("*") if opt == default else " "
-        print(f"  {marker} {i}) {opt}")
-    hint = f" [默认: {default}]" if default in options else ""
-    answer = input(f"输入编号或名称{hint}: ").strip()
-    if not answer:
-        return default
-    if answer.isdigit():
-        idx = int(answer) - 1
-        if 0 <= idx < len(options):
-            return options[idx]
-    if answer in options:
-        return answer
-    return answer
+def print_detected(answers: dict[str, object]) -> None:
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column(style="dim")
+    table.add_column(style="cyan")
+    for key in ("language", "package_manager", "run_command", "test_command", "check_command", "ci_command", "deploy_target"):
+        table.add_row(key, str(answers.get(key, "")))
+    console.print()
+    console.print(Panel(table, title="[bold]自动探测结果[/bold]", border_style="green"))
 
 
 def print_init_result(result: object) -> None:
-    label = "previewed" if result.dry_run else "initialized"
-    print(bold(f"{label}: {result.target_root}"))
-    print(f"written: {len(result.written_files)}")
-    for path in result.written_files:
-        print(f"{green('+')} {path}")
+    label = "[bold green]初始化完成[/bold green]" if not result.dry_run else "[bold yellow]预演完成[/bold yellow]"
+    console.print(f"\n{label}  {result.target_root}")
+    if result.written_files:
+        console.print(f"  写入 [green]{len(result.written_files)}[/green] 个文件")
+        for path in result.written_files:
+            console.print(f"    [green]+[/green] {path}")
     if result.skipped_files:
-        print(f"skipped: {len(result.skipped_files)}")
+        console.print(f"  跳过 [dim]{len(result.skipped_files)}[/dim] 个文件")
         for path in result.skipped_files:
-            print(f"{dim('=')} {path}")
+            console.print(f"    [dim]=[/dim] {path}")
     if result.summary_path:
-        print(f"summary: {yellow(result.summary_path)}")
+        console.print(f"  摘要: [yellow]{result.summary_path}[/yellow]")
 
 
 def print_upgrade_plan(result: object, show_diff: bool = False) -> None:
-    print(f"target: {result.target_root}")
-    print(f"create: {len(result.create_files)}")
-    for path in result.create_files:
-        print(f"+ {path}")
-    print(f"update: {len(result.update_files)}")
-    for path in result.update_files:
-        print(f"~ {path}")
-    print(f"unchanged: {len(result.unchanged_files)}")
-    for path in result.unchanged_files:
-        print(f"= {path}")
-    print("checklist:")
-    for item in result.checklist:
-        print(f"- {item}")
+    console.print(f"\n[bold]升级计划[/bold]  {result.target_root}")
+    if result.create_files:
+        console.print(f"  新增 [green]{len(result.create_files)}[/green] 个文件")
+        for path in result.create_files:
+            console.print(f"    [green]+[/green] {path}")
+    if result.update_files:
+        console.print(f"  更新 [yellow]{len(result.update_files)}[/yellow] 个文件")
+        for path in result.update_files:
+            console.print(f"    [yellow]~[/yellow] {path}")
+    if result.unchanged_files:
+        console.print(f"  未变 [dim]{len(result.unchanged_files)}[/dim] 个文件")
+    if result.checklist:
+        console.print("  检查项:")
+        for item in result.checklist:
+            console.print(f"    - {item}")
     if show_diff and result.diffs:
-        print("diffs:")
         for path, diff_text in result.diffs.items():
-            print(f"--- {path} ---")
-            print(diff_text.rstrip())
+            console.print(f"\n  [bold]--- {path} ---[/bold]")
+            console.print(diff_text.rstrip())
 
 
 def print_upgrade_apply(result: object) -> None:
-    label = "previewed" if result.dry_run else "upgraded"
-    print(bold(f"{label}: {result.target_root}"))
-    print(f"created: {len(result.created_files)}")
-    for path in result.created_files:
-        print(f"  {green('+')} {path}")
-    print(f"updated: {len(result.updated_files)}")
-    for path in result.updated_files:
-        print(f"  {yellow('~')} {path}")
-    print(f"unchanged: {len(result.unchanged_files)}")
-    for path in result.unchanged_files:
-        print(f"  {dim('=')} {path}")
+    label = "[bold green]升级完成[/bold green]" if not result.dry_run else "[bold yellow]预演完成[/bold yellow]"
+    console.print(f"\n{label}  {result.target_root}")
+    if result.created_files:
+        console.print(f"  新增 [green]{len(result.created_files)}[/green] 个文件")
+        for path in result.created_files:
+            console.print(f"    [green]+[/green] {path}")
+    if result.updated_files:
+        console.print(f"  更新 [yellow]{len(result.updated_files)}[/yellow] 个文件")
+        for path in result.updated_files:
+            console.print(f"    [yellow]~[/yellow] {path}")
+    if result.unchanged_files:
+        console.print(f"  未变 [dim]{len(result.unchanged_files)}[/dim] 个文件")
     if result.backup_root:
-        print(f"backup: {yellow(result.backup_root)}")
+        console.print(f"  备份: [yellow]{result.backup_root}[/yellow]")
     if result.selected_files:
-        print(f"selected: {', '.join(result.selected_files)}")
+        console.print(f"  选定: {', '.join(result.selected_files)}")
 
 
 def print_profile(profile: object) -> None:
-    print(bold("== 探测结果 =="))
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column(style="dim")
+    table.add_column()
     for field in ("project_name", "project_type", "language", "package_manager",
                    "run_command", "test_command", "check_command", "ci_command",
                    "deploy_target", "has_production", "sensitivity"):
-        print(f"{field}: {getattr(profile, field)}")
-    print(f"source_paths: {', '.join(profile.source_paths) or '无'}")
-    print(f"external_systems: {', '.join(profile.external_systems) or '无'}")
+        table.add_row(field, str(getattr(profile, field)))
+    table.add_row("source_paths", ", ".join(profile.source_paths) or "无")
+    table.add_row("external_systems", ", ".join(profile.external_systems) or "无")
+    console.print(Panel(table, title="[bold]探测结果[/bold]", border_style="blue"))
     if profile.notes:
-        print("notes:")
         for note in profile.notes:
-            print(f"  - {note}")
+            console.print(f"  [dim]-[/dim] {note}")
 
 
 def print_assessment(result: object) -> None:
-    color = green if result.readiness == "high" else yellow if result.readiness == "medium" else red
-    print(f"\n{bold('== 评估结果 ==')}")
-    print(f"readiness: {color(result.readiness)}")
-    print(f"score: {bold(str(result.score))}")
-    print(f"confidence: {result.confidence}")
+    color = "green" if result.readiness == "high" else "yellow" if result.readiness == "medium" else "red"
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column(style="dim")
+    table.add_column()
+    table.add_row("readiness", f"[{color}]{result.readiness}[/{color}]")
+    table.add_row("score", f"[bold]{result.score}[/bold]")
+    table.add_row("confidence", result.confidence)
     if result.dimensions:
-        print("dimensions:")
         for k, v in result.dimensions.items():
-            print(f"  {k}: {v}")
+            table.add_row(f"  {k}", str(v))
+    console.print(Panel(table, title="[bold]评估结果[/bold]", border_style=color))
     if result.strengths:
-        print("strengths:")
         for s in result.strengths:
-            print(f"  {green('+')} {s}")
+            console.print(f"  [green]+[/green] {s}")
     if result.gaps:
-        print("gaps:")
         for g in result.gaps:
-            print(f"  {red('-')} {g}")
+            console.print(f"  [red]-[/red] {g}")
     if result.recommendations:
-        print("recommendations:")
         for r in result.recommendations:
-            print(f"  {yellow('>')} {r}")
+            console.print(f"  [yellow]>[/yellow] {r}")

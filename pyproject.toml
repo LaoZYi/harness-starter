@@ -9,6 +9,7 @@ description = "A framework that discovers project context and initializes Codex/
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "OpenAI Codex" }]
+dependencies = ["questionary>=2.0", "rich>=13.0"]
 
 [project.scripts]
 harness = "agent_harness.cli:main"

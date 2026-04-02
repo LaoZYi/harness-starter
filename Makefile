@@ -1,4 +1,4 @@
-PYTHON ?= python3
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 PACKAGE = src/agent_harness
 HARNESS = PYTHONPATH=src $(PYTHON) -m agent_harness
 

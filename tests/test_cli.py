@@ -29,8 +29,8 @@ class InitAssessOnlyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             result = _run_harness("init", tmpdir, "--assess-only")
             self.assertEqual(result.returncode, 0)
-            self.assertIn("== 探测结果 ==", result.stdout)
-            self.assertIn("== 评估结果 ==", result.stdout)
+            self.assertIn("探测结果", result.stdout)
+            self.assertIn("评估结果", result.stdout)
 
     def test_assess_only_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -129,7 +129,7 @@ class UpgradePlanTests(unittest.TestCase):
             _run_harness("init", str(target), "--config", str(config_path), "--non-interactive")
             result = _run_harness("upgrade", "plan", str(target), "--config", str(config_path))
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("unchanged:", result.stdout)
+            self.assertIn("未变", result.stdout)
 
 
 class UpgradeApplyTests(unittest.TestCase):
@@ -159,7 +159,7 @@ class UpgradeApplyTests(unittest.TestCase):
             _run_harness("init", str(target), "--config", str(config_path), "--non-interactive")
             result = _run_harness("upgrade", "apply", str(target), "--config", str(config_path), "--dry-run")
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("previewed:", result.stdout)
+            self.assertIn("预演完成", result.stdout)
 
 
 class NoSubcommandTests(unittest.TestCase):

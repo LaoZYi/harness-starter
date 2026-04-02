@@ -8,15 +8,16 @@ import tomllib
 from dataclasses import asdict
 from pathlib import Path
 
+import questionary
+
 from .assessment import assess_project
 from .cli_utils import (
-    LANGUAGE_DEFAULTS, print_assessment, print_init_result, print_profile,
-    print_upgrade_apply, print_upgrade_plan, prompt_choice,
+    LANGUAGE_DEFAULTS, console, print_assessment, print_detected, print_init_result,
+    print_profile, print_upgrade_apply, print_upgrade_plan,
 )
 from .discovery import discover_project
 from .initializer import initialize_project
 from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade
-
 
 PROJECT_FIELDS = (
     "project_name", "project_slug", "summary", "project_type",
@@ -32,7 +33,6 @@ PROJECT_TYPE_CHOICES = [
 SENSITIVITY_CHOICES = ["standard", "internal", "high"]
 
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[2]
-
 
 
 def _guard_self_init(target: Path) -> None:
@@ -96,23 +96,85 @@ def _merged_config(target: Path, args: argparse.Namespace) -> dict[str, object]:
     return {**_auto_discover_config(target), **explicit}
 
 
-def _prompt(label: str, default: str) -> str:
-    answer = input(f"{label} [{default}]: " if default else f"{label}: ").strip()
-    return answer or default
+def _slugify(value: str) -> str:
+    return "".join(ch.lower() if ch.isalnum() else "-" for ch in value).strip("-") or "project"
 
 
-def _prompt_bool(label: str, default: bool) -> bool:
-    answer = input(f"{label} [{'Y/n' if default else 'y/N'}]: ").strip().lower()
-    return default if not answer else answer in {"y", "yes"}
+def _lang_default(lang_defs: dict[str, str], key: str, profile_val: str, slug: str) -> str:
+    if profile_val and profile_val not in ("TODO", "unknown", "未定"):
+        return profile_val
+    tmpl = lang_defs.get(key, profile_val)
+    return tmpl.replace("{slug}", slug) if tmpl else profile_val
 
 
+def _interactive_init(target: Path, profile: object, config: dict[str, object]) -> dict[str, object]:
+    console.print("\n[bold]项目初始化[/bold]\n")
+    name = questionary.text("项目名称", validate=lambda v: bool(v.strip()) or "不能为空").ask()
+    if name is None:
+        raise SystemExit(1)
+    slug = _slugify(name)
+    summary = questionary.text("一句话目标", validate=lambda v: bool(v.strip()) or "不能为空").ask()
+    if summary is None:
+        raise SystemExit(1)
+    default_type = profile.project_type if profile.project_type in PROJECT_TYPE_CHOICES else "backend-service"
+    project_type = questionary.select("项目类型", choices=PROJECT_TYPE_CHOICES, default=default_type).ask()
+    if project_type is None:
+        raise SystemExit(1)
+    sensitivity = questionary.select("敏感级别", choices=SENSITIVITY_CHOICES, default="standard").ask()
+    if sensitivity is None:
+        raise SystemExit(1)
+    has_prod_answer = questionary.select("是否已有生产环境", choices=["否", "是"], default="否").ask()
+    if has_prod_answer is None:
+        raise SystemExit(1)
+    has_production = has_prod_answer == "是"
+
+    lang = profile.language or "unknown"
+    lang_defs = LANGUAGE_DEFAULTS.get(lang, {})
+
+    answers: dict[str, object] = {
+        "project_name": name,
+        "project_slug": slug,
+        "summary": summary,
+        "project_type": project_type,
+        "sensitivity": sensitivity,
+        "has_production": has_production,
+        "language": lang,
+        "package_manager": _lang_default(lang_defs, "package_manager", profile.package_manager, slug),
+        "run_command": _lang_default(lang_defs, "run_command", profile.run_command, slug),
+        "test_command": _lang_default(lang_defs, "test_command", profile.test_command, slug),
+        "check_command": _lang_default(lang_defs, "check_command", profile.check_command, slug),
+        "ci_command": _lang_default(lang_defs, "ci_command", profile.ci_command, slug),
+        "deploy_target": profile.deploy_target,
+    }
+    for ek in ("description", "features", "constraints", "done_criteria"):
+        if ek in config:
+            answers[ek] = config[ek]
+
+    print_detected(answers)
+    return answers
+
+
+def _non_interactive_init(args: argparse.Namespace, profile: object, config: dict[str, object]) -> dict[str, object]:
+    answers = _resolve_answers(args, profile, config)
+    lang = str(answers.get("language", "unknown"))
+    lang_defs = LANGUAGE_DEFAULTS.get(lang, {})
+    slug = str(answers.get("project_slug", "project"))
+    for key in ("package_manager", "run_command", "test_command", "check_command", "ci_command"):
+        if answers.get(key) in (None, "TODO", "unknown"):
+            answers[key] = _lang_default(lang_defs, key, str(answers.get(key, "TODO")), slug)
+    for ek in ("description", "features", "constraints", "done_criteria"):
+        cv = getattr(args, ek, None)
+        if cv is not None:
+            answers[ek] = cv
+        elif ek in config:
+            answers[ek] = config[ek]
+    return answers
 
 
 def _cmd_init(args: argparse.Namespace) -> None:
     target = Path(args.target).resolve()
     if not args.assess_only:
         _guard_self_init(target)
-
     if args.assess_only:
         profile = discover_project(target)
         result = assess_project(profile, root=target)
@@ -128,62 +190,10 @@ def _cmd_init(args: argparse.Namespace) -> None:
     profile = discover_project(target)
     config = _merged_config(target, args)
 
-    answers: dict[str, object] = {}
-    ni = args.non_interactive
-
-    def _ask(key: str, label: str, cli_val: str | None, default: str, choices: list[str] | None = None) -> None:
-        if cli_val is not None:
-            answers[key] = cli_val
-        elif key in config:
-            answers[key] = str(config[key])
-        elif ni:
-            answers[key] = default
-        elif choices:
-            answers[key] = prompt_choice(label, choices, default)
-        else:
-            answers[key] = _prompt(label, default)
-
-    _ask("project_name", "项目名", args.project_name, profile.project_name)
-    _ask("project_slug", "项目 slug", args.project_slug, profile.project_slug)
-    _ask("summary", "一句话目标", args.summary, profile.summary)
-    _ask("project_type", "项目类型", args.project_type, profile.project_type, PROJECT_TYPE_CHOICES)
-    _ask("language", "主要语言", args.language, profile.language)
-
-    lang = str(answers.get("language", "unknown"))
-    lang_defs = LANGUAGE_DEFAULTS.get(lang, {})
-    slug = str(answers.get("project_slug", "project"))
-
-    def _lang_default(key: str, profile_val: str) -> str:
-        if profile_val and profile_val not in ("TODO", "unknown", "未定"):
-            return profile_val
-        tmpl = lang_defs.get(key, profile_val)
-        return tmpl.replace("{slug}", slug) if tmpl else profile_val
-
-    _ask("package_manager", "包管理器", args.package_manager, _lang_default("package_manager", profile.package_manager))
-    _ask("run_command", "运行命令", args.run_command, _lang_default("run_command", profile.run_command))
-    _ask("test_command", "测试命令", args.test_command, _lang_default("test_command", profile.test_command))
-    _ask("check_command", "检查命令", args.check_command, _lang_default("check_command", profile.check_command))
-    _ask("ci_command", "CI 命令", args.ci_command, _lang_default("ci_command", profile.ci_command))
-    _ask("deploy_target", "部署目标", args.deploy_target, profile.deploy_target)
-    _ask("sensitivity", "敏感级别", args.sensitivity, profile.sensitivity, SENSITIVITY_CHOICES)
-
-    for ek in ("description", "features", "constraints", "done_criteria"):
-        cv = getattr(args, ek, None)
-        if cv is not None:
-            answers[ek] = cv
-        elif ek in config:
-            answers[ek] = config[ek]
-
-    if args.has_production:
-        answers["has_production"] = True
-    elif args.no_production:
-        answers["has_production"] = False
-    elif "has_production" in config:
-        answers["has_production"] = bool(config["has_production"])
-    elif ni:
-        answers["has_production"] = profile.has_production
+    if args.non_interactive or args.config or _auto_discover_config(target):
+        answers = _non_interactive_init(args, profile, config)
     else:
-        answers["has_production"] = _prompt_bool("是否已有生产环境", profile.has_production)
+        answers = _interactive_init(target, profile, config)
 
     result = initialize_project(target, answers, force=args.force, dry_run=args.dry_run)
     print_init_result(result)
@@ -196,20 +206,14 @@ def _cmd_upgrade_plan(args: argparse.Namespace) -> None:
     config = _merged_config(target, args)
     answers = _resolve_answers(args, profile, config)
     result = _plan_upgrade(target, answers, only_files=args.only or None)
-
     if args.json:
         print(json.dumps({
-            "target_root": result.target_root,
-            "create_files": result.create_files,
-            "update_files": result.update_files,
-            "unchanged_files": result.unchanged_files,
-            "checklist": result.checklist,
-            "diffs": result.diffs,
+            "target_root": result.target_root, "create_files": result.create_files,
+            "update_files": result.update_files, "unchanged_files": result.unchanged_files,
+            "checklist": result.checklist, "diffs": result.diffs,
         }, ensure_ascii=False, indent=2))
         return
     print_upgrade_plan(result, show_diff=args.show_diff)
-
-
 
 
 def _cmd_upgrade_apply(args: argparse.Namespace) -> None:
@@ -219,7 +223,6 @@ def _cmd_upgrade_apply(args: argparse.Namespace) -> None:
     config = _merged_config(target, args)
     answers = _resolve_answers(args, profile, config)
     result = _execute_upgrade(target, answers, only_files=args.only or None, dry_run=args.dry_run)
-
     print_upgrade_apply(result)
 
 
