@@ -231,6 +231,43 @@ class GitCommitTests(unittest.TestCase):
             self.assertIn("initialize agent harness", log.stdout)
 
 
+class ScaffoldTests(unittest.TestCase):
+    def test_scaffold_copies_files_then_inits(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scaffold = Path(tmpdir) / "framework"
+            scaffold.mkdir()
+            (scaffold / "src").mkdir()
+            (scaffold / "src" / "main.py").write_text("print('hello')", encoding="utf-8")
+            (scaffold / "package.json").write_text('{"name": "fw"}', encoding="utf-8")
+
+            target = Path(tmpdir) / "new-project"
+            cfg = Path(tmpdir) / "cfg.json"
+            cfg.write_text(json.dumps(_TEST_CONFIG), encoding="utf-8")
+            result = _run_harness("init", str(target), "--scaffold", str(scaffold), "--config", str(cfg), "--non-interactive", "--no-git-commit")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((target / "src" / "main.py").exists())
+            self.assertTrue((target / "AGENTS.md").exists())
+            self.assertIn("hello", (target / "src" / "main.py").read_text(encoding="utf-8"))
+
+    def test_scaffold_skips_git_and_node_modules(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scaffold = Path(tmpdir) / "framework"
+            scaffold.mkdir()
+            (scaffold / ".git").mkdir()
+            (scaffold / ".git" / "config").write_text("git stuff", encoding="utf-8")
+            (scaffold / "node_modules").mkdir()
+            (scaffold / "node_modules" / "pkg.js").write_text("module", encoding="utf-8")
+            (scaffold / "index.js").write_text("// app", encoding="utf-8")
+
+            target = Path(tmpdir) / "new-project"
+            cfg = Path(tmpdir) / "cfg.json"
+            cfg.write_text(json.dumps(_TEST_CONFIG), encoding="utf-8")
+            _run_harness("init", str(target), "--scaffold", str(scaffold), "--config", str(cfg), "--non-interactive", "--no-git-commit")
+            self.assertTrue((target / "index.js").exists())
+            self.assertFalse((target / ".git" / "config").exists())
+            self.assertFalse((target / "node_modules").exists())
+
+
 class NoSubcommandTests(unittest.TestCase):
     def test_no_subcommand_shows_help(self) -> None:
         result = _run_harness()

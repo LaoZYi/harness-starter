@@ -14,7 +14,10 @@ from .cli_utils import (
     print_upgrade_apply, print_upgrade_plan, print_verify_warnings,
 )
 from .discovery import discover_project
-from .init_flow import PROJECT_TYPE_CHOICES, SENSITIVITY_CHOICES, interactive_init, non_interactive_init
+from .init_flow import (
+    PROJECT_TYPE_CHOICES, SENSITIVITY_CHOICES, ask_scaffold, copy_scaffold,
+    interactive_init, non_interactive_init,
+)
 from .initializer import initialize_project
 from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade, verify_upgrade as _verify
 
@@ -99,12 +102,19 @@ def _cmd_init(args: argparse.Namespace) -> None:
         return
     if not args.dry_run:
         target.mkdir(parents=True, exist_ok=True)
+    is_interactive = not (args.non_interactive or args.config or _auto_discover_config(target))
+    scaffold_src = getattr(args, "scaffold", None)
+    if scaffold_src:
+        copy_scaffold(Path(scaffold_src).expanduser(), target)
+        console.print(f"  [green]已复制框架代码[/green]：{Path(scaffold_src).name}")
+    elif is_interactive:
+        ask_scaffold(target)
     profile = discover_project(target)
     config = _merged_config(target, args)
-    if args.non_interactive or args.config or _auto_discover_config(target):
-        answers = non_interactive_init(args, profile, config, _resolve_answers)
-    else:
+    if is_interactive:
         answers = interactive_init(target, profile, config)
+    else:
+        answers = non_interactive_init(args, profile, config, _resolve_answers)
     result = initialize_project(target, answers, force=args.force, dry_run=args.dry_run)
     print_init_result(result)
     if not result.dry_run:
@@ -178,6 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_p = subs.add_parser("init", help="初始化 harness")
     init_p.add_argument("target", help="目标项目路径")
     init_p.add_argument("--config", help="JSON/TOML 配置文件")
+    init_p.add_argument("--scaffold", help="基于现有框架创建（复制框架代码到目标目录）")
     _add_common_project_args(init_p)
     init_p.add_argument("--assess-only", action="store_true", help="只做探测评估")
     init_p.add_argument("--force", action="store_true", help="覆盖已有文件")
