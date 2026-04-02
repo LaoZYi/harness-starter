@@ -85,6 +85,15 @@ def print_upgrade_apply(result: object) -> None:
         console.print(f"  选定: {', '.join(result.selected_files)}")
 
 
+def print_verify_warnings(warnings: list[str]) -> None:
+    if warnings:
+        console.print("\n[bold yellow]验证警告[/bold yellow]")
+        for w in warnings:
+            console.print(f"  [yellow]![/yellow] {w}")
+    else:
+        console.print("\n[bold green]验证通过[/bold green]")
+
+
 def print_profile(profile: object) -> None:
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="dim")

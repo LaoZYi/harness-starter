@@ -1,45 +1,42 @@
 # AGENTS
 
-把这个文件当成入口，不要把它写成百科全书。长期知识统一写回 `docs/` 和 `.agent-harness/project.json`。
+本文件不超过 80 行。详细知识写回 `docs/` 和 `.agent-harness/project.json`，禁止在这里写百科全书。
 
-## 开始前先看什么
+## 开始前必读
 
-1. `.agent-harness/current-task.md`，如果有未完成任务则从断点继续。
-2. `docs/product.md`，看功能列表和完成标准的打勾状态。
-3. `.agent-harness/lessons.md`，了解之前踩过的坑，避免再犯。
-4. `.agent-harness/task-log.md`，了解最近的任务和决策。
-5. `docs/architecture.md`，理解模块边界和禁区。
-6. `docs/runbook.md`，理解运行、测试和排障入口。
+1. `.agent-harness/current-task.md` — 有未完成任务则**从断点继续**，禁止重新开始
+2. `docs/product.md` — 功能列表和完成标准的打勾状态
+3. `.agent-harness/lessons.md` — 之前的教训，禁止重复犯同样的错
+4. `.agent-harness/task-log.md` — 最近 5 条任务记录
+5. `docs/architecture.md` — 模块边界和禁区
+6. `docs/runbook.md` — 运行、测试和排障命令
 
 ## 默认工作流
 
-1. 先用一句话重述本次要改什么。
-2. 将任务目标和计划写入 `.agent-harness/current-task.md`。
-3. 只打开和任务相关的文件，不要全仓乱扫。
-4. 逐步实现，每完成一个功能点立即：更新 current-task.md 进度 + 对应 docs 的 checkbox 打勾。
-5. 用 `{{check_command}}` 验证。
-6. **逐条对照 `docs/product.md` 完成标准**，全部 `[x]` 才算完成。
+1. 用 1 句话重述本次要改什么（不超过 25 字）。
+2. 将目标和计划写入 `.agent-harness/current-task.md`。
+3. 只打开与任务相关的文件，禁止全仓扫描，因为无关文件会污染上下文窗口。
+4. 逐步实现。每完成 1 个功能点立即：更新 current-task.md 进度 + 对应 docs checkbox 打勾。
+5. 运行 `{{check_command}}` 和 `{{test_command}}` 验证。连续失败 3 次则停下分析根因，禁止盲目重试。
+6. 逐条对照 `docs/product.md` 完成标准，全部 `[x]` 才算完成。禁止留半成品告诉用户"已完成"。
 7. 将 current-task.md 转移到 task-log.md，清空 current-task.md。
 
 ## 硬规则
 
-- 行为变化必须同步更新 `docs/product.md`。
+- 禁止在任务结束时才批量更新文档。每完成 1 个功能点就更新，因为会话中断会导致所有未记录进度丢失。
+- 行为变化必须同步更新 `docs/product.md`，因为文档与代码不同步会误导后续所有任务。
 - 架构变化必须同步更新 `docs/architecture.md`。
 - 运行方式变化必须同步更新 `docs/runbook.md`。
-- **文档更新要增量进行**：每完成一个功能点就更新，不要堆到任务结束。
-- 每次完成任务后，检查 `docs/` 和本文件是否需要同步更新，如有需要直接更新，不需要等人提醒。
-- 如果发现文档中有"待补充"占位符且已有足够信息，直接填充。
-- 用户否决了某个功能或方案时，从 `docs/product.md` 中移除对应条目，并在 task-log 里记录原因。
-- 发现本文件中的约束不再合理时，可以修改，但必须在 task-log 里记录修改原因。
-- 出错或返工时必须归因：记录根因到 task-log、提炼教训到 lessons.md、必要时在本文件新增规则。
-- 长期规则不要只写进聊天记录或工具 memory。
+- 禁止跳过测试直接提交。每次改动后运行 `{{test_command}}`，因为未测试代码的修复成本是即时修复的 5-10 倍。
+- 禁止执行不可逆操作（rm -rf、git push --force、DROP TABLE），除非用户在当前对话中明确要求。
+- 出错或返工时必须归因：根因记到 task-log、教训记到 lessons.md、缺约束导致的错误在本节新增规则。因为不归因的错误会反复出现。
+- 禁止只把规则写进聊天记录或工具 memory，因为它们会被压缩丢失。长期规则必须写回仓库文件。
+- 发现"待补充"占位符且已有足够信息时，直接填充，不需要等人提醒。
+- 本文件中的约束不再合理时可以修改，但必须在 task-log 里记录修改原因。
 {{constraints_bullets}}
 
-## 当前项目快照
+## 项目快照
 
-- 项目名：`{{project_name}}`
-- 项目类型：`{{project_type}}`
-- 主要语言：`{{language}}`
-- 包管理器：`{{package_manager}}`
-- 源码目录：{{source_paths_inline}}
-- 测试目录：{{test_paths_inline}}
+- 项目：`{{project_name}}`（{{project_type}}）
+- 语言：`{{language}}` / `{{package_manager}}`
+- 源码：{{source_paths_inline}} | 测试：{{test_paths_inline}}

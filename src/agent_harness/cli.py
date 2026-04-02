@@ -13,11 +13,11 @@ import questionary
 from .assessment import assess_project
 from .cli_utils import (
     LANGUAGE_DEFAULTS, console, print_assessment, print_detected, print_init_result,
-    print_profile, print_upgrade_apply, print_upgrade_plan,
+    print_profile, print_upgrade_apply, print_upgrade_plan, print_verify_warnings,
 )
 from .discovery import discover_project
 from .initializer import initialize_project
-from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade
+from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade, verify_upgrade as _verify
 
 PROJECT_FIELDS = (
     "project_name", "project_slug", "summary", "project_type",
@@ -33,7 +33,6 @@ PROJECT_TYPE_CHOICES = [
 SENSITIVITY_CHOICES = ["standard", "internal", "high"]
 
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[2]
-
 
 def _guard_self_init(target: Path) -> None:
     if target.resolve() == _FRAMEWORK_ROOT:
@@ -95,17 +94,14 @@ def _merged_config(target: Path, args: argparse.Namespace) -> dict[str, object]:
     explicit = _load_config(Path(args.config).resolve()) if args.config else {}
     return {**_auto_discover_config(target), **explicit}
 
-
 def _slugify(value: str) -> str:
     return "".join(ch.lower() if ch.isalnum() else "-" for ch in value).strip("-") or "project"
-
 
 def _lang_default(lang_defs: dict[str, str], key: str, profile_val: str, slug: str) -> str:
     if profile_val and profile_val not in ("TODO", "unknown", "未定"):
         return profile_val
     tmpl = lang_defs.get(key, profile_val)
     return tmpl.replace("{slug}", slug) if tmpl else profile_val
-
 
 def _interactive_init(target: Path, profile: object, config: dict[str, object]) -> dict[str, object]:
     console.print("\n[bold]项目初始化[/bold]\n")
@@ -153,7 +149,6 @@ def _interactive_init(target: Path, profile: object, config: dict[str, object]) 
     print_detected(answers)
     return answers
 
-
 def _non_interactive_init(args: argparse.Namespace, profile: object, config: dict[str, object]) -> dict[str, object]:
     answers = _resolve_answers(args, profile, config)
     lang = str(answers.get("language", "unknown"))
@@ -197,6 +192,8 @@ def _cmd_init(args: argparse.Namespace) -> None:
 
     result = initialize_project(target, answers, force=args.force, dry_run=args.dry_run)
     print_init_result(result)
+    if not result.dry_run:
+        print_verify_warnings(_verify(target))
 
 
 def _cmd_upgrade_plan(args: argparse.Namespace) -> None:
@@ -224,6 +221,8 @@ def _cmd_upgrade_apply(args: argparse.Namespace) -> None:
     answers = _resolve_answers(args, profile, config)
     result = _execute_upgrade(target, answers, only_files=args.only or None, dry_run=args.dry_run)
     print_upgrade_apply(result)
+    if not result.dry_run:
+        print_verify_warnings(_verify(target))
 
 
 def build_parser() -> argparse.ArgumentParser:

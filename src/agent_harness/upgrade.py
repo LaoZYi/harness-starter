@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from datetime import UTC, datetime
 from difflib import unified_diff
 from pathlib import Path
@@ -152,3 +154,30 @@ def execute_upgrade(
         dry_run=False,
         changelog=changelog,
     )
+
+
+_PLACEHOLDER_RE = re.compile(r"\{\{\s*[a-z0-9_]+\s*\}\}")
+
+
+def verify_upgrade(target_root: Path) -> list[str]:
+    """Post-upgrade verification. Returns list of warnings (empty = PASS)."""
+    target_root = target_root.resolve()
+    warnings: list[str] = []
+    agents = target_root / "AGENTS.md"
+    if agents.exists():
+        line_count = len(agents.read_text(encoding="utf-8").splitlines())
+        if line_count > 80:
+            warnings.append(f"AGENTS.md 超过 80 行（当前 {line_count} 行），建议拆分到 docs/。")
+    pj = target_root / ".agent-harness" / "project.json"
+    if pj.exists():
+        try:
+            json.loads(pj.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            warnings.append(f"project.json 格式错误：{e}")
+    for md in (target_root / "AGENTS.md", target_root / "CLAUDE.md"):
+        if md.exists():
+            text = md.read_text(encoding="utf-8")
+            unfilled = _PLACEHOLDER_RE.findall(text)
+            if unfilled:
+                warnings.append(f"{md.name} 中存在未填充的占位符：{', '.join(unfilled[:3])}")
+    return warnings
