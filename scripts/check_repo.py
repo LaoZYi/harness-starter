@@ -107,9 +107,12 @@ def check_adapter_files_point_to_agents() -> None:
 
 
 def check_markdown_references() -> None:
+    skip_prefixes = (".agent-harness/", ".claude/", ".github/", ".harness-plugins/")
     for path in [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "CLAUDE.md", ROOT / "CONTRIBUTING.md"]:
         text = path.read_text(encoding="utf-8")
         for match in MARKDOWN_LINK_PATTERN.findall(text):
+            if any(match.startswith(p) for p in skip_prefixes):
+                continue
             target = ROOT / match
             assert_true(target.exists(), f"{path.name} 引用了不存在的文档: {match}")
 

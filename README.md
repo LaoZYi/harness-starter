@@ -64,11 +64,19 @@ harness upgrade apply /path/to/repo
 harness upgrade apply /path/to/repo --only AGENTS.md
 ```
 
-再初始化 harness：
+初始化 harness（交互模式会依次问项目名称、目标、类型等）：
 
 ```bash
 harness init /path/to/repo
 ```
+
+如果要基于现有技术框架创建（复制框架代码 + 初始化 harness）：
+
+```bash
+harness init /path/to/new-project --scaffold ~/frameworks/vue-admin-template
+```
+
+交互模式下也会自动问是否基于框架创建，不需要记参数。
 
 如果想先预演、不直接写文件：
 
@@ -106,6 +114,15 @@ harness init /path/to/repo \
   --sensitivity internal \
   --non-interactive
 ```
+
+## 初始化后的首次使用
+
+初始化完成后，打开 Claude Code（或其他 AI 工具）进入项目目录即可。AI 会自动读取 `.agent-harness/current-task.md` 中预填的"分析项目并补全文档"任务，自动完成：
+- 分析项目源码，理解架构和模块划分
+- 补全 docs/ 中所有"待补充"占位符
+- 验证命令是否可执行
+
+完成后任务自动归档到 task-log.md，不需要任何额外操作。
 
 ## 日常运维命令
 

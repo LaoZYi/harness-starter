@@ -23,6 +23,7 @@ harness upgrade plan /path/to/repo --only AGENTS.md
 harness upgrade apply /path/to/repo
 harness upgrade apply /path/to/repo --only AGENTS.md
 harness init /path/to/repo
+harness init /path/to/repo --scaffold ~/frameworks/vue-admin-template
 harness init /path/to/repo --config examples/init-config.example.json --non-interactive
 harness doctor /path/to/repo
 harness export /path/to/repo
