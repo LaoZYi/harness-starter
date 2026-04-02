@@ -35,11 +35,10 @@
 make check
 make test
 make ci
-make discover TARGET=.
-make assess TARGET=.
-make upgrade-plan TARGET=/path/to/repo ARGS="--config examples/init-config.example.json"
-make upgrade-apply TARGET=/path/to/repo ARGS="--config examples/init-config.example.json"
-make init TARGET=/path/to/repo ARGS="--config examples/init-config.example.json --non-interactive"
+harness init /path/to/repo --assess-only
+harness init /path/to/repo --non-interactive
+harness upgrade plan /path/to/repo
+harness upgrade apply /path/to/repo
 ```
 
 ## 快速地图
@@ -53,7 +52,8 @@ make init TARGET=/path/to/repo ARGS="--config examples/init-config.example.json 
 - `examples/init-config.example.json`：初始化配置示例。
 - `tests/test_discovery.py`：探测逻辑回归。
 - `tests/test_initializer.py`：初始化逻辑回归。
-- `tests/test_init_script.py`：脚本入口回归。
+- `src/agent_harness/cli.py`：统一 CLI 入口。
+- `tests/test_cli.py`：CLI 集成回归。
 - `tests/test_upgrade.py`：升级规划回归。
 - `scripts/check_repo.py`：框架仓库守卫。
 - `CONTRIBUTING.md`：贡献说明。

@@ -7,73 +7,91 @@
 3. 生成第一版项目知识骨架
 4. 把协作约束落成文档和模板
 
-## 典型使用方式
-
-先看现有项目长什么样：
+## 安装
 
 ```bash
-python scripts/discover_project.py /path/to/repo
+cd agent-harness-starter
+pip install -e .
 ```
 
-再做一次接入评估：
+`-e` 是 editable mode（开发模式），安装一次即可。后续框架代码更新后**无需重新安装**，因为它直接指向源码目录，改了代码立刻生效。
+
+安装后即可在任意位置使用 `harness` 命令。
+
+> 不想安装？也可以通过 `PYTHONPATH=src python -m agent_harness` 或 `make` 目标来使用，功能完全一样。
+
+## 典型使用方式
+
+先看项目探测和接入评估结果：
 
 ```bash
-python scripts/assess_project.py /path/to/repo
+harness init /path/to/repo --assess-only
+```
+
+如果需要 JSON 格式输出：
+
+```bash
+harness init /path/to/repo --assess-only --json
 ```
 
 如果这个项目已经接入过旧版本 harness，先看升级会影响哪些文件：
 
 ```bash
-python scripts/plan_upgrade.py --target /path/to/repo
+harness upgrade plan /path/to/repo
 ```
 
 如果想直接看会改什么内容：
 
 ```bash
-python scripts/plan_upgrade.py --target /path/to/repo --show-diff
+harness upgrade plan /path/to/repo --show-diff
 ```
 
 如果只想升级某几个托管文件：
 
 ```bash
-python scripts/plan_upgrade.py --target /path/to/repo --only AGENTS.md --only .agent-harness/project.json
+harness upgrade plan /path/to/repo --only AGENTS.md --only .agent-harness/project.json
 ```
 
 确认没问题后，可以直接执行升级：
 
 ```bash
-python scripts/apply_upgrade.py --target /path/to/repo
+harness upgrade apply /path/to/repo
 ```
 
 也可以只执行部分升级：
 
 ```bash
-python scripts/apply_upgrade.py --target /path/to/repo --only AGENTS.md
+harness upgrade apply /path/to/repo --only AGENTS.md
 ```
 
 再初始化 harness：
 
 ```bash
-python scripts/init_project.py --target /path/to/repo
+harness init /path/to/repo
 ```
 
 如果想先预演、不直接写文件：
 
 ```bash
-python scripts/init_project.py --target /path/to/repo --dry-run
+harness init /path/to/repo --dry-run
 ```
 
 如果你希望把初始化参数固化到配置文件：
 
 ```bash
-python scripts/init_project.py --target /path/to/repo --config examples/init-config.example.json --non-interactive
+harness init /path/to/repo --config examples/init-config.example.json --non-interactive
+```
+
+如果目标仓库中有 `.harness.json`，参数会自动读取，无需每次传 `--config`：
+
+```bash
+harness init /path/to/repo --non-interactive
 ```
 
 如果你希望一次性无交互初始化：
 
 ```bash
-python scripts/init_project.py \
-  --target /path/to/repo \
+harness init /path/to/repo \
   --project-name "Acme API" \
   --summary "Handle internal automation requests." \
   --project-type backend-service \
@@ -105,20 +123,22 @@ python scripts/init_project.py \
 
 ## 框架仓库结构
 
+- `src/agent_harness/cli.py`：统一 CLI 入口（`harness` 命令）
+- `src/agent_harness/`：探测、初始化和模板渲染逻辑
 - `templates/common/`：生成到目标项目中的模板文件
 - `presets/`：按项目类型给出默认文案和检查重点
-- `src/agent_harness/`：探测、初始化和模板渲染逻辑
-- `scripts/discover_project.py`：命令行探测入口
-- `scripts/assess_project.py`：命令行评估入口
-- `scripts/plan_upgrade.py`：升级规划入口
-- `scripts/apply_upgrade.py`：自动升级执行入口
-- `scripts/init_project.py`：命令行初始化入口
 - `scripts/check_repo.py`：框架仓库自检
 - `examples/init-config.example.json`：配置文件初始化示例
+
+## 配置自动发现
+
+如果目标仓库根目录下有 `.harness.json` 文件，`harness` 命令会自动读取作为默认配置。格式与 `examples/init-config.example.json` 相同。
+
+优先级：CLI 参数 > `--config` 文件 > `.harness.json` > 自动探测值
 
 ## 为什么做成框架而不是样例项目
 
 - 避免样例业务代码污染真实项目上下文
 - 让新项目和存量项目都能接入
-- 让“初始化项目认知”成为显式步骤
+- 让"初始化项目认知"成为显式步骤
 - 让后续需求迭代都落在同一套仓库内知识源上

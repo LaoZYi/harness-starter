@@ -5,37 +5,43 @@
 - `make check`：校验框架仓库结构、模板入口和 Python 语法。
 - `make test`：运行框架级回归测试。
 - `make ci`：串联 `check` 和 `test`。
-- `make discover TARGET=/path/to/repo`：扫描目标项目。
-- `make assess TARGET=/path/to/repo`：输出接入评估和建议。
+- `make assess TARGET=/path/to/repo`：探测目标项目并输出接入评估和建议。
 - `make upgrade-plan TARGET=/path/to/repo ARGS="..."`：预览升级会新增和改动哪些文件。
 - `make upgrade-apply TARGET=/path/to/repo ARGS="..."`：执行升级并自动备份被覆盖文件。
 - `make init TARGET=/path/to/repo ARGS="..."`：初始化目标项目。
 
-## 直接运行脚本
+## 使用 harness 命令
+
+安装后（`pip install -e .`）可直接使用：
 
 ```bash
-python scripts/discover_project.py /path/to/repo
-python scripts/assess_project.py /path/to/repo
-python scripts/plan_upgrade.py --target /path/to/repo
-python scripts/plan_upgrade.py --target /path/to/repo --show-diff
-python scripts/plan_upgrade.py --target /path/to/repo --only AGENTS.md
-python scripts/apply_upgrade.py --target /path/to/repo
-python scripts/apply_upgrade.py --target /path/to/repo --only AGENTS.md
-python scripts/init_project.py --target /path/to/repo
-python scripts/init_project.py --target /path/to/repo --config examples/init-config.example.json --non-interactive
+harness init /path/to/repo --assess-only
+harness init /path/to/repo --assess-only --json
+harness upgrade plan /path/to/repo
+harness upgrade plan /path/to/repo --show-diff
+harness upgrade plan /path/to/repo --only AGENTS.md
+harness upgrade apply /path/to/repo
+harness upgrade apply /path/to/repo --only AGENTS.md
+harness init /path/to/repo
+harness init /path/to/repo --config examples/init-config.example.json --non-interactive
 ```
+
+未安装时也可通过 `PYTHONPATH=src python -m agent_harness` 替代 `harness`。
 
 ## 初始化建议流程
 
-1. 先跑 `scripts/discover_project.py` 看预填信息。
-2. 再跑 `scripts/assess_project.py` 看接入缺口和建议。
-3. 如果仓库已经接入过旧版本 harness，先跑 `scripts/plan_upgrade.py` 看哪些文件会变。
-4. 如果需要先 review 内容差异，加 `--show-diff`。
-5. 如果只想先升级部分文件，使用 `--only`。
-6. 如果接受这些变化，再运行 `scripts/apply_upgrade.py`，它会先备份被覆盖文件。
-7. 如有需要先用 `--dry-run` 预演初始化结果。
-8. 再运行 `scripts/init_project.py`，补充项目目标、命令和部署信息。
-9. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/`、`.agent-harness/project.json` 和 `.agent-harness/init-summary.md`。
+1. 先跑 `harness init /path/to/repo --assess-only` 看探测和评估结果。
+2. 如果仓库已经接入过旧版本 harness，先跑 `harness upgrade plan` 看哪些文件会变。
+3. 如果需要先 review 内容差异，加 `--show-diff`。
+4. 如果只想先升级部分文件，使用 `--only`。
+5. 如果接受这些变化，再运行 `harness upgrade apply`，它会先备份被覆盖文件。
+6. 如有需要先用 `--dry-run` 预演初始化结果。
+7. 再运行 `harness init /path/to/repo`，补充项目目标、命令和部署信息。
+8. 初始化后进入目标项目，检查生成的 `AGENTS.md`、`docs/`、`.agent-harness/project.json` 和 `.agent-harness/init-summary.md`。
+
+## 配置自动发现
+
+如果目标仓库中有 `.harness.json`，所有命令会自动读取其中的配置作为默认值，无需每次传 `--config`。
 
 ## 常见问题
 
@@ -46,6 +52,6 @@ python scripts/init_project.py --target /path/to/repo --config examples/init-con
 3. 新项目类型不适配
    先补 `presets/`，再补模板和测试。
 4. 团队想把初始化参数标准化
-   直接维护一个 JSON/TOML 配置文件，并通过 `--config` 执行初始化。
+   在目标仓库中维护 `.harness.json`，之后 `harness init --non-interactive` 即可。
 5. 自动升级覆盖了本地自定义内容
    先到 `.agent-harness/backups/<timestamp>/` 找回旧文件，再决定如何合并。

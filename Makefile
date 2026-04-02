@@ -1,7 +1,8 @@
 PYTHON ?= python3
 PACKAGE = src/agent_harness
+HARNESS = PYTHONPATH=src $(PYTHON) -m agent_harness
 
-.PHONY: test check ci discover assess upgrade-plan upgrade-apply init
+.PHONY: test check ci assess upgrade-plan upgrade-apply init
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests -v
@@ -12,17 +13,26 @@ check:
 
 ci: check test
 
-discover:
-	$(PYTHON) scripts/discover_project.py $(TARGET)
-
 assess:
-	$(PYTHON) scripts/assess_project.py $(TARGET)
+ifndef TARGET
+	$(error 请指定 TARGET，例如：make assess TARGET=/path/to/repo)
+endif
+	$(HARNESS) init "$(TARGET)" --assess-only
 
 upgrade-plan:
-	$(PYTHON) scripts/plan_upgrade.py --target "$(TARGET)" $(ARGS)
+ifndef TARGET
+	$(error 请指定 TARGET，例如：make upgrade-plan TARGET=/path/to/repo)
+endif
+	$(HARNESS) upgrade plan "$(TARGET)" $(ARGS)
 
 upgrade-apply:
-	$(PYTHON) scripts/apply_upgrade.py --target "$(TARGET)" $(ARGS)
+ifndef TARGET
+	$(error 请指定 TARGET，例如：make upgrade-apply TARGET=/path/to/repo)
+endif
+	$(HARNESS) upgrade apply "$(TARGET)" $(ARGS)
 
 init:
-	$(PYTHON) scripts/init_project.py --target "$(TARGET)" $(ARGS)
+ifndef TARGET
+	$(error 请指定 TARGET，例如：make init TARGET=/path/to/repo)
+endif
+	$(HARNESS) init "$(TARGET)" $(ARGS)

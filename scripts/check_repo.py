@@ -11,8 +11,6 @@ REQUIRED_FILES = [
     ROOT / "AGENTS.md",
     ROOT / "CONTRIBUTING.md",
     ROOT / "CLAUDE.md",
-    ROOT / "scripts" / "discover_project.py",
-    ROOT / "scripts" / "assess_project.py",
     ROOT / "scripts" / "plan_upgrade.py",
     ROOT / "scripts" / "apply_upgrade.py",
     ROOT / "scripts" / "init_project.py",
@@ -26,6 +24,8 @@ REQUIRED_FILES = [
     ROOT / "docs" / "workflow.md",
     ROOT / "docs" / "release.md",
     ROOT / "docs" / "runbook.md",
+    ROOT / "src" / "agent_harness" / "cli.py",
+    ROOT / "src" / "agent_harness" / "__main__.py",
     ROOT / "src" / "agent_harness" / "__init__.py",
     ROOT / "src" / "agent_harness" / "models.py",
     ROOT / "src" / "agent_harness" / "cli_utils.py",
@@ -41,6 +41,7 @@ REQUIRED_FILES = [
     ROOT / "tests" / "test_upgrade.py",
     ROOT / "tests" / "test_initializer.py",
     ROOT / "tests" / "test_init_script.py",
+    ROOT / "tests" / "test_cli.py",
     ROOT / "tests" / "test_lang_detect.py",
     ROOT / "tests" / "test_project_types.py",
     ROOT / "templates" / "common" / "AGENTS.md.tmpl",
@@ -105,12 +106,13 @@ def check_markdown_references() -> None:
 
 def check_command_surface() -> None:
     makefile_text = (ROOT / "Makefile").read_text(encoding="utf-8")
-    for target in ("check:", "test:", "ci:", "discover:", "assess:", "upgrade-plan:", "upgrade-apply:", "init:"):
+    for target in ("check:", "test:", "ci:", "assess:", "upgrade-plan:", "upgrade-apply:", "init:"):
         assert_true(target in makefile_text, f"Makefile 缺少目标: {target[:-1]}")
 
 
 def check_module_sizes() -> None:
     for relative_path in [
+        "src/agent_harness/cli.py",
         "src/agent_harness/cli_utils.py",
         "src/agent_harness/lang_detect.py",
         "src/agent_harness/discovery.py",
@@ -130,7 +132,6 @@ def check_runbook_mentions_main_commands() -> None:
         "make check",
         "make test",
         "make ci",
-        "make discover",
         "make assess",
         "make upgrade-plan",
         "make upgrade-apply",
