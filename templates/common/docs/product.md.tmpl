@@ -1,5 +1,7 @@
 # 产品说明
 
+<!-- 静态：初始化时确定，一般不变 -->
+
 ## 一句话目标
 
 {{project_summary}}
@@ -8,20 +10,24 @@
 
 `{{project_type}}`
 
+## 什么算行为变化
+
+{{behavior_change_definition}}
+
+<!-- 动态：随开发持续更新 -->
+
 ## 详细描述
 
 {{project_description}}
 
 ## 功能列表
 
+<!-- 每新增/修改/移除功能时，立即更新此节 -->
 {{features_bullets}}
 
 ## 完成标准
 
-以下是交付前必须逐条验证的检查清单。全部打勾才算完成，不要留半成品：
+<!-- 每完成一个功能点时，立即将对应条目从 [ ] 改为 [x] -->
+以下是交付前必须逐条验证的检查清单。全部打勾才算完成：
 
 {{done_criteria_bullets}}
-
-## 什么算行为变化
-
-{{behavior_change_definition}}

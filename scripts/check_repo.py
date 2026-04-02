@@ -60,6 +60,7 @@ REQUIRED_FILES = [
     ROOT / "templates" / "common" / ".claude" / "rules" / "database.md.tmpl",
     ROOT / "templates" / "common" / ".claude" / "rules" / "api.md.tmpl",
     ROOT / "templates" / "common" / ".claude" / "rules" / "testing.md.tmpl",
+    ROOT / "templates" / "common" / ".claude" / "rules" / "autonomy.md.tmpl",
     ROOT / "templates" / "common" / "CLAUDE.local.md.example.tmpl",
     ROOT / "templates" / "common" / ".agent-harness" / "current-task.md.tmpl",
     ROOT / "templates" / "common" / ".agent-harness" / "lessons.md.tmpl",
