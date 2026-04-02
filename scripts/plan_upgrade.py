@@ -27,7 +27,7 @@ def main() -> None:
     parser.add_argument("--project-name")
     parser.add_argument("--project-slug")
     parser.add_argument("--summary")
-    parser.add_argument("--project-type", choices=["backend-service", "web-app", "cli-tool", "library", "worker"])
+    parser.add_argument("--project-type", choices=["backend-service", "web-app", "cli-tool", "library", "worker", "mobile-app", "monorepo", "data-pipeline"])
     parser.add_argument("--language")
     parser.add_argument("--package-manager")
     parser.add_argument("--run-command")

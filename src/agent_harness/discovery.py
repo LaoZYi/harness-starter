@@ -5,9 +5,20 @@ import re
 import tomllib
 from pathlib import Path
 
+from .lang_detect import (
+    detect_api_docs,
+    detect_commands,
+    detect_language,
+    detect_orm,
+    detect_package_manager,
+    detect_testing_framework,
+)
 from .models import ProjectProfile
 
-PROJECT_TYPES = ("backend-service", "web-app", "cli-tool", "library", "worker")
+PROJECT_TYPES = (
+    "backend-service", "web-app", "cli-tool", "library", "worker",
+    "mobile-app", "monorepo", "data-pipeline",
+)
 SENSITIVITY_LEVELS = ("standard", "internal", "high")
 
 
@@ -64,7 +75,11 @@ def _detect_ci_paths(root: Path) -> list[str]:
 
 def _collect_text_for_detection(root: Path) -> str:
     chunks: list[str] = []
-    for candidate in ["package.json", "pyproject.toml", "requirements.txt", "go.mod", "Cargo.toml"]:
+    candidates = [
+        "package.json", "pyproject.toml", "requirements.txt", "go.mod",
+        "Cargo.toml", "Gemfile", "composer.json", "pom.xml", "build.gradle",
+    ]
+    for candidate in candidates:
         path = root / candidate
         if path.exists():
             chunks.append(path.read_text(encoding="utf-8"))
@@ -86,34 +101,6 @@ def _detect_external_systems(root: Path) -> list[str]:
     return systems
 
 
-def _detect_language(root: Path) -> str:
-    if (root / "pyproject.toml").exists() or (root / "requirements.txt").exists():
-        return "python"
-    if (root / "package.json").exists():
-        if (root / "tsconfig.json").exists():
-            return "typescript"
-        return "javascript"
-    if (root / "go.mod").exists():
-        return "go"
-    if (root / "Cargo.toml").exists():
-        return "rust"
-    return "unknown"
-
-
-def _detect_package_manager(root: Path, language: str) -> str:
-    if (root / "uv.lock").exists():
-        return "uv"
-    if (root / "poetry.lock").exists():
-        return "poetry"
-    if (root / "pnpm-lock.yaml").exists():
-        return "pnpm"
-    if (root / "yarn.lock").exists():
-        return "yarn"
-    if (root / "package-lock.json").exists():
-        return "npm"
-    if language == "python":
-        return "pip"
-    return "unknown"
 
 
 def _detect_project_name(root: Path, language: str) -> tuple[str, str]:
@@ -133,6 +120,23 @@ def _detect_project_name(root: Path, language: str) -> tuple[str, str]:
 
 
 def _detect_project_type(root: Path, language: str) -> str:
+    if (root / "pnpm-workspace.yaml").exists() or (root / "lerna.json").exists():
+        return "monorepo"
+    if (root / "package.json").exists():
+        data = _read_json(root / "package.json")
+        if data.get("workspaces"):
+            return "monorepo"
+        deps = {**dict(data.get("dependencies", {})), **dict(data.get("devDependencies", {}))}
+        if "react-native" in deps:
+            return "mobile-app"
+    if (root / "pubspec.yaml").exists():
+        return "mobile-app"
+    if (root / "ios").is_dir() and (root / "android").is_dir():
+        return "mobile-app"
+    if (root / "dbt_project.yml").exists() or (root / "dagster.yaml").exists():
+        return "data-pipeline"
+    if (root / "dags").is_dir():
+        return "data-pipeline"
     if any((root / name).exists() for name in ("next.config.js", "next.config.mjs", "vite.config.ts", "vite.config.js")):
         return "web-app"
     if (root / "worker.toml").exists() or (root / "wrangler.toml").exists():
@@ -146,53 +150,6 @@ def _detect_project_type(root: Path, language: str) -> str:
     return "backend-service"
 
 
-def _detect_python_module_name(root: Path, project_slug: str) -> str | None:
-    src_root = root / "src"
-    if not src_root.exists():
-        return None
-
-    preferred = project_slug.replace("-", "_")
-    if (src_root / preferred).exists():
-        return preferred
-
-    for path in src_root.iterdir():
-        if path.is_dir() and (path / "cli.py").exists():
-            return path.name
-    for path in src_root.iterdir():
-        if path.is_dir() and (path / "__main__.py").exists():
-            return path.name
-    return None
-
-
-def _detect_commands(root: Path, language: str, project_slug: str) -> tuple[str, str, str, str]:
-    make_targets = _parse_make_targets(root / "Makefile")
-    if {"run", "test", "check", "ci"}.issubset(make_targets):
-        return ("make run", "make test", "make check", "make ci")
-
-    if (root / "package.json").exists():
-        data = _read_json(root / "package.json")
-        scripts = data.get("scripts", {})
-        if isinstance(scripts, dict):
-            run = "npm run dev" if "dev" in scripts else "npm run start" if "start" in scripts else "TODO"
-            test = "npm test" if "test" in scripts else "TODO"
-            check = "npm run lint" if "lint" in scripts else "npm run check" if "check" in scripts else "TODO"
-            ci = "npm run ci" if "ci" in scripts else f"{check} && {test}" if check != "TODO" and test != "TODO" else "TODO"
-            return (run, test, check, ci)
-
-    if language == "python":
-        run = "TODO"
-        module_name = _detect_python_module_name(root, project_slug)
-        if module_name and (root / "src" / module_name / "cli.py").exists():
-            run = f"PYTHONPATH=src python -m {module_name}.cli"
-        elif module_name and (root / "src" / module_name / "__main__.py").exists():
-            run = f"PYTHONPATH=src python -m {module_name}"
-
-        test = "python -m unittest discover -s tests -v" if (root / "tests").exists() else "TODO"
-        check = "python scripts/check_repo.py" if (root / "scripts" / "check_repo.py").exists() else "TODO"
-        ci = f"{check} && {test}" if test != "TODO" else check
-        return (run, test, check, ci)
-
-    return ("TODO", "TODO", "TODO", "TODO")
 
 
 def _detect_deploy_target(root: Path) -> str:
@@ -228,17 +185,21 @@ def _detect_sensitivity(root: Path) -> str:
 
 def discover_project(root: Path) -> ProjectProfile:
     root = root.resolve()
-    language = _detect_language(root)
+    language = detect_language(root)
     project_name, summary = _detect_project_name(root, language)
     project_slug = _slugify(project_name)
     project_type = _detect_project_type(root, language)
-    run_command, test_command, check_command, ci_command = _detect_commands(root, language, project_slug)
+    make_targets = _parse_make_targets(root / "Makefile")
+    run_command, test_command, check_command, ci_command = detect_commands(
+        root, language, project_slug, make_targets,
+    )
     notes: list[str] = []
     if run_command == "TODO":
         notes.append("没有探测到稳定的运行命令，需要初始化时手动确认。")
     if test_command == "TODO":
         notes.append("没有探测到测试命令，需要初始化时补全。")
     sensitivity = _detect_sensitivity(root)
+    dep_text = _collect_text_for_detection(root)
 
     return ProjectProfile(
         root=str(root),
@@ -247,7 +208,7 @@ def discover_project(root: Path) -> ProjectProfile:
         summary=summary,
         project_type=project_type if project_type in PROJECT_TYPES else "backend-service",
         language=language,
-        package_manager=_detect_package_manager(root, language),
+        package_manager=detect_package_manager(root, language),
         run_command=run_command,
         test_command=test_command,
         check_command=check_command,
@@ -261,4 +222,7 @@ def discover_project(root: Path) -> ProjectProfile:
         ci_paths=_detect_ci_paths(root),
         external_systems=_detect_external_systems(root),
         notes=notes,
+        testing_framework=detect_testing_framework(root, language),
+        orm=detect_orm(dep_text),
+        api_docs=detect_api_docs(root),
     )

@@ -28,6 +28,24 @@ def _build_diff(relative_path: str, current_content: str, expected_content: str)
     )
 
 
+def _generate_changelog(plan: UpgradePlanResult) -> str:
+    lines = ["# 升级变更摘要\n"]
+    lines.append(f"时间：{datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+    if plan.create_files:
+        lines.append(f"\n## 新增文件（{len(plan.create_files)} 个）\n")
+        for f in plan.create_files:
+            lines.append(f"- `{f}`")
+    if plan.update_files:
+        lines.append(f"\n## 更新文件（{len(plan.update_files)} 个）\n")
+        for f in plan.update_files:
+            lines.append(f"- `{f}`")
+    if plan.unchanged_files:
+        lines.append(f"\n## 未变化文件（{len(plan.unchanged_files)} 个）\n")
+        for f in plan.unchanged_files:
+            lines.append(f"- `{f}`")
+    return "\n".join(lines) + "\n"
+
+
 def plan_upgrade(
     target_root: Path,
     answers: dict[str, object],
@@ -83,9 +101,23 @@ def execute_upgrade(
     answers: dict[str, object],
     *,
     only_files: list[str] | None = None,
+    dry_run: bool = False,
 ) -> UpgradeExecutionResult:
     target_root = target_root.resolve()
     plan = plan_upgrade(target_root, answers, only_files=only_files)
+    changelog = _generate_changelog(plan)
+
+    if dry_run:
+        return UpgradeExecutionResult(
+            target_root=str(target_root),
+            created_files=plan.create_files,
+            updated_files=plan.update_files,
+            unchanged_files=plan.unchanged_files,
+            selected_files=sorted(plan.create_files + plan.update_files + plan.unchanged_files),
+            dry_run=True,
+            changelog=changelog,
+        )
+
     _, _, context = prepare_initialization(target_root, answers)
     rendered = _filter_rendered(render_templates(TEMPLATE_ROOT, context), only_files)
 
@@ -106,6 +138,10 @@ def execute_upgrade(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(rendered[relative_path], encoding="utf-8")
 
+    changelog_path = target_root / ".agent-harness" / "upgrade-changelog.md"
+    changelog_path.parent.mkdir(parents=True, exist_ok=True)
+    changelog_path.write_text(changelog, encoding="utf-8")
+
     return UpgradeExecutionResult(
         target_root=str(target_root),
         created_files=plan.create_files,
@@ -113,4 +149,6 @@ def execute_upgrade(
         unchanged_files=plan.unchanged_files,
         backup_root=str(backup_root) if backup_root is not None else None,
         selected_files=sorted(rendered.keys()),
+        dry_run=False,
+        changelog=changelog,
     )

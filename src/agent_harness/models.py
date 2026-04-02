@@ -25,6 +25,9 @@ class ProjectProfile:
     ci_paths: list[str] = field(default_factory=list)
     external_systems: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    testing_framework: str | None = None
+    orm: str | None = None
+    api_docs: str | None = None
 
 
 @dataclass(slots=True)
@@ -44,6 +47,8 @@ class AssessmentResult:
     strengths: list[str] = field(default_factory=list)
     gaps: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
+    confidence: str = "medium"
+    dimensions: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -64,3 +69,5 @@ class UpgradeExecutionResult:
     unchanged_files: list[str] = field(default_factory=list)
     backup_root: str | None = None
     selected_files: list[str] = field(default_factory=list)
+    dry_run: bool = False
+    changelog: str | None = None

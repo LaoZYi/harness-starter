@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from agent_harness.cli_utils import bold, dim, green, yellow
 from agent_harness.discovery import discover_project
 from agent_harness.initializer import initialize_project
 
@@ -42,7 +43,7 @@ def main() -> None:
     parser.add_argument("--project-name")
     parser.add_argument("--project-slug")
     parser.add_argument("--summary")
-    parser.add_argument("--project-type", choices=["backend-service", "web-app", "cli-tool", "library", "worker"])
+    parser.add_argument("--project-type", choices=["backend-service", "web-app", "cli-tool", "library", "worker", "mobile-app", "monorepo", "data-pipeline"])
     parser.add_argument("--language")
     parser.add_argument("--package-manager")
     parser.add_argument("--run-command")
@@ -51,6 +52,10 @@ def main() -> None:
     parser.add_argument("--ci-command")
     parser.add_argument("--deploy-target")
     parser.add_argument("--sensitivity", choices=["standard", "internal", "high"])
+    parser.add_argument("--description", help="Detailed project description (multi-line)")
+    parser.add_argument("--features", help="Planned features, one per line or comma-separated")
+    parser.add_argument("--constraints", help="Project-specific hard rules for agents")
+    parser.add_argument("--done-criteria", help="Definition of done: quality bar for delivery")
     parser.add_argument("--force", action="store_true", help="Overwrite existing generated files")
     parser.add_argument("--dry-run", action="store_true", help="Preview generated files without writing them")
     parser.add_argument("--non-interactive", action="store_true", help="Do not prompt for missing values")
@@ -90,6 +95,13 @@ def main() -> None:
         else:
             answers[key] = _prompt(label, default)
 
+    for extra_key in ("description", "features", "constraints", "done_criteria"):
+        cli_value = getattr(args, extra_key, None)
+        if cli_value is not None:
+            answers[extra_key] = cli_value
+        elif extra_key in config:
+            answers[extra_key] = config[extra_key]
+
     if args.has_production:
         answers["has_production"] = True
     elif args.no_production:
@@ -102,16 +114,17 @@ def main() -> None:
         answers["has_production"] = _prompt_bool("是否已有生产环境", profile.has_production)
 
     result = initialize_project(target, answers, force=args.force, dry_run=args.dry_run)
-    print(f"{'previewed' if result.dry_run else 'initialized'}: {result.target_root}")
+    label = "previewed" if result.dry_run else "initialized"
+    print(bold(f"{label}: {result.target_root}"))
     print(f"written: {len(result.written_files)}")
     for path in result.written_files:
-        print(f"+ {path}")
+        print(f"{green('+')} {path}")
     if result.skipped_files:
         print(f"skipped: {len(result.skipped_files)}")
         for path in result.skipped_files:
-            print(f"= {path}")
+            print(f"{dim('=')} {path}")
     if result.summary_path:
-        print(f"summary: {result.summary_path}")
+        print(f"summary: {yellow(result.summary_path)}")
 
 
 if __name__ == "__main__":

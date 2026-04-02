@@ -42,6 +42,21 @@ def _json_value(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2)
 
 
+def _auto_done_criteria(features_raw: str, preset: dict[str, object]) -> str:
+    items: list[str] = []
+    if features_raw:
+        for f in features_raw.replace(",", "\n").splitlines():
+            f = f.strip()
+            if f:
+                items.append(f"功能「{f}」已实现并可正常工作")
+    preset_criteria = preset.get("default_done_criteria")
+    if isinstance(preset_criteria, list):
+        items.extend(str(c) for c in preset_criteria)
+    if not items:
+        return "（初始化时未提供功能列表和完成标准，agent 应在实现功能后自行生成验收清单）"
+    return "\n".join(f"- [ ] {item}" for item in items)
+
+
 def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tuple[object, object, dict[str, str]]:
     target_root = target_root.resolve()
     profile = discover_project(target_root)
@@ -76,7 +91,30 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
         has_production=has_production,
         sensitivity=sensitivity,
     )
-    assessment = assess_project(effective_profile)
+    assessment = assess_project(effective_profile, root=target_root)
+
+    description = str(answers.get("description") or "")
+    features_raw = str(answers.get("features") or "").replace("\\n", "\n")
+    constraints_raw = str(answers.get("constraints") or "").replace("\\n", "\n")
+
+    if features_raw:
+        items = [f.strip() for f in features_raw.replace(",", "\n").splitlines() if f.strip()]
+        features_bullets = "\n".join(f"- {item}" for item in items)
+    else:
+        features_bullets = "（agent 在实现功能后自动填充此节，每条功能用一行描述）"
+
+    if constraints_raw:
+        items = [c.strip() for c in constraints_raw.replace(",", "\n").splitlines() if c.strip()]
+        constraints_bullets = "\n".join(f"- {item}" for item in items)
+    else:
+        constraints_bullets = ""
+
+    done_raw = str(answers.get("done_criteria") or "").replace("\\n", "\n")
+    if done_raw:
+        items = [d.strip() for d in done_raw.replace(",", "\n").splitlines() if d.strip()]
+        done_criteria_bullets = "\n".join(f"- [ ] {item}" for item in items)
+    else:
+        done_criteria_bullets = _auto_done_criteria(features_raw, preset)
 
     context = {
         "project_name": project_name,
@@ -107,6 +145,11 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
             assessment.recommendations,
             fallback="初始化完成后可以直接开始补充项目细节。",
         ),
+        "assessment_confidence": assessment.confidence,
+        "project_description": description,
+        "features_bullets": features_bullets,
+        "constraints_bullets": constraints_bullets,
+        "done_criteria_bullets": done_criteria_bullets,
         "harness_version": FRAMEWORK_VERSION,
         "source_paths_inline": _inline_list(profile.source_paths, fallback="待补充"),
         "test_paths_inline": _inline_list(profile.test_paths, fallback="待补充"),

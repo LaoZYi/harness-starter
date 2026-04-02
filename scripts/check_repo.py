@@ -28,6 +28,8 @@ REQUIRED_FILES = [
     ROOT / "docs" / "runbook.md",
     ROOT / "src" / "agent_harness" / "__init__.py",
     ROOT / "src" / "agent_harness" / "models.py",
+    ROOT / "src" / "agent_harness" / "cli_utils.py",
+    ROOT / "src" / "agent_harness" / "lang_detect.py",
     ROOT / "src" / "agent_harness" / "discovery.py",
     ROOT / "src" / "agent_harness" / "assessment.py",
     ROOT / "src" / "agent_harness" / "upgrade.py",
@@ -39,6 +41,8 @@ REQUIRED_FILES = [
     ROOT / "tests" / "test_upgrade.py",
     ROOT / "tests" / "test_initializer.py",
     ROOT / "tests" / "test_init_script.py",
+    ROOT / "tests" / "test_lang_detect.py",
+    ROOT / "tests" / "test_project_types.py",
     ROOT / "templates" / "common" / "AGENTS.md.tmpl",
     ROOT / "templates" / "common" / "CLAUDE.md.tmpl",
     ROOT / "templates" / "common" / "CONTRIBUTING.md.tmpl",
@@ -51,6 +55,9 @@ REQUIRED_FILES = [
     ROOT / "templates" / "common" / "docs" / "workflow.md.tmpl",
     ROOT / "templates" / "common" / "docs" / "release.md.tmpl",
     ROOT / "templates" / "common" / "docs" / "runbook.md.tmpl",
+    ROOT / "templates" / "common" / ".agent-harness" / "current-task.md.tmpl",
+    ROOT / "templates" / "common" / ".agent-harness" / "lessons.md.tmpl",
+    ROOT / "templates" / "common" / ".agent-harness" / "task-log.md.tmpl",
     ROOT / "templates" / "common" / ".agent-harness" / "init-summary.md.tmpl",
     ROOT / "templates" / "common" / ".agent-harness" / "project.json.tmpl",
     ROOT / "presets" / "backend-service.json",
@@ -58,6 +65,9 @@ REQUIRED_FILES = [
     ROOT / "presets" / "cli-tool.json",
     ROOT / "presets" / "library.json",
     ROOT / "presets" / "worker.json",
+    ROOT / "presets" / "mobile-app.json",
+    ROOT / "presets" / "monorepo.json",
+    ROOT / "presets" / "data-pipeline.json",
     ROOT / "VERSION",
 ]
 
@@ -101,6 +111,8 @@ def check_command_surface() -> None:
 
 def check_module_sizes() -> None:
     for relative_path in [
+        "src/agent_harness/cli_utils.py",
+        "src/agent_harness/lang_detect.py",
         "src/agent_harness/discovery.py",
         "src/agent_harness/assessment.py",
         "src/agent_harness/upgrade.py",

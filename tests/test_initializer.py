@@ -77,5 +77,63 @@ class InitializeProjectTests(unittest.TestCase):
         self.assertFalse(agents_exists)
 
 
+    def test_no_unfilled_placeholders_in_output(self) -> None:
+        import re
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "complete-check"
+            initialize_project(
+                root,
+                {
+                    "project_name": "Complete Check",
+                    "project_slug": "complete-check",
+                    "summary": "Verify all placeholders are filled.",
+                    "project_type": "backend-service",
+                    "language": "python",
+                    "package_manager": "pip",
+                    "run_command": "python -m app",
+                    "test_command": "pytest",
+                    "check_command": "ruff check .",
+                    "ci_command": "make ci",
+                    "deploy_target": "docker",
+                    "has_production": True,
+                    "sensitivity": "internal",
+                },
+                force=True,
+            )
+            pattern = re.compile(r"{{\s*[a-z0-9_]+\s*}}")
+            for path in root.rglob("*"):
+                if path.is_file():
+                    content = path.read_text(encoding="utf-8")
+                    matches = pattern.findall(content)
+                    self.assertFalse(matches, f"{path.relative_to(root)} 包含未填充的占位符: {matches}")
+
+    def test_idempotent_init_with_force(self) -> None:
+        answers = {
+            "project_name": "Idempotent",
+            "project_slug": "idempotent",
+            "summary": "Test idempotency.",
+            "project_type": "backend-service",
+            "language": "python",
+            "package_manager": "pip",
+            "run_command": "make run",
+            "test_command": "make test",
+            "check_command": "make check",
+            "ci_command": "make ci",
+            "deploy_target": "docker",
+            "has_production": False,
+            "sensitivity": "standard",
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "idem"
+            initialize_project(root, answers, force=True)
+            # Second init discovers generated dirs, so run twice to stabilize
+            initialize_project(root, answers, force=True)
+            second = {p.relative_to(root): p.read_text(encoding="utf-8") for p in root.rglob("*") if p.is_file()}
+            initialize_project(root, answers, force=True)
+            third = {p.relative_to(root): p.read_text(encoding="utf-8") for p in root.rglob("*") if p.is_file()}
+        self.assertEqual(second, third)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from .models import AssessmentResult, ProjectProfile
 
 
-def assess_project(profile: ProjectProfile) -> AssessmentResult:
+def _score_detection(profile: ProjectProfile) -> tuple[int, list[str], list[str], list[str]]:
     score = 100
     strengths: list[str] = []
     gaps: list[str] = []
@@ -60,11 +62,117 @@ def assess_project(profile: ProjectProfile) -> AssessmentResult:
     else:
         recommendations.append("如果项目依赖数据库、队列或第三方 API，请在初始化后补到 docs/architecture.md。")
 
-    readiness = "high" if score >= 80 else "medium" if score >= 55 else "low"
+    return score, strengths, gaps, recommendations
+
+
+def _score_code_quality(root: Path) -> tuple[int, list[str], list[str]]:
+    bonus = 0
+    strengths: list[str] = []
+    recommendations: list[str] = []
+    linter_markers = [
+        ".eslintrc", ".eslintrc.js", ".eslintrc.json", ".eslintrc.yml",
+        "ruff.toml", ".pylintrc", ".rubocop.yml", ".golangci.yml",
+        "eslint.config.js", "eslint.config.mjs",
+    ]
+    formatter_markers = [".prettierrc", ".prettierrc.json", ".prettierrc.js", "rustfmt.toml", ".editorconfig"]
+
+    has_linter = any((root / m).exists() for m in linter_markers)
+    if not has_linter and (root / "pyproject.toml").exists():
+        text = (root / "pyproject.toml").read_text(encoding="utf-8")
+        has_linter = "[tool.ruff]" in text or "[tool.pylint]" in text
+
+    has_formatter = any((root / m).exists() for m in formatter_markers)
+
+    if has_linter:
+        bonus += 5
+        strengths.append("已配置代码检查工具")
+    else:
+        recommendations.append("建议配置 linter（如 ruff、eslint、golangci-lint）以提高代码一致性。")
+    if has_formatter:
+        bonus += 5
+        strengths.append("已配置代码格式化工具")
+
+    return bonus, strengths, recommendations
+
+
+def _score_testing(root: Path) -> tuple[int, list[str], list[str]]:
+    testing_markers = [
+        "jest.config.js", "jest.config.ts", "jest.config.mjs",
+        "vitest.config.ts", "vitest.config.js",
+        "pytest.ini", "conftest.py", ".rspec", "phpunit.xml",
+    ]
+    has_config = any((root / m).exists() for m in testing_markers)
+    if not has_config and (root / "pyproject.toml").exists():
+        text = (root / "pyproject.toml").read_text(encoding="utf-8")
+        has_config = "[tool.pytest" in text
+
+    if has_config:
+        return 5, ["已配置测试框架"], []
+    return 0, [], ["建议添加测试框架配置文件，让 CI 和 agent 能自动发现测试入口。"]
+
+
+def _score_documentation(root: Path) -> tuple[int, list[str], list[str]]:
+    readme = root / "README.md"
+    if readme.exists():
+        lines = [l for l in readme.read_text(encoding="utf-8").splitlines() if l.strip()]
+        if len(lines) >= 10:
+            return 5, ["README.md 内容充实"], []
+        return 2, ["README.md 存在但内容较少"], ["建议补充 README.md 的项目说明、使用方式和开发指引。"]
+    return 0, [], ["建议创建 README.md，让新成员和 agent 能快速了解项目。"]
+
+
+def _compute_confidence(profile: ProjectProfile) -> str:
+    unknowns = 0
+    if profile.language == "unknown":
+        unknowns += 1
+    if profile.package_manager == "unknown":
+        unknowns += 1
+    for cmd in [profile.run_command, profile.test_command, profile.check_command, profile.ci_command]:
+        if cmd == "TODO":
+            unknowns += 1
+    if profile.deploy_target == "未定":
+        unknowns += 1
+    if unknowns <= 1:
+        return "high"
+    if unknowns <= 3:
+        return "medium"
+    return "low"
+
+
+def assess_project(profile: ProjectProfile, root: Path | None = None) -> AssessmentResult:
+    base_score, strengths, gaps, recommendations = _score_detection(profile)
+    dimensions: dict[str, int] = {"detection": max(base_score, 0)}
+    bonus = 0
+
+    if root is not None:
+        qb, qs, qr = _score_code_quality(root)
+        bonus += qb
+        strengths.extend(qs)
+        recommendations.extend(qr)
+        dimensions["code_quality"] = qb
+
+        tb, ts, tr = _score_testing(root)
+        bonus += tb
+        strengths.extend(ts)
+        recommendations.extend(tr)
+        dimensions["testing"] = tb
+
+        db, ds, dr = _score_documentation(root)
+        bonus += db
+        strengths.extend(ds)
+        recommendations.extend(dr)
+        dimensions["documentation"] = db
+
+    final_score = min(max(base_score + bonus, 0), 100)
+    confidence = _compute_confidence(profile)
+    readiness = "high" if final_score >= 80 else "medium" if final_score >= 55 else "low"
+
     return AssessmentResult(
-        score=max(score, 0),
+        score=final_score,
         readiness=readiness,
         strengths=strengths,
         gaps=gaps,
         recommendations=recommendations,
+        confidence=confidence,
+        dimensions=dimensions,
     )

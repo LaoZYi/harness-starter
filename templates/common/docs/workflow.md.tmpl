@@ -1,21 +1,16 @@
 # 协作流程
 
-## 推荐流程
-
-1. 先从 `AGENTS.md` 和 `.agent-harness/project.json` 理解项目上下文。
-2. 小步修改代码。
-3. 同步更新 `docs/`。
-4. 先跑 `{{check_command}}`，再跑 `{{test_command}}`。
-5. 需要完整收口时跑 `{{ci_command}}`。
+本文件补充 `AGENTS.md` 中未展开的评审和协作细节。
 
 ## 评审要点
 
 - 行为变化是否已经写回 `docs/product.md`
 - 架构变化是否已经写回 `docs/architecture.md`
 - 运行方式变化是否已经写回 `docs/runbook.md`
+- `docs/product.md` 里的完成标准是否已更新打勾状态
+- `.agent-harness/task-log.md` 是否记录了本次改动
 - 是否引入了本可脚本化但仍停留在口头层的规则
 
 ## 额外提示
 
 {{workflow_notes}}
-

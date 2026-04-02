@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from agent_harness import discover_project, execute_upgrade
+from agent_harness.cli_utils import bold, dim, green, yellow
 
 
 def _load_config(path: Path) -> dict[str, object]:
@@ -27,7 +28,7 @@ def main() -> None:
     parser.add_argument("--project-name")
     parser.add_argument("--project-slug")
     parser.add_argument("--summary")
-    parser.add_argument("--project-type", choices=["backend-service", "web-app", "cli-tool", "library", "worker"])
+    parser.add_argument("--project-type", choices=["backend-service", "web-app", "cli-tool", "library", "worker", "mobile-app", "monorepo", "data-pipeline"])
     parser.add_argument("--language")
     parser.add_argument("--package-manager")
     parser.add_argument("--run-command")
@@ -39,6 +40,7 @@ def main() -> None:
     parser.add_argument("--has-production", action="store_true")
     parser.add_argument("--no-production", action="store_true")
     parser.add_argument("--only", action="append", default=[], help="Only upgrade specific managed files")
+    parser.add_argument("--dry-run", action="store_true", help="Preview upgrade without writing files")
     args = parser.parse_args()
 
     target = Path(args.target).resolve()
@@ -77,19 +79,20 @@ def main() -> None:
     else:
         answers["has_production"] = profile.has_production
 
-    result = execute_upgrade(target, answers, only_files=args.only or None)
-    print(f"upgraded: {result.target_root}")
+    result = execute_upgrade(target, answers, only_files=args.only or None, dry_run=args.dry_run)
+    label = "previewed" if result.dry_run else "upgraded"
+    print(bold(f"{label}: {result.target_root}"))
     print(f"created: {len(result.created_files)}")
     for path in result.created_files:
-        print(f"+ {path}")
+        print(f"  {green('+')} {path}")
     print(f"updated: {len(result.updated_files)}")
     for path in result.updated_files:
-        print(f"~ {path}")
+        print(f"  {yellow('~')} {path}")
     print(f"unchanged: {len(result.unchanged_files)}")
     for path in result.unchanged_files:
-        print(f"= {path}")
+        print(f"  {dim('=')} {path}")
     if result.backup_root:
-        print(f"backup: {result.backup_root}")
+        print(f"backup: {yellow(result.backup_root)}")
     if result.selected_files:
         print(f"selected: {', '.join(result.selected_files)}")
 

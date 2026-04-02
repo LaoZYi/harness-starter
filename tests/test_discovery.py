@@ -50,6 +50,26 @@ class DiscoverProjectTests(unittest.TestCase):
         self.assertIn("src", profile.source_paths)
 
 
+    def test_empty_directory_returns_unknown_language(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            profile = discover_project(root)
+        self.assertEqual(profile.language, "unknown")
+        self.assertEqual(profile.project_type, "backend-service")
+
+    def test_detects_go_project_end_to_end(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "go.mod").write_text("module example.com/svc\n\ngo 1.21\n", encoding="utf-8")
+            (root / "cmd").mkdir()
+            (root / "tests").mkdir()
+            profile = discover_project(root)
+        self.assertEqual(profile.language, "go")
+        self.assertEqual(profile.package_manager, "go-modules")
+        self.assertEqual(profile.test_command, "go test ./...")
+        self.assertEqual(profile.testing_framework, "go-test")
+
+
 if __name__ == "__main__":
     unittest.main()
 

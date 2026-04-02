@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from agent_harness import assess_project, discover_project
+from agent_harness.cli_utils import bold, green, red, yellow
 
 
 def main() -> None:
@@ -18,8 +19,9 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Print raw JSON")
     args = parser.parse_args()
 
-    profile = discover_project(Path(args.target))
-    result = assess_project(profile)
+    target = Path(args.target).resolve()
+    profile = discover_project(target)
+    result = assess_project(profile, root=target)
     payload = {
         "profile": asdict(profile),
         "assessment": asdict(result),
@@ -29,20 +31,26 @@ def main() -> None:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return
 
-    print(f"readiness: {result.readiness}")
-    print(f"score: {result.score}")
+    color = green if result.readiness == "high" else yellow if result.readiness == "medium" else red
+    print(f"readiness: {color(result.readiness)}")
+    print(f"score: {bold(str(result.score))}")
+    print(f"confidence: {result.confidence}")
+    if result.dimensions:
+        print("dimensions:")
+        for dim_name, dim_score in result.dimensions.items():
+            print(f"  {dim_name}: {dim_score}")
     if result.strengths:
         print("strengths:")
         for item in result.strengths:
-            print(f"- {item}")
+            print(f"  {green('+')} {item}")
     if result.gaps:
         print("gaps:")
         for item in result.gaps:
-            print(f"- {item}")
+            print(f"  {red('-')} {item}")
     if result.recommendations:
         print("recommendations:")
         for item in result.recommendations:
-            print(f"- {item}")
+            print(f"  {yellow('>')} {item}")
 
 
 if __name__ == "__main__":
