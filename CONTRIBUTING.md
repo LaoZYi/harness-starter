@@ -4,20 +4,20 @@
 
 开始前请按顺序阅读：
 
-1. `AGENTS.md`
-2. `docs/workflow.md`
-3. `templates/common/`
-4. `src/agent_harness/`
-5. 涉及运行方式时读 `docs/runbook.md`
+1. `AGENTS.md` — 入口和硬规则
+2. `docs/product.md` — 功能清单和变更原则
+3. `docs/architecture.md` — 模块职责和约束
+4. `docs/workflow.md` — 协作流程和提交检查
+5. `docs/runbook.md` — 命令用法和排障
 
 ## 标准流程
 
 1. 用一句话描述本次改动目标。
 2. 先做最小实现。
-3. 为行为变化补测试。
+3. 为行为变化补测试（当前 64 个，禁止只加功能不加测试）。
 4. 为规则变化补文档。
-5. 运行 `make check`。
-6. 如果改了行为或发布相关内容，运行 `make ci`。
+5. 运行 `make ci`。
+6. 如果新增了模块，加到 `scripts/check_repo.py` 的 REQUIRED_FILES。
 
 ## 提交内容应该包含什么
 
@@ -26,13 +26,14 @@
 - 文档同步：说明更新了哪份文档。
 - 风险说明：还有哪些边界没覆盖。
 
-## 不要这样做
+## 禁止事项
 
-- 不要把长期规则只写进某个工具的 memory。
-- 不要发明新的隐藏命令。
-- 不要只改代码不补文档或测试。
-- 不要修改运行方式却不更新 `docs/runbook.md`。
-- 不要修改生成模板却不验证初始化结果。
+- 禁止把长期规则只写进某个工具的 memory，因为它们会被压缩丢失。
+- 禁止发明新的隐藏命令，所有命令必须注册到 Makefile 或 cli.py。
+- 禁止只改代码不补文档或测试。
+- 禁止修改 CLI 命令却不更新 `docs/runbook.md`。
+- 禁止修改模板却不验证初始化结果（`harness init /tmp/test --dry-run`）。
+- 禁止让单个模块超过 280 行，超过时拆分到新模块。
 
 ## 发布前阅读
 

@@ -2,30 +2,72 @@
 
 ## 模块职责
 
-- `src/agent_harness/discovery.py`：扫描目标项目并给出第一版画像。
+### CLI 层
+- `src/agent_harness/cli.py`：统一入口，argparse 子命令注册和路由，不超过 280 行。
+- `src/agent_harness/init_flow.py`：交互式和非交互式初始化流程（从 cli.py 拆出）。
+
+### 核心功能层
+- `src/agent_harness/discovery.py`：扫描目标项目并给出结构化画像。
 - `src/agent_harness/assessment.py`：根据画像给出接入评分、缺口和建议。
-- `src/agent_harness/upgrade.py`：比较模板生成结果与现有仓库文件，给出升级计划。
-- `scripts/apply_upgrade.py`：执行升级并把被覆盖文件备份到 `.agent-harness/backups/`。
-- `src/agent_harness/initializer.py`：整合探测结果、预设和用户输入，生成文件。
-- `src/agent_harness/templating.py`：模板渲染和落盘。
-- `templates/common/`：真正会写入目标项目的模板。
-- `presets/`：按项目类型提供默认文案和关注点。
-- `scripts/*.py`：命令行封装层。
-- `tests/`：框架级回归测试。
-- `scripts/check_repo.py`：框架仓库的守卫脚本。
+- `src/agent_harness/initializer.py`：整合探测结果、预设和用户输入，渲染模板并生成文件。含插件渲染逻辑。
+- `src/agent_harness/upgrade.py`：比较模板生成结果与现有文件，给出升级计划并执行。含 verify_upgrade 验证。
+- `src/agent_harness/templating.py`：模板发现、占位符替换和落盘。
+
+### 运维工具层
+- `src/agent_harness/doctor.py`：健康检查（task-log 使用率、教训积累、占位符、长度）。
+- `src/agent_harness/export.py`：项目画像导出（Markdown 或 JSON）。
+- `src/agent_harness/stats.py`：任务统计分析（返工率、活跃度、教训数）。
+
+### 辅助层
+- `src/agent_harness/cli_utils.py`：rich 输出函数、语言默认值映射。
+- `src/agent_harness/lang_detect.py`：语言/框架/ORM 检测。
+- `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
+
+### 资源层
+- `templates/common/`：生成到目标项目的 Jinja2 模板（23 个 .tmpl 文件）。
+- `presets/`：8 种项目类型的 JSON 预设。
+- `scripts/check_repo.py`：框架仓库守卫脚本。
+
+### 测试层
+- `tests/`：64 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、新功能。
 
 ## 约束
 
-1. 模板内容必须尽量通用，不能再引入样例业务。
-2. 脚本逻辑和模板文本分离，不要把长文案塞进 Python 代码里。
-3. 长期规则必须写回仓库文件，不要只留在某个工具的 memory 里。
-4. Claude 适配层只做薄封装，不能演化成第二套真规则。
-5. 自检脚本要优先检查“模板是否存在”“脚本是否连通”“文档是否指向真实入口”。
+1. 每个 Python 模块不超过 280 行。超过时拆分到新模块。
+2. 模板内容必须通用，禁止引入样例业务代码。
+3. 脚本逻辑和模板文本分离，禁止把长文案塞进 Python 代码。
+4. CLI 新增子命令时，handler 放在独立模块，cli.py 只注册路由。
+5. 自检脚本（check_repo.py）优先检查文件存在、模板连通、模块长度。
+
+## 数据流
+
+```
+用户输入/配置
+     ↓
+discover_project() → ProjectProfile
+     ↓
+assess_project() → AssessmentResult
+     ↓
+prepare_initialization() → context dict (69 个模板变量)
+     ↓
+materialize_templates() → 写入目标项目
+     ↓
+_materialize_plugins() → 渲染 .harness-plugins/ (如果存在)
+     ↓
+verify_upgrade() → 验证结果
+```
+
+## 插件机制
+
+目标项目中 `.harness-plugins/` 目录的文件在 init/upgrade 时被渲染：
+- `rules/*.md` → 合并到 `.claude/rules/`
+- `templates/**` → 保持目录结构渲染到项目根
+
+插件文件支持与内置模板相同的 `{{variable}}` 占位符。
 
 ## 推荐扩展方式
 
 - 想增加新项目类型：先加 `presets/*.json`，再补模板、评估逻辑和测试。
 - 想增加新生成文件：先加模板，再补初始化测试和仓库自检。
-- 想调整升级策略：先改 `src/agent_harness/upgrade.py`，再补升级规划测试。
-- 想调整自动升级策略：必须保留可恢复路径，不能绕过备份逻辑。
-- 想增加新命令：先改 `Makefile`，再补脚本和 `docs/runbook.md`。
+- 想增加新 CLI 命令：新建模块放 handler，cli.py 只注册子命令，更新 runbook。
+- 想增加新规则模板：放到 `templates/common/.claude/rules/`，加 paths frontmatter。
