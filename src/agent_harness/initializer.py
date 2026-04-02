@@ -201,6 +201,13 @@ def initialize_project(
         force=force,
         dry_run=dry_run,
     )
+
+    plugin_root = target_root / ".harness-plugins"
+    if plugin_root.is_dir():
+        pw, ps = _materialize_plugins(plugin_root, target_root, context, force=force, dry_run=dry_run)
+        written.extend(pw)
+        skipped.extend(ps)
+
     return InitializationResult(
         target_root=str(target_root),
         context=context,
@@ -209,3 +216,51 @@ def initialize_project(
         dry_run=dry_run,
         summary_path=".agent-harness/init-summary.md",
     )
+
+
+def _materialize_plugins(
+    plugin_root: Path,
+    target_root: Path,
+    context: dict[str, str],
+    *,
+    force: bool = False,
+    dry_run: bool = False,
+) -> tuple[list[str], list[str]]:
+    from .templating import render_template
+
+    written: list[str] = []
+    skipped: list[str] = []
+
+    # rules/ → .claude/rules/
+    rules_dir = plugin_root / "rules"
+    if rules_dir.is_dir():
+        for f in sorted(rules_dir.glob("*.md")):
+            output_rel = f".claude/rules/{f.name}"
+            output_path = target_root / output_rel
+            content = render_template(f.read_text(encoding="utf-8"), context)
+            if output_path.exists() and not force:
+                skipped.append(output_rel)
+            else:
+                if not dry_run:
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    output_path.write_text(content, encoding="utf-8")
+                written.append(output_rel)
+
+    # templates/ → project root (preserving subdirectory structure)
+    tmpl_dir = plugin_root / "templates"
+    if tmpl_dir.is_dir():
+        for f in sorted(tmpl_dir.rglob("*")):
+            if f.is_dir():
+                continue
+            output_rel = str(f.relative_to(tmpl_dir))
+            output_path = target_root / output_rel
+            content = render_template(f.read_text(encoding="utf-8"), context)
+            if output_path.exists() and not force:
+                skipped.append(output_rel)
+            else:
+                if not dry_run:
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    output_path.write_text(content, encoding="utf-8")
+                written.append(output_rel)
+
+    return written, skipped
