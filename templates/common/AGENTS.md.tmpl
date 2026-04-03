@@ -19,8 +19,9 @@
 3. 只打开与任务相关的文件，禁止全仓扫描，因为无关文件会污染上下文窗口。
 4. 逐步实现。每完成 1 个功能点立即：更新 current-task.md 进度 + 对应 docs checkbox 打勾。
 5. 运行 `{{check_command}}` 和 `{{test_command}}` 验证。连续失败 3 次则停下分析根因，禁止盲目重试。
-6. 逐条对照 `docs/product.md` 完成标准，全部 `[x]` 才算完成。禁止留半成品告诉用户"已完成"。
-7. 将 current-task.md 转移到 task-log.md，清空 current-task.md。
+6. 逐条对照 `docs/product.md` 完成标准，全部 `[x]` 才算完成。
+7. 标记 current-task.md 为"待验证"，告诉用户可以验证。**不要主动清空 current-task.md**。
+8. 用户确认通过后，才将 current-task.md 转移到 task-log.md 并清空。验证不通过则在当前任务里继续修。
 
 ## 硬规则
 

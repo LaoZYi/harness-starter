@@ -24,7 +24,7 @@
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
 
 ### 资源层
-- `templates/common/`：生成到目标项目的模板（24 个 .tmpl 文件）。含 `.claude/commands/process-notes.md.tmpl`（需求笔记处理 skill）和 `notes/.gitkeep`。
+- `templates/common/`：生成到目标项目的模板（29 个 .tmpl 文件）。含 `.claude/commands/process-notes.md.tmpl`（需求笔记处理 skill）、`.claude/rules/task-lifecycle.md.tmpl`（任务生命周期）、`.claude/rules/documentation-sync.md.tmpl`（文档同步）、`.claude/rules/error-attribution.md.tmpl`（错误归因）、`.claude/settings.json.tmpl`（SessionStart + PreToolUse hooks）和 `notes/.gitkeep`。
 - `presets/`：8 种项目类型的 JSON 预设。
 - `scripts/check_repo.py`：框架仓库守卫脚本。
 

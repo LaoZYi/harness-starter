@@ -48,7 +48,9 @@
 1. 新任务开始时，将目标和计划写入 `.agent-harness/current-task.md`
 2. 每完成一个步骤，立即更新 current-task.md 的进度
 3. 每完成一个功能点，立即更新 `docs/product.md` 的对应 checkbox
-4. 任务全部完成后，转移到 task-log.md，清空 current-task.md
+4. 实现完成后标记为"待验证"，告诉用户可以验证。**禁止主动清空 current-task.md**
+5. 用户确认通过后，才转移到 task-log.md 并清空 current-task.md
+6. 用户验证不通过，在当前任务里继续修，不开新任务
 
 ## Harness 自维护规则
 
