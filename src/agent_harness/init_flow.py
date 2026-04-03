@@ -8,6 +8,8 @@ from pathlib import Path
 import questionary
 
 from .cli_utils import LANGUAGE_DEFAULTS, console, print_detected
+from rich.panel import Panel
+from rich.table import Table
 
 SCAFFOLD_SKIP = {".git", "node_modules", ".venv", "__pycache__", ".DS_Store", ".agent-harness"}
 
@@ -66,36 +68,149 @@ def ask_scaffold(target: Path) -> bool:
     return True
 
 
+_BACK = "↩ 返回上一步"
+
+_STEP_LABELS = ["项目名称", "一句话目标", "项目类型", "敏感级别", "生产环境"]
+
+
+def _ask_with_back(message: str, choices: list[str], default: str, *, allow_back: bool = True) -> str | None:
+    """Ask a select question, optionally with a back option. Returns None on Ctrl-C, _BACK on back."""
+    opts = list(choices) + ([_BACK] if allow_back else [])
+    return questionary.select(message, choices=opts, default=default).ask()
+
+
 def interactive_init(target: Path, profile: object, config: dict[str, object]) -> dict[str, object]:
     console.print("\n[bold]项目初始化[/bold]\n")
-    name = questionary.text("项目名称", validate=lambda v: bool(v.strip()) or "不能为空").ask()
-    if name is None:
-        raise SystemExit(1)
-    slug = _slugify(name)
-    summary = questionary.text("一句话目标", validate=lambda v: bool(v.strip()) or "不能为空").ask()
-    if summary is None:
-        raise SystemExit(1)
-    default_type = profile.project_type if profile.project_type in PROJECT_TYPE_CHOICES else "backend-service"
-    project_type = questionary.select("项目类型", choices=PROJECT_TYPE_CHOICES, default=default_type).ask()
-    if project_type is None:
-        raise SystemExit(1)
-    sensitivity = questionary.select("敏感级别", choices=SENSITIVITY_CHOICES, default="standard").ask()
-    if sensitivity is None:
-        raise SystemExit(1)
-    has_prod_answer = questionary.select("是否已有生产环境", choices=["否", "是"], default="否").ask()
-    if has_prod_answer is None:
-        raise SystemExit(1)
-    has_production = has_prod_answer == "是"
 
+    default_type = profile.project_type if profile.project_type in PROJECT_TYPE_CHOICES else "backend-service"
+    collected: dict[str, str] = {}
+    step = 0
+
+    while step <= 4:
+        if step == 0:
+            val = questionary.text(
+                "项目名称",
+                default=collected.get("project_name", ""),
+                validate=lambda v: bool(v.strip()) or "不能为空",
+            ).ask()
+            if val is None:
+                raise SystemExit(1)
+            collected["project_name"] = val.strip()
+            step += 1
+
+        elif step == 1:
+            val = questionary.text(
+                "一句话目标",
+                default=collected.get("summary", ""),
+                validate=lambda v: bool(v.strip()) or "不能为空",
+            ).ask()
+            if val is None:
+                raise SystemExit(1)
+            collected["summary"] = val.strip()
+            step += 1
+
+        elif step == 2:
+            val = _ask_with_back(
+                "项目类型",
+                PROJECT_TYPE_CHOICES,
+                default=collected.get("project_type", default_type),
+            )
+            if val is None:
+                raise SystemExit(1)
+            if val == _BACK:
+                step -= 1
+                continue
+            collected["project_type"] = val
+            step += 1
+
+        elif step == 3:
+            val = _ask_with_back(
+                "敏感级别",
+                SENSITIVITY_CHOICES,
+                default=collected.get("sensitivity", "standard"),
+            )
+            if val is None:
+                raise SystemExit(1)
+            if val == _BACK:
+                step -= 1
+                continue
+            collected["sensitivity"] = val
+            step += 1
+
+        elif step == 4:
+            val = _ask_with_back(
+                "是否已有生产环境",
+                ["否", "是"],
+                default=collected.get("has_production_raw", "否"),
+            )
+            if val is None:
+                raise SystemExit(1)
+            if val == _BACK:
+                step -= 1
+                continue
+            collected["has_production_raw"] = val
+            step += 1
+
+    # -- 确认环节 --
+    while True:
+        console.print()
+        table = Table(show_header=False, box=None, padding=(0, 2))
+        table.add_column(style="dim")
+        table.add_column(style="cyan")
+        for i, label in enumerate(_STEP_LABELS):
+            if label == "生产环境":
+                table.add_row(f"[{i}] {label}", collected.get("has_production_raw", "否"))
+            else:
+                key = ["project_name", "summary", "project_type", "sensitivity"][i]
+                table.add_row(f"[{i}] {label}", str(collected.get(key, "")))
+        console.print(Panel(table, title="[bold]初始化配置[/bold]", border_style="blue"))
+
+        confirm_choices = ["✓ 确认继续"] + [f"修改 [{i}] {label}" for i, label in enumerate(_STEP_LABELS)]
+        choice = questionary.select("确认或修改", choices=confirm_choices).ask()
+        if choice is None:
+            raise SystemExit(1)
+        if choice.startswith("✓"):
+            break
+        # 跳回对应步骤
+        for i in range(len(_STEP_LABELS)):
+            if f"[{i}]" in choice:
+                step = i
+                break
+        # 只执行一步后回到确认
+        if step == 0:
+            val = questionary.text("项目名称", default=collected.get("project_name", ""), validate=lambda v: bool(v.strip()) or "不能为空").ask()
+            if val is not None:
+                collected["project_name"] = val.strip()
+        elif step == 1:
+            val = questionary.text("一句话目标", default=collected.get("summary", ""), validate=lambda v: bool(v.strip()) or "不能为空").ask()
+            if val is not None:
+                collected["summary"] = val.strip()
+        elif step == 2:
+            val = questionary.select("项目类型", choices=PROJECT_TYPE_CHOICES, default=collected.get("project_type", default_type)).ask()
+            if val is not None:
+                collected["project_type"] = val
+        elif step == 3:
+            val = questionary.select("敏感级别", choices=SENSITIVITY_CHOICES, default=collected.get("sensitivity", "standard")).ask()
+            if val is not None:
+                collected["sensitivity"] = val
+        elif step == 4:
+            val = questionary.select("是否已有生产环境", choices=["否", "是"], default=collected.get("has_production_raw", "否")).ask()
+            if val is not None:
+                collected["has_production_raw"] = val
+
+    # -- 组装 answers --
+    name = collected["project_name"]
+    slug = _slugify(name)
+    has_production = collected.get("has_production_raw") == "是"
     lang = profile.language or "unknown"
     lang_defs = LANGUAGE_DEFAULTS.get(lang, {})
 
     answers: dict[str, object] = {
         "project_name": name,
         "project_slug": slug,
-        "summary": summary,
-        "project_type": project_type,
-        "sensitivity": sensitivity,
+        "summary": collected["summary"],
+        "project_type": collected["project_type"],
+        "sensitivity": collected["sensitivity"],
         "has_production": has_production,
         "language": lang,
         "package_manager": _lang_default(lang_defs, "package_manager", profile.package_manager, slug),
