@@ -24,12 +24,12 @@
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
 
 ### 资源层
-- `templates/common/`：生成到目标项目的 Jinja2 模板（23 个 .tmpl 文件）。
+- `templates/common/`：生成到目标项目的模板（24 个 .tmpl 文件）。含 `.claude/commands/process-notes.md.tmpl`（需求笔记处理 skill）和 `notes/.gitkeep`。
 - `presets/`：8 种项目类型的 JSON 预设。
 - `scripts/check_repo.py`：框架仓库守卫脚本。
 
 ### 测试层
-- `tests/`：64 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、新功能。
+- `tests/`：66 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、新功能。
 
 ## 约束
 
@@ -71,3 +71,4 @@ verify_upgrade() → 验证结果
 - 想增加新生成文件：先加模板，再补初始化测试和仓库自检。
 - 想增加新 CLI 命令：新建模块放 handler，cli.py 只注册子命令，更新 runbook。
 - 想增加新规则模板：放到 `templates/common/.claude/rules/`，加 paths frontmatter。
+- 想增加新 Claude Code 命令：放到 `templates/common/.claude/commands/`，文件名即命令名。
