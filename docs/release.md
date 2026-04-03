@@ -10,8 +10,8 @@
 4. `docs/runbook.md` 是否覆盖最新命令。
 5. `docs/product.md` 是否反映最新功能清单。
 6. `docs/architecture.md` 是否反映最新模块结构。
-7. `templates/common/` 是否仍然通用，没有带入样例业务。
-8. `presets/` 是否覆盖当前支持的 8 种项目类型。
+7. `src/agent_harness/templates/common/` 是否仍然通用，没有带入样例业务。
+8. `src/agent_harness/presets/` 是否覆盖当前支持的 8 种项目类型。
 9. 在临时目录里跑一次完整的 init + doctor + export + stats 验证。
 
 ## 发布动作

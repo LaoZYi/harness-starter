@@ -8,6 +8,6 @@
 2. 任务相关的 `docs/` 下文档
 3. 提交前看 `CONTRIBUTING.md`
 4. 涉及运行和排障时看 `docs/runbook.md`
-5. 改模板时看 `templates/common/`
+5. 改模板时看 `src/agent_harness/templates/common/`
 
 不要把新的长期规则只写在这里。

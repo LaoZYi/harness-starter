@@ -1,6 +1,6 @@
 # AGENTS
 
-把这个文件当成入口，不要把它写成百科全书。详细信息放到 `docs/`、`templates/` 和 `src/agent_harness/`。
+把这个文件当成入口，不要把它写成百科全书。详细信息放到 `docs/` 和 `src/agent_harness/`。
 
 ## 开始前先看什么
 
@@ -55,7 +55,7 @@ harness stats /path/to/repo
 - `src/agent_harness/assessment.py`：接入评估。
 - `src/agent_harness/upgrade.py`：升级规划和验证。
 - `src/agent_harness/initializer.py`：初始化主流程（含插件渲染）。
-- `templates/common/`：生成到目标项目的骨架文件（含 .claude/rules/）。
-- `presets/`：8 种项目类型预设。
+- `src/agent_harness/templates/common/`：生成到目标项目的骨架文件（含 .claude/rules/）。
+- `src/agent_harness/presets/`：8 种项目类型预设。
 - `tests/test_cli.py`：CLI 集成回归（64 个测试）。
 - `scripts/check_repo.py`：框架仓库守卫。

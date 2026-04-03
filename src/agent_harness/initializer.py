@@ -9,10 +9,17 @@ from .discovery import discover_project
 from .models import InitializationResult
 from .templating import materialize_templates
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-TEMPLATE_ROOT = REPO_ROOT / "templates" / "common"
-PRESET_ROOT = REPO_ROOT / "presets"
-FRAMEWORK_VERSION = (REPO_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+_PKG_DIR = Path(__file__).resolve().parent
+TEMPLATE_ROOT = _PKG_DIR / "templates" / "common"
+PRESET_ROOT = _PKG_DIR / "presets"
+FRAMEWORK_VERSION = (_PKG_DIR / "VERSION").read_text(encoding="utf-8").strip()
+
+if not TEMPLATE_ROOT.is_dir():
+    raise RuntimeError(
+        f"Template directory not found: {TEMPLATE_ROOT}\n"
+        "This usually means the package was installed without data files. "
+        "Reinstall with: pip install -e ."
+    )
 
 
 def _load_preset(project_type: str) -> dict[str, object]:
