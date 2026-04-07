@@ -1,0 +1,17 @@
+# 本地覆盖（不提交到 git）
+
+# 将此文件复制为 CLAUDE.local.md 后即可生效。
+# CLAUDE.local.md 的优先级高于 CLAUDE.md，适合放个人偏好和本地环境配置。
+# 此文件已加入 .gitignore，不会影响团队其他成员。
+
+# 示例：
+
+# ## 个人偏好
+# - 回复使用英文
+# - 代码注释使用英文
+# - 提交信息使用 conventional commits 格式
+
+# ## 本地环境
+# - 本地数据库地址：localhost:5432
+# - 本地运行命令：make dev
+# - 调试时使用 --verbose 标志

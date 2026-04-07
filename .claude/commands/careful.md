@@ -1,0 +1,105 @@
+# 安全护栏
+
+核心原则：**破坏性操作前必须停下来确认。没有例外。**
+
+当前项目：`Agent Harness Framework`（cli-tool / python）
+
+> 这是一个 RULES 文件。Agent 应内化这些检查规则，在每次执行命令前自动应用，
+> 而不是等用户手动调用 `/careful`。
+
+## 8 类危险操作
+
+### 1. 文件删除
+
+拦截命令：`rm -rf`、`rm -r`、`find ... -delete`、`shutil.rmtree`
+
+**内置例外**（以下目录的清理视为安全操作，无需确认）：
+- `node_modules/`、`.next/`、`dist/`、`build/`
+- `__pycache__/`、`.pytest_cache/`、`coverage/`
+- `.venv/`、`venv/`、`.tox/`
+- `*.pyc`、`*.pyo`
+
+除上述例外外，执行前必须**停下来**，告知用户：
+- 将要删除什么（路径和大致内容）
+- 是否可逆（是否在版本控制内）
+- 建议先 `ls` 确认目标
+
+### 2. 数据库操作
+
+拦截命令：`DROP TABLE`、`DROP DATABASE`、`TRUNCATE`、`DELETE FROM ... WHERE 1=1`、`ALTER TABLE ... DROP COLUMN`
+
+执行前必须确认：
+- 当前连接的是哪个数据库（生产 / 测试 / 本地）
+- 是否有备份
+- 影响的数据量
+
+### 3. 版本控制
+
+拦截命令：
+- `git push --force` / `git push -f`
+- `git reset --hard`
+- `git checkout .` / `git restore .`
+- `git clean -fd`
+- `git branch -D`（大写 D 强制删除）
+- `git rebase` 在公共分支上
+
+执行前必须确认：
+- 当前分支名和未提交的更改
+- 是否有远程副本
+- 操作是否可撤销
+
+### 4. 容器操作
+
+拦截命令：`docker rm -f`、`docker system prune -a`、`docker volume rm`
+
+确认要点：
+- 是否有运行中的容器或持久化数据
+- 是否影响其他服务
+
+### 5. Kubernetes 操作
+
+拦截命令：`kubectl delete`、`kubectl apply --force`、`helm uninstall`
+
+确认要点：
+- 当前 context 和 namespace（是否是生产集群）
+- 是否有副本或回滚策略
+
+### 6. 进程操作
+
+拦截命令：`kill -9`、`pkill`、`killall`
+
+确认要点：
+- 目标进程是什么，PID 是否正确
+- 是否影响数据完整性（如数据库进程）
+
+### 7. 基础设施操作
+
+拦截命令：`terraform destroy`、`aws s3 rm --recursive`、`aws ec2 terminate-instances`
+
+确认要点：
+- 当前环境（staging / production）
+- 资源是否可重建
+- 预估影响范围和恢复时间
+
+### 8. 权限操作
+
+拦截命令：`chmod 777`、`chmod -R`、`chown -R`
+
+确认要点：
+- 目标路径和当前权限
+- 777 几乎永远不应该用于生产环境
+- 建议使用最小权限原则
+
+## 确认流程
+
+当检测到上述操作时，按以下流程执行：
+
+1. **停下来** — 不要直接执行
+2. **说明** — 告诉用户你即将执行什么命令
+3. **解释** — 这个操作会产生什么后果
+4. **评估** — 操作是否可逆，如何恢复
+5. **等待** — 让用户明确确认后再执行
+
+## 一句话总结
+
+**任何无法撤销的操作，都值得多花 10 秒钟确认。**
