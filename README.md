@@ -160,7 +160,7 @@ harness stats /path/to/repo
 - `AGENTS.md` / `CLAUDE.md` / `CLAUDE.local.md.example` / `CONTRIBUTING.md`
 - `docs/`：product、architecture、workflow、runbook、release
 - `.claude/rules/`：safety、database、api、testing、autonomy、superpowers-workflow
-- `.claude/commands/`：20 个结构化工作流技能命令（见下方）
+- `.claude/commands/`：25 个结构化工作流技能命令（见下方）
 - `.agent-harness/`：project.json、current-task、task-log、lessons、init-summary
 - `.github/`：PR 模板、Issue 模板
 - `docs/superpowers/specs/`：设计文档和实现计划存放目录
@@ -182,6 +182,10 @@ harness stats /path/to/repo
 | 收尾 | `/git-commit`, `/finish-branch` | 结构化提交、分支收尾 |
 | 自主 | `/lfg` | 全自主流水线（一键串联全部阶段） |
 | 协作 | `/subagent-dev`, `/dispatch-agents` | 子代理开发、并行任务分发 |
+| 安全 | `/cso`, `/careful` | 安全审计（OWASP+STRIDE）、危险命令拦截 |
+| 质量 | `/health` | 代码质量仪表盘（0-10 综合评分） |
+| 回顾 | `/retro` | 工程回顾（git 历史分析） |
+| 文档 | `/doc-release` | 发布后文档同步 |
 | 管理 | `/todo`, `/use-superpowers` | 任务拆分管理、技能选择引导 |
 
 推荐工作流：`/ideate` → `/brainstorm` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound`

@@ -14,5 +14,5 @@
     "响应式适配：桌面和移动端均可正常使用",
     "数据持久化正常：刷新页面后状态不丢失（如适用）"
   ],
-  "workflow_skills_summary": "Web 应用重点技能：`/ideate`（交互创意探索）、`/brainstorm`（交互设计）、`/tdd`（组件测试）、`/multi-review`（UI 多角度审查）、`/compound`（前端经验沉淀）"
+  "workflow_skills_summary": "Web 应用重点技能：`/ideate`（交互创意探索）、`/brainstorm`（交互设计）、`/tdd`（组件测试）、`/health`（前端质量仪表盘）、`/multi-review`（UI 多角度审查）、`/compound`（经验沉淀）"
 }

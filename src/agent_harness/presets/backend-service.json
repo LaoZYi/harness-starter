@@ -14,5 +14,5 @@
     "数据持久化正确：写入后能读回、重启后不丢失",
     "日志输出关键操作和错误信息，便于排障"
   ],
-  "workflow_skills_summary": "后端服务重点技能：`/tdd`（API 契约测试）、`/debug`（系统性排障）、`/verify`（部署前验证）、`/multi-review`（接口变更多角度评审）、`/compound`（API 经验沉淀）"
+  "workflow_skills_summary": "后端服务重点技能：`/tdd`（API 契约测试）、`/debug`（系统性排障）、`/cso`（API 安全审计）、`/health`（质量仪表盘）、`/multi-review`（接口变更多角度评审）、`/compound`（经验沉淀）"
 }

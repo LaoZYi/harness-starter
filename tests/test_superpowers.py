@@ -34,6 +34,8 @@ _EXPECTED_COMMANDS = [
     # compound-engineering additions
     "ideate.md", "compound.md", "multi-review.md", "lfg.md",
     "git-commit.md", "todo.md",
+    # gstack additions
+    "cso.md", "retro.md", "doc-release.md", "health.md", "careful.md",
 ]
 
 
@@ -160,6 +162,7 @@ class SuperpowersDryRunTests(unittest.TestCase):
 
 
 _COMPOUND_COMMANDS = ["ideate.md", "compound.md", "multi-review.md", "lfg.md", "git-commit.md", "todo.md"]
+_GSTACK_COMMANDS = ["cso.md", "retro.md", "doc-release.md", "health.md", "careful.md"]
 
 
 class CompoundEngineeringTests(unittest.TestCase):
@@ -191,6 +194,40 @@ class CompoundEngineeringTests(unittest.TestCase):
             initialize_project(root, {**_BASE_ANSWERS})
             commands_dir = root / ".claude" / "commands"
             for cmd in _COMPOUND_COMMANDS:
+                path = commands_dir / cmd
+                content = path.read_text(encoding="utf-8")
+                unfilled = _PLACEHOLDER_RE.findall(content)
+                self.assertEqual(unfilled, [], f"Unfilled placeholders in {cmd}: {unfilled}")
+
+
+class GstackSkillsTests(unittest.TestCase):
+    def test_gstack_commands_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            commands_dir = root / ".claude" / "commands"
+            for cmd in _GSTACK_COMMANDS:
+                self.assertTrue(
+                    (commands_dir / cmd).exists(),
+                    f"Missing gstack command: {cmd}",
+                )
+
+    def test_workflow_rule_references_gstack_skills(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            rule = root / ".claude" / "rules" / "superpowers-workflow.md"
+            content = rule.read_text(encoding="utf-8")
+            self.assertIn("/cso", content)
+            self.assertIn("/health", content)
+            self.assertIn("/retro", content)
+
+    def test_no_unfilled_placeholders_in_gstack_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            commands_dir = root / ".claude" / "commands"
+            for cmd in _GSTACK_COMMANDS:
                 path = commands_dir / cmd
                 content = path.read_text(encoding="utf-8")
                 unfilled = _PLACEHOLDER_RE.findall(content)

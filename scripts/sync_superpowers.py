@@ -50,9 +50,21 @@ COMPOUND_SKILL_MAP: dict[str, str] = {
     "todo-create": "todo.md.tmpl",
 }
 
+GSTACK_REPO = "garrytan/gstack"
+
+# gstack upstream skill -> local template filename
+GSTACK_SKILL_MAP: dict[str, str] = {
+    "cso": "cso.md.tmpl",
+    "retro": "retro.md.tmpl",
+    "document-release": "doc-release.md.tmpl",
+    "health": "health.md.tmpl",
+    "careful": "careful.md.tmpl",
+}
+
 ALL_SKILL_MAPS: list[tuple[str, str, dict[str, str]]] = [
     (SUPERPOWERS_REPO, "skills/{name}/SKILL.md", SKILL_MAP),
     (COMPOUND_REPO, "plugins/compound-engineering/skills/{name}/SKILL.md", COMPOUND_SKILL_MAP),
+    (GSTACK_REPO, "{name}/SKILL.md", GSTACK_SKILL_MAP),
 ]
 
 
