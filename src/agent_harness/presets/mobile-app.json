@@ -13,5 +13,5 @@
     "交互响应流畅，无明显卡顿",
     "权限请求在需要时触发，拒绝后有合理降级"
   ],
-  "workflow_skills_summary": "移动应用重点技能：`/brainstorm`（交互设计）、`/tdd`（UI 组件测试）、`/use-worktrees`（多特性并行开发）"
+  "workflow_skills_summary": "移动应用重点技能：`/ideate`（交互创意探索）、`/brainstorm`（交互设计）、`/tdd`（UI 组件测试）、`/use-worktrees`（多特性并行开发）"
 }

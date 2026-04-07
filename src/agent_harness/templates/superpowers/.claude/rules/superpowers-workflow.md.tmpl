@@ -1,0 +1,65 @@
+# Superpowers 工作流
+
+本项目启用了 superpowers 结构化开发工作流。处理开发任务时，优先按以下流程使用技能命令。
+
+## 推荐工作流
+
+1. **构思阶段** — 运行 `/ideate` 多角度生成方案，或 `/brainstorm` 结构化设计对话
+2. **计划阶段** — 运行 `/write-plan` 编写实现计划（2-5 分钟粒度的任务）
+3. **执行阶段** — 运行 `/execute-plan` 按计划逐步实施，或 `/tdd` 进行测试驱动开发
+4. **验证阶段** — 运行 `/verify` 在告知用户"完成"之前做全面验证
+5. **评审阶段** — 运行 `/multi-review` 多人格评审，或 `/request-review` 准备评审请求
+6. **沉淀阶段** — 运行 `/compound` 提炼经验写入知识库
+
+> 想全自动完成？运行 `/lfg` 一键串联上述全部阶段。
+
+## 项目重点技能
+
+{{workflow_skills_summary}}
+
+## 所有可用技能
+
+| 命令 | 用途 |
+|------|------|
+| `/brainstorm` | 结构化头脑风暴，设计先行 |
+| `/write-plan` | 编写实现计划 |
+| `/tdd` | 测试驱动开发（RED-GREEN-REFACTOR） |
+| `/debug` | 系统性排障（根因优先） |
+| `/execute-plan` | 按计划逐步执行 |
+| `/subagent-dev` | 子代理协作开发 |
+| `/dispatch-agents` | 并行分发独立任务 |
+| `/request-review` | 请求代码评审 |
+| `/receive-review` | 处理评审反馈 |
+| `/use-worktrees` | Git worktree 隔离开发 |
+| `/finish-branch` | 完成开发分支 |
+| `/write-skill` | 编写新技能 |
+| `/verify` | 完成前验证 |
+| `/use-superpowers` | 选择合适的技能 |
+| `/ideate` | 多角度结构化构思 |
+| `/compound` | 完成后提炼经验到知识库 |
+| `/multi-review` | 多人格并行代码评审 |
+| `/lfg` | 全自主流水线（plan→work→review→compound） |
+| `/git-commit` | 结构化 git 提交 |
+| `/todo` | 结构化任务拆分和管理 |
+
+## 何时使用哪个技能
+
+- 需要探索方向和创意 → `/ideate`
+- 不确定从哪里开始 → `/use-superpowers` 或 `/brainstorm`
+- 任务复杂需要规划 → `/write-plan` → `/execute-plan`
+- 想全自动完成 → `/lfg`
+- 需要写新功能 → `/tdd`
+- 遇到 bug → `/debug`
+- 多个独立子任务 → `/dispatch-agents` 或 `/subagent-dev`
+- 实现完成 → `/verify` → `/multi-review`
+- 需要提交代码 → `/git-commit`
+- 任务完成想沉淀经验 → `/compound`
+- 分支工作完成 → `/finish-branch`
+
+## 核心原则
+
+1. **设计先于编码** — 不要跳过构思直接写代码
+2. **测试先于实现** — 先写失败测试，再写实现代码
+3. **根因先于修复** — 不要在不理解问题的情况下尝试修复
+4. **证据先于声明** — 不要在没有运行验证的情况下声称"完成"
+5. **知识要沉淀** — 每次解决问题后运行 `/compound` 记录经验，让下次更快

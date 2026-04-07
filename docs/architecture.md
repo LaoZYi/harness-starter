@@ -24,12 +24,14 @@
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
 
 ### 资源层
-- `src/agent_harness/templates/common/`：生成到目标项目的模板（29 个 .tmpl 文件）。含 `.claude/commands/process-notes.md.tmpl`（需求笔记处理 skill）、`.claude/rules/task-lifecycle.md.tmpl`（任务生命周期）、`.claude/rules/documentation-sync.md.tmpl`（文档同步）、`.claude/rules/error-attribution.md.tmpl`（错误归因）、`.claude/settings.json.tmpl`（SessionStart + PreToolUse hooks）和 `notes/.gitkeep`。
-- `src/agent_harness/presets/`：8 种项目类型的 JSON 预设。
+- `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、命令、文档、任务追踪等。
+- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（20 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）和 EveryInc/compound-engineering-plugin（6 个增强技能）。
+- `src/agent_harness/presets/`：8 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。
 - `scripts/check_repo.py`：框架仓库守卫脚本。
+- `scripts/sync_superpowers.py`：上游 skills 同步工具，支持双上游源。
 
 ### 测试层
-- `tests/`：66 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、新功能。
+- `tests/`：78 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、superpowers/compound 技能。
 
 ## 约束
 
@@ -50,7 +52,9 @@ assess_project() → AssessmentResult
      ↓
 prepare_initialization() → context dict (69 个模板变量)
      ↓
-materialize_templates() → 写入目标项目
+materialize_templates() → 写入目标项目（common 模板）
+     ↓
+materialize_templates() → 写入 superpowers 模板 (如果启用)
      ↓
 _materialize_plugins() → 渲染 .harness-plugins/ (如果存在)
      ↓
@@ -71,4 +75,4 @@ verify_upgrade() → 验证结果
 - 想增加新生成文件：先加模板，再补初始化测试和仓库自检。
 - 想增加新 CLI 命令：新建模块放 handler，cli.py 只注册子命令，更新 runbook。
 - 想增加新规则模板：放到 `src/agent_harness/templates/common/.claude/rules/`，加 paths frontmatter。
-- 想增加新 Claude Code 命令：放到 `src/agent_harness/templates/common/.claude/commands/`，文件名即命令名。
+- 想增加新 Claude Code 命令：放到 `src/agent_harness/templates/common/.claude/commands/`（通用）或 `src/agent_harness/templates/superpowers/.claude/commands/`（工作流技能），文件名即命令名。

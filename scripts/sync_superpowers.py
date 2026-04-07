@@ -1,4 +1,4 @@
-"""Sync superpowers skills from upstream obra/superpowers repository.
+"""Sync skills from upstream repositories (obra/superpowers + EveryInc/compound-engineering-plugin).
 
 Fetches latest SKILL.md files via GitHub API, caches them locally,
 and reports changes against the previous cached version.
@@ -19,7 +19,8 @@ CACHE_DIR = ROOT / ".superpowers-upstream" / "skills"
 VERSION_FILE = ROOT / ".superpowers-upstream" / "version.json"
 TEMPLATE_DIR = ROOT / "src" / "agent_harness" / "templates" / "superpowers" / ".claude" / "commands"
 
-REPO = "obra/superpowers"
+SUPERPOWERS_REPO = "obra/superpowers"
+COMPOUND_REPO = "EveryInc/compound-engineering-plugin"
 
 # upstream skill directory name -> local template filename
 SKILL_MAP: dict[str, str] = {
@@ -38,6 +39,21 @@ SKILL_MAP: dict[str, str] = {
     "verification-before-completion": "verify.md.tmpl",
     "using-superpowers": "use-superpowers.md.tmpl",
 }
+
+# compound-engineering upstream skill -> local template filename
+COMPOUND_SKILL_MAP: dict[str, str] = {
+    "ce-ideate": "ideate.md.tmpl",
+    "ce-compound": "compound.md.tmpl",
+    "ce-review": "multi-review.md.tmpl",
+    "lfg": "lfg.md.tmpl",
+    "git-commit": "git-commit.md.tmpl",
+    "todo-create": "todo.md.tmpl",
+}
+
+ALL_SKILL_MAPS: list[tuple[str, str, dict[str, str]]] = [
+    (SUPERPOWERS_REPO, "skills/{name}/SKILL.md", SKILL_MAP),
+    (COMPOUND_REPO, "plugins/compound-engineering/skills/{name}/SKILL.md", COMPOUND_SKILL_MAP),
+]
 
 
 def _fetch_json(url: str) -> dict:
@@ -66,20 +82,25 @@ def _gh_api(endpoint: str) -> str:
     return base64.b64decode(data["content"]).decode("utf-8")
 
 
-def _get_head_sha() -> str:
-    data = _fetch_json(f"repos/{REPO}/commits/main")
-    return data["sha"][:12]
+def _combined_skill_map() -> dict[str, str]:
+    """Merge all skill maps into one."""
+    combined: dict[str, str] = {}
+    combined.update(SKILL_MAP)
+    combined.update(COMPOUND_SKILL_MAP)
+    return combined
 
 
 def fetch_skills() -> dict[str, str]:
-    """Fetch all skill contents from upstream. Returns {skill_name: content}."""
+    """Fetch all skill contents from all upstream repos. Returns {skill_name: content}."""
     skills: dict[str, str] = {}
-    for skill_name in SKILL_MAP:
-        try:
-            content = _gh_api(f"repos/{REPO}/contents/skills/{skill_name}/SKILL.md")
-            skills[skill_name] = content
-        except RuntimeError as e:
-            print(f"  [WARN] 跳过 {skill_name}: {e}", file=sys.stderr)
+    for repo, path_tmpl, skill_map in ALL_SKILL_MAPS:
+        for skill_name in skill_map:
+            try:
+                path = path_tmpl.format(name=skill_name)
+                content = _gh_api(f"repos/{repo}/contents/{path}")
+                skills[skill_name] = content
+            except RuntimeError as e:
+                print(f"  [WARN] 跳过 {repo}/{skill_name}: {e}", file=sys.stderr)
     return skills
 
 
@@ -90,12 +111,11 @@ def save_cache(skills: dict[str, str]) -> None:
         skill_dir = CACHE_DIR / name
         skill_dir.mkdir(parents=True, exist_ok=True)
         (skill_dir / "SKILL.md").write_text(content, encoding="utf-8")
-    sha = _get_head_sha()
     VERSION_FILE.write_text(
         json.dumps({
-            "sha": sha,
             "date": datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC"),
             "skills": sorted(skills.keys()),
+            "repos": [r for r, _, _ in ALL_SKILL_MAPS],
         }, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
@@ -106,7 +126,8 @@ def load_cache() -> dict[str, str]:
     cached: dict[str, str] = {}
     if not CACHE_DIR.is_dir():
         return cached
-    for name in SKILL_MAP:
+    combined = _combined_skill_map()
+    for name in combined:
         path = CACHE_DIR / name / "SKILL.md"
         if path.exists():
             cached[name] = path.read_text(encoding="utf-8")
@@ -115,12 +136,13 @@ def load_cache() -> dict[str, str]:
 
 def report(old: dict[str, str], new: dict[str, str]) -> None:
     """Print sync status report."""
-    all_skills = sorted(set(list(old.keys()) + list(new.keys()) + list(SKILL_MAP.keys())))
+    combined = _combined_skill_map()
+    all_skills = sorted(set(list(old.keys()) + list(new.keys()) + list(combined.keys())))
     print(f"\n{'Skill':<40} {'状态':<12} {'本地模板'}")
     print("-" * 80)
     changes = 0
     for name in all_skills:
-        tmpl = SKILL_MAP.get(name, "???")
+        tmpl = combined.get(name, "???")
         has_local = (TEMPLATE_DIR / tmpl).exists() if tmpl != "???" else False
         if name in new and name not in old:
             status = "NEW"
@@ -140,7 +162,7 @@ def report(old: dict[str, str], new: dict[str, str]) -> None:
     print(f"\n共 {len(all_skills)} 个 skills，{changes} 个有变化。")
     if VERSION_FILE.exists():
         ver = json.loads(VERSION_FILE.read_text(encoding="utf-8"))
-        print(f"上游 commit: {ver.get('sha', '?')}  缓存时间: {ver.get('date', '?')}")
+        print(f"缓存时间: {ver.get('date', '?')}")
 
 
 def show_diff(skill_name: str, old: dict[str, str], new: dict[str, str]) -> None:
@@ -179,15 +201,25 @@ def main() -> None:
             print("缓存为空，请先运行一次完整同步。")
             sys.exit(1)
         print(f"正在拉取 {args.diff} 的最新版本...")
-        try:
-            new_content = _gh_api(f"repos/{REPO}/contents/skills/{args.diff}/SKILL.md")
-        except RuntimeError as e:
-            print(f"拉取失败: {e}", file=sys.stderr)
+        found = False
+        for repo, path_tmpl, skill_map in ALL_SKILL_MAPS:
+            if args.diff in skill_map:
+                try:
+                    path = path_tmpl.format(name=args.diff)
+                    new_content = _gh_api(f"repos/{repo}/contents/{path}")
+                    show_diff(args.diff, old, {args.diff: new_content})
+                    found = True
+                except RuntimeError as e:
+                    print(f"拉取失败: {e}", file=sys.stderr)
+                break
+        if not found:
+            print(f"未找到 skill: {args.diff}", file=sys.stderr)
             sys.exit(1)
-        show_diff(args.diff, old, {args.diff: new_content})
         return
 
-    print(f"正在从 {REPO} 拉取 {len(SKILL_MAP)} 个 skills...")
+    total = sum(len(m) for _, _, m in ALL_SKILL_MAPS)
+    repos = ", ".join(r for r, _, _ in ALL_SKILL_MAPS)
+    print(f"正在从 {repos} 拉取 {total} 个 skills...")
     new = fetch_skills()
     if not new:
         print("未能拉取任何 skill，请检查网络和 gh 认证。", file=sys.stderr)

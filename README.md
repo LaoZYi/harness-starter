@@ -159,9 +159,34 @@ harness stats /path/to/repo
 
 - `AGENTS.md` / `CLAUDE.md` / `CLAUDE.local.md.example` / `CONTRIBUTING.md`
 - `docs/`：product、architecture、workflow、runbook、release
-- `.claude/rules/`：safety、database、api、testing、autonomy
+- `.claude/rules/`：safety、database、api、testing、autonomy、superpowers-workflow
+- `.claude/commands/`：20 个结构化工作流技能命令（见下方）
 - `.agent-harness/`：project.json、current-task、task-log、lessons、init-summary
 - `.github/`：PR 模板、Issue 模板
+- `docs/superpowers/specs/`：设计文档和实现计划存放目录
+
+## 内置工作流技能（Superpowers）
+
+初始化时默认生成 20 个 Claude Code 命令，覆盖完整开发生命周期：
+
+| 阶段 | 命令 | 用途 |
+|------|------|------|
+| 构思 | `/ideate` | 多角度结构化构思，生成候选方案 |
+| 设计 | `/brainstorm` | 结构化头脑风暴，产出设计文档 |
+| 计划 | `/write-plan` | 编写 2-5 分钟粒度的实现计划 |
+| 执行 | `/tdd`, `/execute-plan` | 测试驱动开发、按计划逐步实施 |
+| 排障 | `/debug` | 4 阶段系统性排障（根因优先） |
+| 验证 | `/verify` | 完成前全面验证 |
+| 评审 | `/multi-review`, `/request-review` | 多人格并行评审、评审请求准备 |
+| 沉淀 | `/compound` | 提炼经验写入知识库 |
+| 收尾 | `/git-commit`, `/finish-branch` | 结构化提交、分支收尾 |
+| 自主 | `/lfg` | 全自主流水线（一键串联全部阶段） |
+| 协作 | `/subagent-dev`, `/dispatch-agents` | 子代理开发、并行任务分发 |
+| 管理 | `/todo`, `/use-superpowers` | 任务拆分管理、技能选择引导 |
+
+推荐工作流：`/ideate` → `/brainstorm` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound`
+
+不需要 superpowers 工作流？加 `--no-superpowers` 即可跳过。
 
 ## 配置自动发现
 

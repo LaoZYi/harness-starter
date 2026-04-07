@@ -13,5 +13,5 @@
     "有测试覆盖核心功能路径",
     "README 或 API 文档与实际行为一致"
   ],
-  "workflow_skills_summary": "库项目重点技能：`/tdd`（API 契约驱动）、`/write-plan`（API 设计）、`/request-review`（公开 API 评审）、`/finish-branch`（版本发布）"
+  "workflow_skills_summary": "库项目重点技能：`/tdd`（API 契约驱动）、`/write-plan`（API 设计）、`/multi-review`（公开 API 多角度评审）、`/finish-branch`（版本发布）"
 }

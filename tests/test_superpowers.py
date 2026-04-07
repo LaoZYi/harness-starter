@@ -31,6 +31,9 @@ _EXPECTED_COMMANDS = [
     "execute-plan.md", "subagent-dev.md", "dispatch-agents.md",
     "request-review.md", "receive-review.md", "use-worktrees.md",
     "finish-branch.md", "write-skill.md", "verify.md", "use-superpowers.md",
+    # compound-engineering additions
+    "ideate.md", "compound.md", "multi-review.md", "lfg.md",
+    "git-commit.md", "todo.md",
 ]
 
 
@@ -154,6 +157,44 @@ class SuperpowersDryRunTests(unittest.TestCase):
             sp_files = [f for f in result.written_files if "brainstorm" in f or "tdd" in f or "superpowers-workflow" in f]
             self.assertTrue(len(sp_files) >= 3, f"Expected superpowers files in dry run, got: {sp_files}")
             self.assertFalse((root / ".claude" / "commands" / "brainstorm.md").exists())
+
+
+_COMPOUND_COMMANDS = ["ideate.md", "compound.md", "multi-review.md", "lfg.md", "git-commit.md", "todo.md"]
+
+
+class CompoundEngineeringTests(unittest.TestCase):
+    def test_compound_commands_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            commands_dir = root / ".claude" / "commands"
+            for cmd in _COMPOUND_COMMANDS:
+                self.assertTrue(
+                    (commands_dir / cmd).exists(),
+                    f"Missing compound command: {cmd}",
+                )
+
+    def test_workflow_rule_references_compound_skills(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            rule = root / ".claude" / "rules" / "superpowers-workflow.md"
+            content = rule.read_text(encoding="utf-8")
+            self.assertIn("/ideate", content)
+            self.assertIn("/compound", content)
+            self.assertIn("/multi-review", content)
+            self.assertIn("/lfg", content)
+
+    def test_no_unfilled_placeholders_in_compound_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            commands_dir = root / ".claude" / "commands"
+            for cmd in _COMPOUND_COMMANDS:
+                path = commands_dir / cmd
+                content = path.read_text(encoding="utf-8")
+                unfilled = _PLACEHOLDER_RE.findall(content)
+                self.assertEqual(unfilled, [], f"Unfilled placeholders in {cmd}: {unfilled}")
 
 
 if __name__ == "__main__":
