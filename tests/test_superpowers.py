@@ -36,6 +36,8 @@ _EXPECTED_COMMANDS = [
     "git-commit.md", "todo.md",
     # gstack additions
     "cso.md", "retro.md", "doc-release.md", "health.md", "careful.md",
+    # knowledge management
+    "lint-lessons.md",
 ]
 
 
