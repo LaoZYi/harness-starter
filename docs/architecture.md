@@ -25,7 +25,7 @@
 
 ### 资源层
 - `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、命令、文档、任务追踪等。
-- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（25 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）和 garrytan/gstack（5 个运维技能）。
+- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（26 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）和 garrytan/gstack（5 个运维技能）。
 - `src/agent_harness/presets/`：8 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。
 - `scripts/check_repo.py`：框架仓库守卫脚本。
 - `scripts/sync_superpowers.py`：上游 skills 同步工具，支持双上游源。
