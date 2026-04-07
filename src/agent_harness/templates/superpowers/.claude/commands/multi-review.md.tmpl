@@ -152,3 +152,7 @@
 - 如果结论为 FAIL 或 PASS WITH CONDITIONS，提示用户修复后重新评审
 - `safe_auto` 类发现可以询问用户是否一键修复
 - `gated_auto` 类发现逐个展示修复方案等待确认
+
+## 外部评审集成
+
+如果项目安装了 [codex-plugin-cc](https://github.com/openai/codex-plugin-cc)，可以在本评审完成后运行 `/codex:review` 获取 Codex AI 的独立评审视角，作为交叉验证。两个不同 AI 的评审结果互补，能更全面地发现问题。
