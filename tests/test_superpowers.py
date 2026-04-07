@@ -236,5 +236,22 @@ class GstackSkillsTests(unittest.TestCase):
                 self.assertEqual(unfilled, [], f"Unfilled placeholders in {cmd}: {unfilled}")
 
 
+class DecisionTreeCompletenessTests(unittest.TestCase):
+    def test_use_superpowers_references_all_commands(self) -> None:
+        """Every command (except use-superpowers itself) should appear in the decision tree."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            content = (root / ".claude" / "commands" / "use-superpowers.md").read_text(encoding="utf-8")
+            for cmd in _EXPECTED_COMMANDS:
+                skill_name = "/" + cmd.removesuffix(".md")
+                if skill_name == "/use-superpowers":
+                    continue  # doesn't need to reference itself
+                self.assertIn(
+                    skill_name, content,
+                    f"use-superpowers.md does not reference {skill_name}",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

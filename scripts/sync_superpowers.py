@@ -97,8 +97,8 @@ def _gh_api(endpoint: str) -> str:
 def _combined_skill_map() -> dict[str, str]:
     """Merge all skill maps into one."""
     combined: dict[str, str] = {}
-    combined.update(SKILL_MAP)
-    combined.update(COMPOUND_SKILL_MAP)
+    for _, _, skill_map in ALL_SKILL_MAPS:
+        combined.update(skill_map)
     return combined
 
 
