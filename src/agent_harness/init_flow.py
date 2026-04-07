@@ -223,6 +223,7 @@ def interactive_init(target: Path, profile: object, config: dict[str, object]) -
     for ek in ("description", "features", "constraints", "done_criteria"):
         if ek in config:
             answers[ek] = config[ek]
+    answers["superpowers"] = config.get("superpowers", True)
 
     print_detected(answers)
     return answers
@@ -247,4 +248,5 @@ def non_interactive_init(
             answers[ek] = cv
         elif ek in config:
             answers[ek] = config[ek]
+    answers["superpowers"] = config.get("superpowers", True)
     return answers

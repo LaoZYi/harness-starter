@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from difflib import unified_diff
 from pathlib import Path
 
-from .initializer import TEMPLATE_ROOT, prepare_initialization
+from .initializer import SUPERPOWERS_ROOT, TEMPLATE_ROOT, prepare_initialization
 from .models import UpgradeExecutionResult, UpgradePlanResult
 from .templating import render_templates
 
@@ -56,7 +56,10 @@ def plan_upgrade(
 ) -> UpgradePlanResult:
     target_root = target_root.resolve()
     _, _, context = prepare_initialization(target_root, answers)
-    rendered = _filter_rendered(render_templates(TEMPLATE_ROOT, context), only_files)
+    rendered = render_templates(TEMPLATE_ROOT, context)
+    if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
+        rendered.update(render_templates(SUPERPOWERS_ROOT, context))
+    rendered = _filter_rendered(rendered, only_files)
 
     create_files: list[str] = []
     update_files: list[str] = []
@@ -121,7 +124,10 @@ def execute_upgrade(
         )
 
     _, _, context = prepare_initialization(target_root, answers)
-    rendered = _filter_rendered(render_templates(TEMPLATE_ROOT, context), only_files)
+    rendered = render_templates(TEMPLATE_ROOT, context)
+    if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
+        rendered.update(render_templates(SUPERPOWERS_ROOT, context))
+    rendered = _filter_rendered(rendered, only_files)
 
     backup_root: Path | None = None
     if plan.update_files:

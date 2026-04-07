@@ -11,5 +11,6 @@
     "所有受影响的包能独立构建通过",
     "跨包接口调用正常，无类型或版本不兼容",
     "共享配置变更对所有消费方生效"
-  ]
+  ],
+  "workflow_skills_summary": "Monorepo 重点技能：`/dispatch-agents`（多包并行任务）、`/write-plan`（跨包协调规划）、`/verify`（全包集成验证）"
 }

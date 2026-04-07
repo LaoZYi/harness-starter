@@ -2,7 +2,7 @@ PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 PACKAGE = src/agent_harness
 HARNESS = PYTHONPATH=src $(PYTHON) -m agent_harness
 
-.PHONY: test check ci assess upgrade-plan upgrade-apply init
+.PHONY: test check ci assess upgrade-plan upgrade-apply init sync-superpowers
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests -v
@@ -30,6 +30,9 @@ ifndef TARGET
 	$(error 请指定 TARGET，例如：make upgrade-apply TARGET=/path/to/repo)
 endif
 	$(HARNESS) upgrade apply "$(TARGET)" $(ARGS)
+
+sync-superpowers:
+	$(PYTHON) scripts/sync_superpowers.py
 
 init:
 ifndef TARGET

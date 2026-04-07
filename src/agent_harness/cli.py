@@ -115,6 +115,8 @@ def _cmd_init(args: argparse.Namespace) -> None:
         answers = interactive_init(target, profile, config)
     else:
         answers = non_interactive_init(args, profile, config, _resolve_answers)
+    if getattr(args, "no_superpowers", False):
+        answers["superpowers"] = False
     result = initialize_project(target, answers, force=args.force, dry_run=args.dry_run)
     print_init_result(result)
     if not result.dry_run:
@@ -201,6 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_p.add_argument("--features")
     init_p.add_argument("--constraints")
     init_p.add_argument("--done-criteria")
+    init_p.add_argument("--no-superpowers", action="store_true", help="不生成 superpowers 工作流文件")
     init_p.set_defaults(func=_cmd_init)
 
     upgrade_p = subs.add_parser("upgrade", help="升级 harness 文件")

@@ -11,6 +11,7 @@ from .templating import materialize_templates
 
 _PKG_DIR = Path(__file__).resolve().parent
 TEMPLATE_ROOT = _PKG_DIR / "templates" / "common"
+SUPERPOWERS_ROOT = _PKG_DIR / "templates" / "superpowers"
 PRESET_ROOT = _PKG_DIR / "presets"
 FRAMEWORK_VERSION = (_PKG_DIR / "VERSION").read_text(encoding="utf-8").strip()
 
@@ -166,6 +167,7 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
         "architecture_focus": str(preset["architecture_focus"]),
         "release_checks_bullets": _bullet_list(list(preset["release_checks"]), fallback="待补充发布检查项"),
         "workflow_notes": str(preset["workflow_notes"]),
+        "workflow_skills_summary": str(preset.get("workflow_skills_summary", "")),
         "project_name_json": _json_value(project_name),
         "project_slug_json": _json_value(project_slug),
         "project_summary_json": _json_value(summary),
@@ -208,6 +210,11 @@ def initialize_project(
         force=force,
         dry_run=dry_run,
     )
+
+    if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
+        sw, ss = materialize_templates(SUPERPOWERS_ROOT, target_root, context, force=force, dry_run=dry_run)
+        written.extend(sw)
+        skipped.extend(ss)
 
     plugin_root = target_root / ".harness-plugins"
     if plugin_root.is_dir():
