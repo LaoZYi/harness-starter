@@ -167,7 +167,7 @@ harness stats /path/to/repo
 
 ## 内置工作流技能（Superpowers）
 
-初始化时默认生成 20 个 Claude Code 命令，覆盖完整开发生命周期：
+初始化时默认生成 27 个 Claude Code 命令，覆盖完整开发生命周期：
 
 | 阶段 | 命令 | 用途 |
 |------|------|------|
