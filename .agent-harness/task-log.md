@@ -66,3 +66,26 @@
   - [x] 25 个技能文件命令从 auto-discovery 切换为 project.json 配置
   - [x] 3 条教训写入 lessons.md
 
+## 2026-04-08 进化集成：joelparkerhenderson/architecture-decision-record（Issue #7）
+
+- 需求：从 architecture-decision-record 吸收 ADR 方法论到框架，创建 `/adr` 技能
+- 做了什么：
+  - 新建 `/adr` 技能模板（MADR 格式，3 种模式：创建/查看/更新，含反合理化表）
+  - 新建 `docs/decisions/.gitkeep.tmpl` 目录占位符
+  - LFG 流水线 3 处集成：Phase 0 读 ADR、Phase 3 创建 ADR、Phase 9 更新状态
+  - 更新决策树、工作流规则、evolve 对比表
+  - 技能数 28 → 29，15+ 处文档数字同步
+  - 评审后补充 2 个测试断言（disabled 时 decisions 不存在、workflow rule 含 /adr）
+- 关键决策：
+  - ADR 目录放在 superpowers 模板下而非 common，保持 `--no-superpowers` 能完全关闭
+  - MADR 模板简化（去掉 Links 段），聚焦决策核心四要素
+  - LFG 集成点选择 Phase 0/3/9 而非单独阶段，避免流程膨胀
+- 改了：adr.md.tmpl(新建), .gitkeep.tmpl(新建), lfg.md.tmpl, superpowers-workflow.md.tmpl, use-superpowers.md.tmpl, evolve.md.tmpl, test_superpowers.py, README.md, CHANGELOG.md, docs/product.md, docs/architecture.md, docs/usage-guide.md, .agent-harness/project.json
+- 完成标准：
+  - [x] adr.md.tmpl 存在且占位符完整
+  - [x] LFG 阶段 0/3/9 含 ADR 集成点
+  - [x] 技能数 29 全部同步
+  - [x] 83 测试通过，make ci 全绿
+  - [x] dogfood 同步完成
+  - [x] GitHub Issue #7 待关闭
+

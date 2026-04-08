@@ -3,9 +3,9 @@
 铁律：**先有计划，再动手。没有例外。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`python -m unittest discover -s tests -v`
-检查命令：`python scripts/check_repo.py`
-启动命令：`PYTHONPATH=src python -m agent_harness.cli`
+测试命令：`make test`
+检查命令：`make check`
+启动命令：`harness`
 
 ---
 
@@ -49,6 +49,7 @@
 2. 读 `.agent-harness/task-log.md` 最近 10 条记录 — 了解项目最近做了什么
 3. 读 `docs/architecture.md` — 了解模块边界，避免在错误的位置写代码
 4. 读 `docs/product.md` — 了解现有功能，避免与已有功能冲突
+5. 读 `docs/decisions/` — 浏览已有架构决策记录（ADR），了解历史技术选型和约束
 
 如果在 `lessons.md` 中发现相关教训，**必须在计划中显式引用**，说明如何避免重蹈覆辙。
 
@@ -82,7 +83,7 @@
 ```
 
 1. 直接修改代码
-2. `python -m unittest discover -s tests -v` + `python scripts/check_repo.py` 验证
+2. `make test` + `make check` 验证
 3. `/git-commit` 提交
 4. 如有值得记录的发现 → `/compound`
 
@@ -96,7 +97,7 @@
 
 1. 在 `.agent-harness/current-task.md` 写 3-5 行简要计划
 2. `/tdd` 实施
-3. `python -m unittest discover -s tests -v` + `python scripts/check_repo.py` 验证
+3. `make test` + `make check` 验证
 4. **自检**：回头看验收标准，每条都满足了吗？
 5. `/git-commit` 提交
 6. `/compound` 沉淀（如果解决了值得记录的问题）
@@ -110,11 +111,11 @@
 1. 记录当前分支和 HEAD commit → 存入 `current-task.md`（用于回滚）
 2. **创建隔离环境**（完整通道必须，标准通道推荐）：
    - 创建新的工作分支（或 worktree）
-   - 运行 `python -m unittest discover -s tests -v` 确认基线测试通过
+   - 运行 `make test` 确认基线测试通过
    - 基线测试失败 → **🔴 停下来告诉用户**，不在有问题的基础上工作
 3. **记录质量基线**：
-   - 测试数量和通过率：`python -m unittest discover -s tests -v` 的输出
-   - 代码检查结果：`python scripts/check_repo.py` 的输出
+   - 测试数量和通过率：`make test` 的输出
+   - 代码检查结果：`make check` 的输出
    - 记录到 `current-task.md` 的 LFG 进度区
 
 > 用户可以说"不用 worktree"跳过隔离环境，直接在当前分支工作。
@@ -156,6 +157,7 @@
 1. 检查 `docs/superpowers/specs/` 是否已有适用的计划或规格
 2. **如果没有**：运行 `/write-plan` 生成计划
 3. **如果有**：阅读已有计划/规格，评估是否仍然适用
+4. **如果计划涉及架构选择**（技术选型、模式选择、关键设计决策）：运行 `/adr` 记录决策，ADR 存入 `docs/decisions/`
 
 #### 3.2 计划质量检查（必须通过才能继续）
 
@@ -206,7 +208,7 @@
    - 配置/迁移/文档 → `/execute-plan`（直接执行）
 2. **执行该步骤**
 3. **验证**：运行步骤中指定的验证命令
-4. **回归检查**：运行 `python -m unittest discover -s tests -v` 确认没有破坏已有功能
+4. **回归检查**：运行 `make test` 确认没有破坏已有功能
 5. **提交**：创建原子 commit，消息格式 `<type>(<scope>): <描述> [plan step N]`
 6. **更新进度**：在 `current-task.md` 中勾选该步骤
 
@@ -226,7 +228,7 @@
 
 1. **回顾验收标准**：每一条都满足了吗？逐条对照
 2. **回顾计划**：所有步骤都做了吗？有没有跳过的？
-3. **完整性检查**：`python -m unittest discover -s tests -v` 全部通过？`python scripts/check_repo.py` 没有新增警告？
+3. **完整性检查**：`make test` 全部通过？`make check` 没有新增警告？
 4. 如果发现遗漏 → 补做再继续，不要带着已知问题进入评审
 
 ---
@@ -254,7 +256,7 @@
 1. **分析根因**：不是直接改代码，先理解评审员为什么标记这个问题
 2. 按 P0 → P1 优先级修复
 3. 每个修复创建独立 commit：`fix: <问题描述> [review round N]`
-4. 运行 `python -m unittest discover -s tests -v` 确认修复没有引入新问题
+4. 运行 `make test` 确认修复没有引入新问题
 5. 重新运行 `/multi-review`
 6. PASS → 结束循环
 
@@ -285,8 +287,8 @@
 
 #### 7.1 技术验证
 
-1. `python -m unittest discover -s tests -v` — 全部测试通过
-2. `python scripts/check_repo.py` — 代码质量检查通过
+1. `make test` — 全部测试通过
+2. `make check` — 代码质量检查通过
 
 #### 7.2 验收标准核验
 
@@ -342,7 +344,14 @@
 - 修复循环中反复出现的模式（说明根因和预防方法）
 - 写入 `.agent-harness/lessons.md`
 
-#### 9.2 知识库健康检查
+#### 9.2 ADR 状态维护
+
+检查本次任务是否涉及架构决策记录：
+- 如果阶段 3 创建了新 ADR：确认状态是否应从 `Proposed` 更新为 `Accepted`
+- 如果本次变更影响了已有 ADR 的前提条件：标记该 ADR 为 `Deprecated` 或创建 superseding ADR
+- 如果没有涉及 ADR：跳过此步骤
+
+#### 9.3 知识库健康检查
 
 运行 `/lint-lessons` 对知识库做快速体检：
 - 新写入的条目是否与已有条目重复？如果是 → 合并

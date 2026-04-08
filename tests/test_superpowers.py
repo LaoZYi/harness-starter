@@ -36,6 +36,8 @@ _EXPECTED_COMMANDS = [
     "git-commit.md", "todo.md",
     # agent-skills absorption
     "spec.md",
+    # architecture-decision-record absorption
+    "adr.md",
     # gstack additions
     "cso.md", "retro.md", "doc-release.md", "health.md", "careful.md",
     # knowledge management
@@ -66,12 +68,19 @@ class SuperpowersDefaultEnabledTests(unittest.TestCase):
             content = rule.read_text(encoding="utf-8")
             self.assertIn("/brainstorm", content)
             self.assertIn("/tdd", content)
+            self.assertIn("/adr", content)
 
     def test_default_init_creates_specs_dir(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "project"
             initialize_project(root, {**_BASE_ANSWERS})
             self.assertTrue((root / "docs" / "superpowers" / "specs").is_dir())
+
+    def test_default_init_creates_decisions_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            self.assertTrue((root / "docs" / "decisions").is_dir())
 
 
 class SuperpowersDisabledTests(unittest.TestCase):
@@ -88,6 +97,10 @@ class SuperpowersDisabledTests(unittest.TestCase):
                 )
             self.assertFalse(
                 (root / ".claude" / "rules" / "superpowers-workflow.md").exists(),
+            )
+            self.assertFalse(
+                (root / "docs" / "decisions").exists(),
+                "docs/decisions/ should not exist when superpowers is disabled",
             )
 
     def test_disabled_still_has_common_files(self) -> None:

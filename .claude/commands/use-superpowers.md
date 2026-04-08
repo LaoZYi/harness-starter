@@ -35,6 +35,7 @@
 - `/ideate` —— 需要多角度探索方向和创意时
 - `/brainstorm` —— 不知道从哪里开始时
 - `/spec` —— 需求模糊，需要先明确规格和验收标准时
+- `/adr` —— 面临技术选型或架构模式选择时
 - `/write-plan` —— 任务复杂，需要拆解时
 - `/debug` —— 遇到 bug 或异常行为时
 - `/lfg` —— 想全自动完成一个完整任务时
@@ -78,6 +79,8 @@
   +-- 想全自动完成？ ------------> /lfg
   |
   +-- 需求模糊要先明确规格？ ------> /spec
+  |
+  +-- 面临架构决策要记录？ -------> /adr
   |
   +-- 任务复杂需要拆解？ ---------> /write-plan -> /execute-plan
   |
@@ -130,7 +133,7 @@
 4. `/use-worktrees` —— 创建隔离开发环境
 5. `/tdd` —— 测试驱动开发
 6. `/execute-plan` —— 按计划逐步实现
-7. `/verify` —— 运行 `python -m unittest discover -s tests -v` 和 `python scripts/check_repo.py` 验证
+7. `/verify` —— 运行 `make test` 和 `make check` 验证
 8. `/multi-review` —— 多角度代码评审
 9. `/compound` —— 沉淀经验到知识库
 10. `/finish-branch` —— 合并或推送分支
