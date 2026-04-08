@@ -819,6 +819,23 @@ python scripts/sync_superpowers.py --diff brainstorming
 
 ---
 
+## 自举（Dogfooding）
+
+框架对自身运行了 `harness init`，生成了完整的 `.agent-harness/` 和 `.claude/` 结构。开发框架本身时也可以使用 `/lfg`、`/tdd`、`/debug` 等技能。
+
+### 模板和产物同步
+
+当你修改了 `src/agent_harness/templates/` 下的模板文件后，框架自身的 `.claude/commands/` 和 `.claude/rules/` 需要同步更新：
+
+```bash
+# 同步（只更新 commands/rules/settings，不碰手写文档）
+make dogfood
+```
+
+不需要记住——`make ci` 会自动检测漂移。如果模板改了但没同步，CI 会报错并提示你运行 `make dogfood`。
+
+---
+
 ## 外部工具集成
 
 以下外部插件安装后可与本框架生成的项目配合使用：

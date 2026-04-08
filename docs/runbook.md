@@ -2,9 +2,11 @@
 
 ## 常用命令
 
-- `make check`：校验框架仓库结构、模板入口和 Python 语法。
-- `make test`：运行框架级回归测试。
+- `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
+- `make test`：运行框架级回归测试（82 个）。
 - `make ci`：串联 `check` 和 `test`。
+- `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
+- `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
 - `make assess TARGET=/path/to/repo`：探测目标项目并输出接入评估和建议。
 - `make upgrade-plan TARGET=/path/to/repo ARGS="..."`：预览升级会新增和改动哪些文件。
 - `make upgrade-apply TARGET=/path/to/repo ARGS="..."`：执行升级并自动备份被覆盖文件。
@@ -60,3 +62,5 @@ harness stats /path/to/repo
    在目标仓库中维护 `.harness.json`，之后 `harness init --non-interactive` 即可。
 5. 自动升级覆盖了本地自定义内容
    先到 `.agent-harness/backups/<timestamp>/` 找回旧文件，再决定如何合并。
+6. `make check` 报告"技能/规则模板已变更但生成产物未同步"
+   运行 `make dogfood` 同步框架自身的 `.claude/commands/` 和 `.claude/rules/`，然后重新提交。
