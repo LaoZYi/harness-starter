@@ -2,7 +2,7 @@
   "harness_version": "0.5.0",
   "project_name": "Agent Harness Framework",
   "project_slug": "agent-harness-framework",
-  "project_summary": "通用 AI agent 协作基础设施初始化框架，生成文档、规则、任务追踪和 26 个工作流技能命令",
+  "project_summary": "通用 AI agent 协作基础设施初始化框架，生成文档、规则、任务追踪和 27 个工作流技能命令",
   "project_type": "cli-tool",
   "language": "python",
   "package_manager": "pip",

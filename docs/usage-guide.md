@@ -270,7 +270,7 @@ project/
 | 命令 | 用途 | 来源 |
 |------|------|------|
 | `/compound` | 任务完成后提炼经验，写入 `.agent-harness/lessons.md`，自动去重 | compound |
-| `/lint-lessons` | 知识库健康检查：去重、矛盾检测、过时检测、覆盖度分析（0-10 评分） | karpathy |
+| `/lint-lessons` | 知识库健康检查：去重、矛盾检测、过时检测、覆盖度分析（0-10 评分） | 本地原创 |
 | `/git-commit` | 结构化提交（规范检测、逻辑分组、安全检查、智能暂存） | compound |
 | `/finish-branch` | 4 个选项：合并/PR/保留/丢弃，测试门禁 | superpowers |
 | `/doc-release` | 9 步发布后文档同步（diff 分析 → 逐文件审计 → 跨文档一致性） | gstack |

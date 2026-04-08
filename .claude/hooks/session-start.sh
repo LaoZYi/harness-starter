@@ -10,7 +10,7 @@ fi
 
 # 2. 检查 evolution 定时任务是否存在
 if [ -f .claude/scheduled_tasks.json ]; then
-  if grep -q "evolve" .claude/scheduled_tasks.json 2>/dev/null; then
+  if grep -q "/evolve" .claude/scheduled_tasks.json 2>/dev/null; then
     exit 0  # 定时任务存在，一切正常
   fi
 fi

@@ -98,6 +98,13 @@ jobs:
             echo "" >> /tmp/evolution-report.md
           done
 
+      - name: Ensure evolution label exists
+        if: steps.search.outputs.candidate_count > 0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "evolution" --color "0E8A16" --description "自动进化提案" 2>/dev/null || true
+
       - name: Create evolution report Issue
         if: steps.search.outputs.candidate_count > 0
         env:
@@ -112,25 +119,29 @@ jobs:
             exit 0
           fi
 
-          # 创建 Issue
+          # 构建 Issue body 到文件（避免 shell 注入）
+          cat /tmp/evolution-report.md > /tmp/issue-body.md
+          cat >> /tmp/issue-body.md << 'FOOTER'
+
+---
+
+## 如何实施
+
+对感兴趣的项目，在本地 Claude Code 中运行：
+
+```
+/lfg #<本Issue编号>
+```
+
+/lfg 会自动读取本 Issue 内容，进入进化集成模式，按框架规范完成分析、集成、测试和文档更新。
+
+*此 Issue 由 daily-evolution workflow 自动创建。*
+FOOTER
+
           gh issue create \
             --title "🧬 [Evolution] 每日进化报告 $DATE" \
             --label "evolution" \
-            --body "$(cat /tmp/evolution-report.md)
-
-          ---
-
-          ## 如何实施
-
-          对感兴趣的项目，在本地 Claude Code 中运行：
-
-          \`\`\`
-          /lfg #<本Issue编号>
-          \`\`\`
-
-          /lfg 会自动读取本 Issue 内容，进入进化集成模式，按框架规范完成分析、集成、测试和文档更新。
-
-          *此 Issue 由 daily-evolution workflow 自动创建。*"
+            --body-file /tmp/issue-body.md
 
       - name: No candidates found
         if: steps.search.outputs.candidate_count == 0

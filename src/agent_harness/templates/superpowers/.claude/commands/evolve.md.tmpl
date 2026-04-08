@@ -71,7 +71,7 @@ gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/de
 
 ### 2.2 独特性评估
 
-与本框架已有的 26 个技能逐一对比：
+与本框架已有的 27 个技能逐一对比：
 
 | 已有技能 | 是否覆盖 |
 |---------|---------|
@@ -81,18 +81,27 @@ gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/de
 | `/tdd` — 测试驱动开发 | ? |
 | `/debug` — 系统性排障 | ? |
 | `/execute-plan` — 按计划执行 | ? |
+| `/subagent-dev` — 子代理协作开发 | ? |
+| `/dispatch-agents` — 并行任务分发 | ? |
+| `/use-worktrees` — Git worktree 隔离 | ? |
 | `/verify` — 完成前验证 | ? |
 | `/multi-review` — 多角度评审 | ? |
+| `/request-review` — 评审请求准备 | ? |
+| `/receive-review` — 评审反馈处理 | ? |
 | `/compound` — 知识沉淀 | ? |
+| `/lint-lessons` — 知识库维护 | ? |
 | `/cso` — 安全审计 | ? |
 | `/health` — 质量仪表盘 | ? |
-| `/lfg` — 全自主流水线 | ? |
-| `/retro` — 工程回顾 | ? |
-| `/doc-release` — 文档同步 | ? |
 | `/careful` — 安全拦截 | ? |
-| `/lint-lessons` — 知识库维护 | ? |
+| `/git-commit` — 结构化提交 | ? |
+| `/finish-branch` — 分支收尾 | ? |
+| `/todo` — 任务管理 | ? |
+| `/doc-release` — 文档同步 | ? |
+| `/retro` — 工程回顾 | ? |
+| `/lfg` — 全自主流水线 | ? |
+| `/write-skill` — 编写新技能 | ? |
+| `/use-superpowers` — 技能选择引导 | ? |
 | `/evolve` — 自我进化 | ? |
-| 其他（git-commit/finish-branch/todo 等） | ? |
 
 **关键问题**：这个项目提供了什么我们**没有**的独特能力？
 

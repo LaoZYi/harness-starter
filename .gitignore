@@ -8,3 +8,5 @@ build/
 *.egg-info/
 .claude/
 .superpowers-upstream/
+.agent-harness/backups/
+.agent-harness/upgrade-changelog.md
