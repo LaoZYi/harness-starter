@@ -302,6 +302,8 @@ project/
     ↓
 /brainstorm      → 深入设计对话，产出设计文档
     ↓
+/spec            → 明确需求规格和验收标准（需求模糊时）
+    ↓
 /write-plan      → 编写实现计划（2-5 分钟粒度）
     ↓
 /tdd             → 测试驱动开发（先写测试，再写实现）
@@ -324,14 +326,14 @@ project/
 /lfg 实现用户登录功能，包含邮箱密码验证和 JWT token 生成
 ```
 
-`/lfg` 会自动串联：计划 → 实施 → 评审 → 修复 → 验证 → 知识沉淀 → 收尾。
+`/lfg` 会自动串联：规格定义 → 计划 → 实施 → 评审 → 修复 → 验证 → 知识沉淀 → 收尾。
 
 ### 懒人入口
 
 如果你不想记 28 个命令，**只记两个**：
 
 - **`/use-superpowers`** — 告诉 AI 你要做什么，它会自动推荐合适的技能
-- **`/lfg`** — 一键全自动完成（plan → implement → review → fix → verify → compound）
+- **`/lfg`** — 一键全自动完成（spec → plan → implement → review → fix → verify → compound）
 
 下面的决策指南帮你理解每个阶段多个命令之间的关系，但日常使用不需要背诵。
 
@@ -350,6 +352,18 @@ project/
 | "需求很明确，不需要讨论" | 跳过，直接下一步 | |
 
 典型组合：先 `/ideate` 选方向 → 再 `/brainstorm` 做设计。小任务可以直接 `/brainstorm` 或跳过。
+
+#### 第一步半：明确需求规格
+
+> **类比**：`/spec` 是在开工前签的需求确认书。
+
+| 情况 | 用什么 | 为什么 |
+|------|--------|--------|
+| "需求来自非技术人员，比较模糊" | `/spec` | 将模糊描述转为可测试的验收标准 |
+| "跨模块改动，涉及 3+ 个文件" | `/spec` | 先明确目标、边界和测试策略 |
+| "需求很清楚，已有明确验收标准" | 跳过，直接制定计划 | |
+
+典型组合：`/brainstorm` 做设计 → `/spec` 定义验收标准 → `/write-plan` 制定计划。
 
 #### 第二步：制定计划
 
@@ -439,12 +453,13 @@ project/
  │                                                          │
  │  ┌──────────── 想全自动？ → /lfg ──────────────────┐    │
  │  │                                                  │    │
- │  │   构思 ──→ 计划 ──→ 执行 ──→ 验证 ──→ 收尾      │    │
- │  │    │        │        │        │        │         │    │
- │  │  ideate   write-   tdd     verify   git-commit   │    │
- │  │  brain-   plan     debug   multi-   compound     │    │
- │  │  storm    todo     exec-   review   finish-      │    │
- │  │                    plan             branch       │    │
+ │  │   构思 ──→ 规格 ──→ 计划 ──→ 执行 ──→ 验证 ──→ 收尾   │    │
+ │  │    │       │        │        │        │        │      │    │
+ │  │  ideate   spec    write-   tdd     verify   git-     │    │
+ │  │  brain-            plan     debug   multi-   commit   │    │
+ │  │  storm             todo     exec-   review   compound│    │
+ │  │                             plan             finish-  │    │
+ │  │                                              branch   │    │
  │  │                    sub-             doc-release   │    │
  │  │                    agent            retro        │    │
  │  │                    dispatch                      │    │
@@ -461,8 +476,8 @@ project/
 |------|---------|---------|
 | **微小** — 改一行配置、修个 typo | < 5 分钟 | 直接改 → `/git-commit` |
 | **小** — 修一个 bug、加一个字段 | 5-30 分钟 | `/tdd` → `/verify` → `/git-commit` |
-| **中** — 新增一个功能模块 | 30 分钟-2 小时 | `/brainstorm` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound` → `/finish-branch` |
-| **大** — 重构、新系统、多模块联动 | 半天以上 | `/ideate` → `/brainstorm` → `/write-plan` → `/lfg`（或手动走全流程） |
+| **中** — 新增一个功能模块 | 30 分钟-2 小时 | `/brainstorm` → `/spec` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound` → `/finish-branch` |
+| **大** — 重构、新系统、多模块联动 | 半天以上 | `/ideate` → `/brainstorm` → `/spec` → `/write-plan` → `/lfg`（或手动走全流程） |
 | **不确定** | ? | `/use-superpowers` 让 AI 推荐 |
 
 ---

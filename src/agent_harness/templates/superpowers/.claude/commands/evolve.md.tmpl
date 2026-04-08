@@ -71,13 +71,15 @@ gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/de
 从已关闭的 `evolution` Issue 中提取吸收过的项目，检查它们是否有值得再次评估的新特性：
 
 ```bash
-# 提取已吸收项目的 GitHub 链接
-gh issue list --label evolution --state closed --json body --limit 50 \
+# 提取已吸收项目的 GitHub 链接（去除 .git 后缀，排除非仓库 URL）
+gh issue list --label evolution --state closed --json body --limit 500 \
   | python3 -c "
 import sys, json, re
 for i in json.load(sys.stdin):
-    urls = re.findall(r'https://github\.com/[\w-]+/[\w.-]+', i.get('body',''))
-    for u in urls: print(u)
+    for u in re.findall(r'https://github\.com/[\w-]+/[\w.-]+', i.get('body','')):
+        u = re.sub(r'\.git$', '', u)  # 去除 .git 后缀
+        if u.count('/') == 4:  # 确保是 github.com/owner/repo 格式
+            print(u)
 " | sort -u
 ```
 
@@ -90,7 +92,7 @@ gh api repos/<owner>/<repo>/commits --jq '.[0:10] | .[] | "\(.commit.author.date
 gh api repos/<owner>/<repo>/releases/latest --jq '.tag_name + " " + .published_at' 2>/dev/null
 ```
 
-**判断标准**：如果发现以下情况，创建 `evolution-update` 标签的 Issue（不是 `evolution`）：
+**判断标准**：如果发现以下情况，创建 `evolution-update` 标签的 Issue：
 
 - 新增了我们尚未吸收的技能/模块
 - 对已吸收的技能有重大方法论更新
@@ -98,21 +100,46 @@ gh api repos/<owner>/<repo>/releases/latest --jq '.tag_name + " " + .published_a
 
 > 注意：已吸收项目的**重复能力**不需要再次提案，只关注**新增的、我们没有的**能力。
 
+**`evolution-update` Issue 内容格式**：
+
+```markdown
+## 项目更新
+
+- **链接**：<GitHub URL>
+- **原始吸收 Issue**：#<原 evolution Issue 编号>
+- **检测日期**：<YYYY-MM-DD>
+
+## 发现的新特性
+
+### 新特性 1：<名称>
+- **什么变了**：<对比上次吸收时的差异>
+- **我们是否需要**：<对比现有技能，是否填补空白>
+- **建议操作**：吸收 / 参考 / 跳过
+
+## 近期更新摘要
+
+<最近 10 条 commit 或最新 release 的要点>
+
+*此 Issue 由 /evolve 步骤 1.5 自动创建。审批后可通过 `/lfg` 实施更新集成。*
+```
+
+创建流程与 `evolution` Issue 一致（GitHub + GitLab 双向同步）。
+
 ### 1.6 已处理项目去重
 
 在评估新发现的候选项目之前，先拉取所有（open + closed）带 `evolution` 或 `evolution-update` 标签的 Issue：
 
 ```bash
-gh issue list --label evolution --state all --json title,body,state --limit 100 \
+gh issue list --label evolution --state all --json title,body,state --limit 500 \
   | python3 -c "import sys,json; [print(i['state'], i['title']) for i in json.load(sys.stdin)]"
-gh issue list --label evolution-update --state all --json title,body,state --limit 100 \
+gh issue list --label evolution-update --state all --json title,body,state --limit 500 \
   | python3 -c "import sys,json; [print(i['state'], i['title']) for i in json.load(sys.stdin)]"
 ```
 
 **去重规则**：
 - `evolution` Issue 中出现过的项目 → **排除**（不创建新的 `evolution` 提案）
 - 但步骤 1.5 仍会检查这些项目的更新（可能创建 `evolution-update` 提案）
-- `evolution-update` Issue 中的项目 → 如果还是 open 状态则跳过，closed 状态则允许再次检查更新
+- `evolution-update` Issue 中的项目 → 如果是 **open 且创建超过 30 天**，视为过期，关闭后允许重新检查；如果是 open 且不到 30 天，跳过
 
 ### 1.7 初筛条件
 
@@ -320,6 +347,12 @@ Issue body 必须包含以下所有章节，每个章节都要展开写，不能
 - superpowers: <最近更新摘要或"无新变化">
 - compound-engineering: <最近更新摘要或"无新变化">
 - gstack: <最近更新摘要或"无新变化">
+
+### 已吸收项目更新（步骤 1.5）
+
+| 项目 | 上次吸收 | 新变化 | 操作 |
+|------|---------|--------|------|
+| <name> | #<原Issue> | <新特性摘要或"无新变化"> | evolution-update / 无需操作 |
 ```
 
 ---
