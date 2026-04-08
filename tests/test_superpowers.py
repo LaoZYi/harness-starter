@@ -38,6 +38,8 @@ _EXPECTED_COMMANDS = [
     "cso.md", "retro.md", "doc-release.md", "health.md", "careful.md",
     # knowledge management
     "lint-lessons.md",
+    # self-evolution
+    "evolve.md",
 ]
 
 

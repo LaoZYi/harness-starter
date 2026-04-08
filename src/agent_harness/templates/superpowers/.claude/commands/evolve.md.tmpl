@@ -1,0 +1,202 @@
+# 自我进化：搜索、评估、提案
+
+自动搜索 AI 编码工具领域的新项目和实践，评估是否值得吸收到本框架，合格的创建 GitHub Issue 提案等待人工审批。
+
+当前项目：`{{project_name}}`（{{project_type}} / {{language}}）
+
+---
+
+## 第 1 步：搜索新项目
+
+### 1.1 GitHub 搜索
+
+执行以下搜索（用 `gh search repos` 或 WebSearch），寻找最近 30 天内活跃的相关项目：
+
+```bash
+# AI 编码工具和插件
+gh search repos "claude code plugin" --sort updated --limit 20
+gh search repos "ai coding agent skills" --sort stars --limit 20
+gh search repos "llm development workflow" --sort updated --limit 20
+gh search repos "ai pair programming tool" --sort stars --limit 20
+gh search repos "claude code slash command" --sort updated --limit 20
+gh search repos "coding agent framework" --sort stars --limit 20
+```
+
+### 1.2 Web 搜索
+
+用 WebSearch 搜索最新的文章和实践：
+
+- "best ai coding tools 2026"
+- "claude code plugin new"
+- "ai agent engineering workflow"
+- "LLM software development methodology"
+
+### 1.3 监控已知上游
+
+检查已跟踪的 3 个上游仓库是否有新的技能发布：
+
+```bash
+# 检查 superpowers 最近 commit
+gh api repos/obra/superpowers/commits --jq '.[0:5] | .[] | .commit.message' 2>/dev/null
+
+# 检查 compound-engineering 最近 commit
+gh api repos/EveryInc/compound-engineering-plugin/commits --jq '.[0:5] | .[] | .commit.message' 2>/dev/null
+
+# 检查 gstack 最近 commit
+gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/dev/null
+```
+
+### 1.4 初筛条件
+
+从搜索结果中筛选，保留满足以下条件的项目：
+
+- Star ≥ 50（有一定社区认可）
+- 最近 30 天内有更新（活跃维护）
+- 非 fork（原创项目）
+- 与 AI 编码工具/方法论/工作流相关
+- 不是已跟踪的 3 个上游仓库
+
+---
+
+## 第 2 步：深度评估
+
+对每个通过初筛的项目，读取其 README 和核心文件，回答以下问题：
+
+### 2.1 基本信息
+
+- 项目名称和链接
+- 核心功能（一句话）
+- 技术栈
+- Star 数和活跃度
+
+### 2.2 独特性评估
+
+与本框架已有的 26 个技能逐一对比：
+
+| 已有技能 | 是否覆盖 |
+|---------|---------|
+| `/ideate` — 结构化构思 | ? |
+| `/brainstorm` — 设计对话 | ? |
+| `/write-plan` — 实施计划 | ? |
+| `/tdd` — 测试驱动开发 | ? |
+| `/debug` — 系统性排障 | ? |
+| `/execute-plan` — 按计划执行 | ? |
+| `/verify` — 完成前验证 | ? |
+| `/multi-review` — 多角度评审 | ? |
+| `/compound` — 知识沉淀 | ? |
+| `/cso` — 安全审计 | ? |
+| `/health` — 质量仪表盘 | ? |
+| `/lfg` — 全自主流水线 | ? |
+| `/retro` — 工程回顾 | ? |
+| `/doc-release` — 文档同步 | ? |
+| `/careful` — 安全拦截 | ? |
+| `/lint-lessons` — 知识库维护 | ? |
+| `/evolve` — 自我进化 | ? |
+| 其他（git-commit/finish-branch/todo 等） | ? |
+
+**关键问题**：这个项目提供了什么我们**没有**的独特能力？
+
+### 2.3 可行性评估
+
+| 维度 | 评估 |
+|------|------|
+| 可模板化？ | 纯方法论（Markdown 可表达）还是需要运行时代码？ |
+| 依赖？ | 零依赖 / 需要安装外部工具 / 需要 API key？ |
+| 通用性？ | 适用于所有项目类型，还是只适用于特定语言/框架？ |
+| 与 `/lfg` 兼容？ | 能嵌入到 LFG 的哪个阶段？ |
+
+### 2.4 评估结论
+
+每个项目产出一个结论：
+
+- **吸收** — 有独特价值，可模板化，建议集成
+- **参考** — 有启发但不适合直接集成（如只加一行引用）
+- **跳过** — 已覆盖、不可模板化、或价值不足
+
+---
+
+## 第 3 步：创建提案 Issue
+
+对每个结论为"吸收"的项目，创建一个 GitHub Issue：
+
+```bash
+gh issue create \
+  --title "🧬 [Evolution] 发现可吸收项目：<项目名>" \
+  --label "evolution" \
+  --body "$(cat <<'ISSUE_EOF'
+## 项目信息
+
+- **链接**：<GitHub URL>
+- **Star**：<数量>
+- **核心能力**：<一句话描述>
+- **技术栈**：<语言/框架>
+
+## 独特价值
+
+<这个项目提供了什么我们目前没有的能力？具体列出 1-3 个>
+
+## 建议吸收的技能
+
+| 新技能名 | 对应源项目功能 | 嵌入 /lfg 的阶段 |
+|---------|-------------|-----------------|
+| `/xxx` | <功能描述> | <阶段 N> |
+
+## 可行性
+
+- 可模板化：是/否
+- 外部依赖：无/需要 xxx
+- 通用性：所有项目/仅 xxx 类型
+
+## 风险
+
+<可能的问题或注意事项>
+
+## 实施建议
+
+<用 /lfg 实施时的注意事项>
+
+---
+*此 Issue 由 /evolve 自动创建。审批后可通过 /lfg 实施集成。*
+ISSUE_EOF
+)"
+```
+
+对结论为"参考"的项目，同样创建 Issue 但标签为 `evolution-reference`，降低优先级。
+
+---
+
+## 第 4 步：输出汇总
+
+完成搜索和评估后，输出今日进化报告：
+
+```
+## 🧬 进化报告 (YYYY-MM-DD)
+
+搜索范围：GitHub + Web
+候选项目：<N> 个
+通过初筛：<N> 个
+深度评估：<N> 个
+
+### 结果
+
+| 项目 | Star | 结论 | Issue |
+|------|------|------|-------|
+| <name> | <N> | 吸收 | #<issue_id> |
+| <name> | <N> | 参考 | #<issue_id> |
+| <name> | <N> | 跳过 | — |
+
+### 上游动态
+
+- superpowers: <最近更新摘要或"无新变化">
+- compound-engineering: <最近更新摘要或"无新变化">
+- gstack: <最近更新摘要或"无新变化">
+```
+
+---
+
+## 注意事项
+
+- **不要自动实施任何集成**。`/evolve` 只搜索、评估和提案，不写代码
+- **不要创建重复 Issue**。搜索现有 Issue 确认没有同一项目的提案
+- **控制 Issue 数量**。每天最多创建 3 个"吸收"提案，避免信息过载
+- **标记搜索日期**。在 Issue 中注明发现日期，方便追踪新鲜度

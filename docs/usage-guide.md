@@ -219,9 +219,9 @@ project/
 
 ---
 
-## 26 个工作流技能命令
+## 27 个工作流技能命令
 
-初始化后，项目中会生成 26 个 Claude Code 斜杠命令，覆盖完整开发生命周期。
+初始化后，项目中会生成 27 个 Claude Code 斜杠命令，覆盖完整开发生命周期。
 
 ### 构思与设计
 
@@ -281,6 +281,7 @@ project/
 | 命令 | 用途 | 来源 |
 |------|------|------|
 | `/lfg` | 全自主流水线：plan → implement → review → fix → verify → compound → lint | compound |
+| `/evolve` | 自动搜索新项目 → 评估独特性 → 创建 Issue 提案 | 本地原创 |
 | `/use-superpowers` | 技能选择引导，1% 法则决策树 | superpowers |
 | `/write-skill` | 用 TDD 方法论编写新技能 | superpowers |
 
@@ -833,6 +834,50 @@ make dogfood
 ```
 
 不需要记住——`make ci` 会自动检测漂移。如果模板改了但没同步，CI 会报错并提示你运行 `make dogfood`。
+
+---
+
+## 自我进化
+
+框架通过 `/evolve` 命令实现自我迭代：每天自动搜索 AI 编码工具领域的新项目，评估是否值得吸收，合格的创建 GitHub Issue 提案。
+
+### 工作流
+
+```
+每天自动触发 /evolve
+    ↓
+搜索 GitHub + Web（AI coding tools 关键词）
+    ↓
+初筛（star≥50、近30天更新、非fork）
+    ↓
+深度评估（vs 已有 27 个技能，找独特能力）
+    ↓
+创建 Issue 提案（标签 evolution）
+    ↓
+你审批 approve / reject
+    ↓ (approved)
+/lfg 实施集成
+```
+
+### 手动运行
+
+```
+/evolve
+```
+
+### 自动触发
+
+通过 Claude Code remote trigger 每天自动执行。查看当前触发器：
+
+```
+查看 Claude Code 中的 scheduled triggers
+```
+
+### 提案 Issue 格式
+
+每个提案包含：项目链接、Star 数、核心能力、独特价值、建议吸收的技能、可行性评估、风险分析。
+
+你只需要在 Issue 里回复 approve 或 reject。approve 后用 `/lfg` 实施集成。
 
 ---
 
