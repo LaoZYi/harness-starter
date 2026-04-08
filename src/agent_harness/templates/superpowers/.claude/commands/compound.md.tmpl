@@ -126,6 +126,10 @@ cat .agent-harness/lessons.md 2>/dev/null | grep -i "<关键词>"
 操作类型：新建 / 更新已有条目
 ```
 
+## ADR 联动
+
+如果 `docs/decisions/` 目录下有架构决策记录，检查本次任务是否影响了已有 ADR 的前提条件。如果是，运行 `/adr` 更新相关 ADR 的状态（Proposed → Accepted，或标记为 Deprecated）。
+
 ## 关键约束
 
 - **先查重再写入** —— 跳过第 3 步等于制造知识噪音

@@ -2,6 +2,10 @@
 
 Fetches latest SKILL.md files via GitHub API, caches them locally,
 and reports changes against the previous cached version.
+
+Note: absorbed projects (addyosmani/agent-skills, joelparkerhenderson/architecture-decision-record)
+are NOT tracked here — their upstream changes are monitored by /evolve step 1.5 instead,
+which reads from closed GitHub Issues with the 'evolution' label.
 """
 from __future__ import annotations
 

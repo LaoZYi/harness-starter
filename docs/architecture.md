@@ -32,7 +32,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：83 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、superpowers/compound/gstack 技能和决策树完整性。
+- `tests/`：87 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、superpowers/compound/gstack 技能和决策树完整性。
 
 ## 约束
 

@@ -253,6 +253,51 @@ class GstackSkillsTests(unittest.TestCase):
                 self.assertEqual(unfilled, [], f"Unfilled placeholders in {cmd}: {unfilled}")
 
 
+_ADR_COMMANDS = ["adr.md"]
+
+
+class ArchitectureDecisionRecordTests(unittest.TestCase):
+    def test_adr_command_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            commands_dir = root / ".claude" / "commands"
+            for cmd in _ADR_COMMANDS:
+                self.assertTrue(
+                    (commands_dir / cmd).exists(),
+                    f"Missing ADR command: {cmd}",
+                )
+
+    def test_adr_content_has_madr_structure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            content = (root / ".claude" / "commands" / "adr.md").read_text(encoding="utf-8")
+            self.assertIn("MADR", content)
+            self.assertIn("Proposed", content)
+            self.assertIn("Accepted", content)
+            self.assertIn("Superseded", content)
+            self.assertIn("docs/decisions/", content)
+
+    def test_adr_references_collaboration_skills(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            content = (root / ".claude" / "commands" / "adr.md").read_text(encoding="utf-8")
+            self.assertIn("/write-plan", content)
+            self.assertIn("/compound", content)
+            self.assertIn("/brainstorm", content)
+            self.assertIn("/lfg", content)
+
+    def test_no_unfilled_placeholders_in_adr_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            content = (root / ".claude" / "commands" / "adr.md").read_text(encoding="utf-8")
+            unfilled = _PLACEHOLDER_RE.findall(content)
+            self.assertEqual(unfilled, [], f"Unfilled placeholders in adr.md: {unfilled}")
+
+
 class DecisionTreeCompletenessTests(unittest.TestCase):
     def test_use_superpowers_references_all_commands(self) -> None:
         """Every command (except use-superpowers itself) should appear in the decision tree."""

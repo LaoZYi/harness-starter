@@ -72,6 +72,8 @@ REQUIRED_FILES = [
     PKG / "templates" / "common" / ".agent-harness" / "task-log.md.tmpl",
     PKG / "templates" / "common" / ".agent-harness" / "init-summary.md.tmpl",
     PKG / "templates" / "common" / ".agent-harness" / "project.json.tmpl",
+    PKG / "templates" / "superpowers" / ".claude" / "commands" / "adr.md.tmpl",
+    PKG / "templates" / "superpowers" / "docs" / "decisions" / ".gitkeep.tmpl",
     PKG / "presets" / "backend-service.json",
     PKG / "presets" / "web-app.json",
     PKG / "presets" / "cli-tool.json",
