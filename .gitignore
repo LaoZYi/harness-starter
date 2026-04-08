@@ -7,6 +7,7 @@ dist/
 build/
 *.egg-info/
 .claude/
+!src/agent_harness/templates/**/.claude/
 .superpowers-upstream/
 .agent-harness/backups/
 .agent-harness/upgrade-changelog.md
