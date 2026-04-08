@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from agent_harness.initializer import SUPERPOWERS_ROOT, TEMPLATE_ROOT, prepare_initialization  # noqa: E402
 from agent_harness.templating import render_templates  # noqa: E402
 
-SYNC_PREFIXES = (".claude/commands/", ".claude/rules/", ".claude/settings.json")
+SYNC_PREFIXES = (".claude/commands/", ".claude/rules/", ".claude/hooks/", ".claude/settings.json")
 
 
 def main() -> None:

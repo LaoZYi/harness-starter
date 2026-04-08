@@ -198,7 +198,7 @@ def check_dogfood_drift() -> None:
     rendered = render_templates(TEMPLATE_ROOT, context)
     if SUPERPOWERS_ROOT.is_dir():
         rendered.update(render_templates(SUPERPOWERS_ROOT, context))
-    check_prefixes = (".claude/commands/", ".claude/rules/", ".claude/settings.json")
+    check_prefixes = (".claude/commands/", ".claude/rules/", ".claude/hooks/", ".claude/settings.json")
     drifted = []
     for rel_path, expected in rendered.items():
         if not any(rel_path.startswith(p) for p in check_prefixes):
