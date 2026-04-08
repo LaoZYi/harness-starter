@@ -3,8 +3,8 @@
 每一次解决问题都是知识积累的机会。核心原则：**第一次靠研究，记录下来，下一次只需几分钟。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`make test`
-检查命令：`make check`
+测试命令：`python -m unittest discover -s tests -v`
+检查命令：`python scripts/check_repo.py`
 
 ## 适用时机
 

@@ -19,8 +19,8 @@
 
 - 在 Agent Harness Framework 代码库中验证反馈提到的问题是否确实存在
 - 检查相关文件和调用链
-- 运行 `make test` 确认当前状态
-- 运行 `make check` 检查代码规范
+- 运行 `python -m unittest discover -s tests -v` 确认当前状态
+- 运行 `python scripts/check_repo.py` 检查代码规范
 
 ### 4. 评估合理性（EVALUATE）
 
@@ -46,7 +46,7 @@
 ### 6. 逐条实施（IMPLEMENT）
 
 - 一次只改一条反馈对应的内容
-- 每改完一条运行 `make test`
+- 每改完一条运行 `python -m unittest discover -s tests -v`
 - 确认不影响其他已通过的修复
 
 ## 禁止行为
@@ -76,7 +76,7 @@
 - 验证：[代码库中的发现]
 - 判断：接受 / 拒绝 / 需要讨论
 - 行动：[具体做了什么 / 为什么不做]
-- 测试：make test 通过
+- 测试：python -m unittest discover -s tests -v 通过
 ```
 
 ## 核心原则

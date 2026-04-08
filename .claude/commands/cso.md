@@ -3,7 +3,7 @@
 核心原则：**像攻击者一样思考，像防御者一样报告。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-检查命令：`make check`
+检查命令：`python scripts/check_repo.py`
 
 ## 行动约束
 
@@ -127,7 +127,7 @@ git log -p | grep -iE '(password|secret|api_key|token|private_key)\s*[:=]'
 在安全的前提下验证可利用性：
 - 检查是否可以构造实际的利用载荷
 - 验证防护措施是否真正生效
-- 运行 `make check` 确认代码质量基线
+- 运行 `python scripts/check_repo.py` 确认代码质量基线
 - **不执行破坏性测试**，只做读取和分析
 
 ### 阶段 14：报告生成

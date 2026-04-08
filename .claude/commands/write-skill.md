@@ -65,7 +65,7 @@
   - 错误："本技能帮助你完成分支管理"
   - 正确："当你完成了一个功能分支的开发，需要合并或清理时"
 - **示例必须完整**——从最初状态到最终结果，包含所有中间步骤
-- 用 `make test` 和 `make check` 作为验证命令
+- 用 `python -m unittest discover -s tests -v` 和 `python scripts/check_repo.py` 作为验证命令
 
 ### REFACTOR 阶段：封堵漏洞
 

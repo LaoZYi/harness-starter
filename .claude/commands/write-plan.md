@@ -3,8 +3,8 @@
 根据设计文档（或用户描述），生成一份**零上下文可执行**的实现计划。目标：任何人拿到这份计划，不需要额外了解代码库就能按步骤实现。
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`make test`
-检查命令：`make check`
+测试命令：`python -m unittest discover -s tests -v`
+检查命令：`python scripts/check_repo.py`
 
 ## 输入来源
 
@@ -38,7 +38,7 @@
 - [ ] 任务 1.1：<动作描述>
   - 文件：`<完整文件路径>`
   - 操作：<具体代码变更，给出完整代码块>
-  - 验证：`make test` 或具体检查命令
+  - 验证：`python -m unittest discover -s tests -v` 或具体检查命令
   - 预期结果：<明确的通过标准>
 
 - [ ] 任务 1.2：...
@@ -49,9 +49,9 @@
 遵循 TDD 节奏，每个功能点拆分为：
 
 1. **写失败测试** — 完整的测试代码（不是伪代码）
-2. **确认测试失败** — 运行 `make test`，确认失败原因正确
+2. **确认测试失败** — 运行 `python -m unittest discover -s tests -v`，确认失败原因正确
 3. **实现功能** — 完整的实现代码
-4. **确认测试通过** — 运行 `make test`，无回归
+4. **确认测试通过** — 运行 `python -m unittest discover -s tests -v`，无回归
 5. **提交** — 原子 commit，消息说明做了什么
 
 ### 代码块要求

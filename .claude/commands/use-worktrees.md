@@ -53,14 +53,14 @@ git worktree add <目录>/<分支名> -b <分支名>
 - **Node.js**：`npm install` 或 `pnpm install`
 - **Python**：`pip install -e .` 或 `poetry install`
 - **其他**：根据 cli-tool 执行对应的安装命令
-- 如果项目有 `harness`，确认能正常启动（快速验证后停止）
+- 如果项目有 `PYTHONPATH=src python -m agent_harness.cli`，确认能正常启动（快速验证后停止）
 
 ## 第 6 步：基线测试
 
 运行基线测试确保 worktree 环境健康：
 
 ```bash
-make test
+python -m unittest discover -s tests -v
 ```
 
 根据测试结果：

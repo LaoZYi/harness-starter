@@ -3,8 +3,8 @@
 用 6 个并行审查视角对变更进行结构化评审。目标：**在代码合并前发现尽可能多的问题，分类分级后给出处理建议。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`make test`
-检查命令：`make check`
+测试命令：`python -m unittest discover -s tests -v`
+检查命令：`python scripts/check_repo.py`
 
 ## 第 1 步：确定评审范围
 
@@ -45,7 +45,7 @@
 - 现有测试是否覆盖了变更路径
 - 缺失的测试场景：边界值、错误路径、并发
 - 测试质量：是否测试了行为而非实现
-- 运行 `make test` 确认测试通过
+- 运行 `python -m unittest discover -s tests -v` 确认测试通过
 
 ### 审查员 3：可维护性审查员
 
@@ -60,7 +60,7 @@
 - 是否遵循项目已有的代码风格和模式
 - 文件组织、目录结构是否符合惯例
 - 命名约定（变量、函数、文件）是否一致
-- 运行 `make check` 检查规范合规性
+- 运行 `python scripts/check_repo.py` 检查规范合规性
 - 导入顺序、格式化是否符合项目配置
 
 ### 审查员 5：安全审查员

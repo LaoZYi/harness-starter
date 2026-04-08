@@ -3,8 +3,8 @@
 核心原则：**先有证据，再有结论。永远如此。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`make test`
-检查命令：`make check`
+测试命令：`python -m unittest discover -s tests -v`
+检查命令：`python scripts/check_repo.py`
 
 ## 五步验证门
 
@@ -16,9 +16,9 @@
 
 | 验证内容 | 命令 |
 |---|---|
-| 测试通过 | `make test` |
-| 代码质量 | `make check` |
-| 构建成功 | `harness` |
+| 测试通过 | `python -m unittest discover -s tests -v` |
+| 代码质量 | `python scripts/check_repo.py` |
+| 构建成功 | `PYTHONPATH=src python -m agent_harness.cli` |
 | 特定功能 | 根据场景确定 |
 
 ### 第 2 步：完整执行命令
@@ -49,8 +49,8 @@
 - 结论
 
 ```
-✓ 验证完成：运行 `make test`，42 个测试全部通过，0 失败，0 跳过。
-✗ 验证失败：运行 `make test`，40 通过，2 失败。失败测试：test_xxx, test_yyy。
+✓ 验证完成：运行 `python -m unittest discover -s tests -v`，42 个测试全部通过，0 失败，0 跳过。
+✗ 验证失败：运行 `python -m unittest discover -s tests -v`，40 通过，2 失败。失败测试：test_xxx, test_yyy。
 ```
 
 ## 绝对禁止
@@ -81,9 +81,9 @@
 
 所有需要确认结果的场景：
 
-1. **测试**：`make test` — 新功能、Bug 修复、重构后
-2. **代码检查**：`make check` — 每次提交前
-3. **构建**：`harness` — 修改构建配置后
+1. **测试**：`python -m unittest discover -s tests -v` — 新功能、Bug 修复、重构后
+2. **代码检查**：`python scripts/check_repo.py` — 每次提交前
+3. **构建**：`PYTHONPATH=src python -m agent_harness.cli` — 修改构建配置后
 4. **需求验证**：对照需求文档逐条确认
 5. **代理工作**：其他 agent 完成的工作也要验证
 

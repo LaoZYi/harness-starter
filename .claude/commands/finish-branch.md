@@ -15,7 +15,7 @@
 运行完整测试套件：
 
 ```bash
-make test
+python -m unittest discover -s tests -v
 ```
 
 - **全部通过**：继续下一步
@@ -54,16 +54,16 @@ make test
 
 ## 选项 1：本地合并
 
-1. 再次运行 `make test` 验证测试
+1. 再次运行 `python -m unittest discover -s tests -v` 验证测试
 2. 切换到基础分支：`git checkout <基础分支>`
 3. 合并：`git merge --no-ff <分支名>`
 4. 删除分支：`git branch -d <分支名>`
 5. 清理 worktree（如果在 worktree 中工作）
-6. 运行 `make check` 最终验证
+6. 运行 `python scripts/check_repo.py` 最终验证
 
 ## 选项 2：推送并创建 PR
 
-1. 再次运行 `make test` 验证测试
+1. 再次运行 `python -m unittest discover -s tests -v` 验证测试
 2. 推送分支：`git push -u origin <分支名>`
 3. 使用 `gh pr create` 创建 PR，包含：
    - 自动生成的标题（从分支名和提交信息提炼）

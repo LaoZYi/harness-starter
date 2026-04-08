@@ -3,7 +3,7 @@
 创建、分级和跟踪结构化工作项，集成 `.agent-harness/current-task.md` 进行持久化管理。
 
 项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`make test`
+测试命令：`python -m unittest discover -s tests -v`
 
 ## 适用场景
 
@@ -62,7 +62,7 @@
 ## 第 4 步：完成任务
 
 1. **核对验收标准**：逐条确认是否满足
-2. **运行测试**：`make test`
+2. **运行测试**：`python -m unittest discover -s tests -v`
 3. **更新状态**：改为 `[已完成]`，附简要工作记录
 4. **检查连锁影响**：是否有被该任务阻塞的项可以解除？
 
@@ -70,7 +70,7 @@
 
 当所有任务项均已完成：
 
-1. **最终验证**：运行 `make test` 确认无回归
+1. **最终验证**：运行 `python -m unittest discover -s tests -v` 确认无回归
 2. **生成摘要**：任务数量、关键成果、耗时估算
 3. **追加日志**：写入 `.agent-harness/task-log.md`
 4. **提炼经验**：更新 `.agent-harness/lessons.md`

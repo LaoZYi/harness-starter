@@ -9,7 +9,7 @@ description: 操作权限分级和自治边界
 ## 自由操作（无需确认）
 
 - 读取任何项目文件
-- 运行 `make test`、`make check`
+- 运行 `python -m unittest discover -s tests -v`、`python scripts/check_repo.py`
 - 在 `.agent-harness/` 下更新 current-task.md、task-log.md、lessons.md
 - 更新 `docs/` 下的 checkbox 打勾状态
 - 填充文档中的"待补充"占位符

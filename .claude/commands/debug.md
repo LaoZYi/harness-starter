@@ -3,8 +3,8 @@
 核心原则：**没有根因分析，不做任何修复。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`make test`
-检查命令：`make check`
+测试命令：`python -m unittest discover -s tests -v`
+检查命令：`python scripts/check_repo.py`
 
 ## 阶段 1：根因调查
 
@@ -19,7 +19,7 @@
 ### 1.2 复现问题
 
 ```
-make test
+python -m unittest discover -s tests -v
 ```
 
 如果不能稳定复现，记录：
@@ -91,7 +91,7 @@ make test
 
 用测试复现 Bug：
 - 测试描述 Bug 触发的条件
-- 运行 `make test` 确认测试失败
+- 运行 `python -m unittest discover -s tests -v` 确认测试失败
 - 失败原因与 Bug 表现一致
 
 ### 4.2 应用修复
@@ -103,8 +103,8 @@ make test
 ### 4.3 全面验证
 
 ```
-make test
-make check
+python -m unittest discover -s tests -v
+python scripts/check_repo.py
 ```
 
 确认：

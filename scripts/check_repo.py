@@ -178,6 +178,42 @@ def check_example_config_is_valid_json() -> None:
         assert_true(key in data, f"示例配置缺少字段: {key}")
 
 
+def check_dogfood_drift() -> None:
+    """Detect if skill/rule templates changed but generated files were not re-synced.
+
+    Only checks .claude/commands/, .claude/rules/, and .claude/settings.json —
+    these are purely template-generated. Docs and other files may have manual edits.
+    """
+    import json
+    pj = ROOT / ".agent-harness" / "project.json"
+    if not pj.exists():
+        return  # dogfood not applied yet, skip
+    sys.path.insert(0, str(ROOT / "src"))
+    from agent_harness.initializer import SUPERPOWERS_ROOT, TEMPLATE_ROOT, prepare_initialization
+    from agent_harness.templating import render_templates
+    answers = json.loads(pj.read_text(encoding="utf-8"))
+    answers["project_name"] = answers.get("project_name", "")
+    answers["summary"] = answers.get("project_summary", "")
+    _, _, context = prepare_initialization(ROOT, answers)
+    rendered = render_templates(TEMPLATE_ROOT, context)
+    if SUPERPOWERS_ROOT.is_dir():
+        rendered.update(render_templates(SUPERPOWERS_ROOT, context))
+    check_prefixes = (".claude/commands/", ".claude/rules/", ".claude/settings.json")
+    drifted = []
+    for rel_path, expected in rendered.items():
+        if not any(rel_path.startswith(p) for p in check_prefixes):
+            continue
+        actual_path = ROOT / rel_path
+        if not actual_path.exists():
+            drifted.append(f"  缺失: {rel_path}")
+        elif actual_path.read_text(encoding="utf-8") != expected:
+            drifted.append(f"  过时: {rel_path}")
+    if drifted:
+        detail = "\n".join(drifted[:5])
+        hint = "运行 make dogfood 同步"
+        raise SystemExit(f"技能/规则模板已变更但生成产物未同步（{len(drifted)} 个文件）：\n{detail}\n{hint}")
+
+
 def main() -> None:
     check_required_files()
     check_agents_length()
@@ -189,6 +225,7 @@ def main() -> None:
     check_github_templates()
     check_framework_has_no_sample_service()
     check_example_config_is_valid_json()
+    check_dogfood_drift()
     print("repository checks passed")
 
 
