@@ -187,6 +187,8 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
         "ci_paths_json": _json_value(profile.ci_paths),
         "external_systems_json": _json_value(profile.external_systems),
         "notes_json": _json_value(profile.notes),
+        "gitlab_api_url": str(answers.get("gitlab_api_url", "")),
+        "gitlab_project_path": str(answers.get("gitlab_project_path", "")),
     }
     return profile, assessment, context
 

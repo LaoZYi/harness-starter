@@ -126,7 +126,9 @@ gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/de
 
 ## 第 3 步：创建提案 Issue
 
-对每个结论为"吸收"的项目，创建一个 GitHub Issue：
+对每个结论为"吸收"的项目，创建 Issue。默认创建到 GitHub，如果用户指定则创建到 GitLab。
+
+**GitHub Issue**（默认）：
 
 ```bash
 gh issue create \
@@ -170,7 +172,25 @@ ISSUE_EOF
 )"
 ```
 
+**GitLab Issue**（用户指定时）：
+
+> 前提：`GITLAB_TOKEN` 环境变量已设置。未设置则 **🔴 停下来提示用户**。
+
+```bash
+curl -sS --request POST \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "title": "🧬 [Evolution] 发现可吸收项目：<项目名>",
+    "description": "<与 GitHub Issue body 相同的 Markdown 内容>",
+    "labels": "evolution"
+  }' \
+  "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues"
+```
+
 对结论为"参考"的项目，同样创建 Issue 但标签为 `evolution-reference`，降低优先级。
+
+**提示**：审批后用 `/lfg gl#<编号>` 执行 GitLab Issue，用 `/lfg #<编号>` 执行 GitHub Issue。
 
 ---
 

@@ -15,11 +15,19 @@
 
 收到任务后，在做任何事之前，先判断输入类型：
 
-**如果输入是 GitHub Issue 编号**（如 `#42` 或 `42`）：
+**如果输入是 Issue 编号**，根据前缀判断来源：
 
-```bash
-gh issue view <编号> --json title,body,labels
-```
+- `gl#42` → **GitLab Issue**（内网）：
+  ```bash
+  curl -sS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+    "http://192.168.4.102/api/v4/projects/ai-x%2Fzjaf-harness/issues/42"
+  ```
+  > 如果 `GITLAB_TOKEN` 未设置 → **🔴 停下来提示用户**：`export GITLAB_TOKEN=<your-token>`
+
+- `gh#42`、`#42` 或 `42` → **GitHub Issue**（默认）：
+  ```bash
+  gh issue view <编号> --json title,body,labels
+  ```
 
 读取 Issue 内容作为任务描述。如果 Issue 有 `evolution` 标签，自动进入**进化集成模式**：
 - 从 Issue 中提取目标项目链接
