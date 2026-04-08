@@ -222,6 +222,49 @@ def check_dogfood_drift() -> None:
         raise SystemExit(f"技能/规则模板已变更但生成产物未同步（{len(drifted)} 个文件）：\n{detail}\n{hint}")
 
 
+def check_count_consistency() -> None:
+    """Ensure hardcoded test/skill counts match reality."""
+    # --- actual test count (count def test_ methods in test files) ---
+    test_method_re = re.compile(r"^\s+def test_", re.MULTILINE)
+    actual_tests = 0
+    for tf in sorted((ROOT / "tests").glob("test_*.py")):
+        actual_tests += len(test_method_re.findall(tf.read_text(encoding="utf-8")))
+
+    # --- actual skill count ---
+    skill_dir = PKG / "templates" / "superpowers" / ".claude" / "commands"
+    actual_skills = len(list(skill_dir.glob("*.md.tmpl")))
+
+    # --- scan files for stale counts ---
+    scan_files = [
+        ROOT / "AGENTS.md", ROOT / "CONTRIBUTING.md", ROOT / "README.md",
+        ROOT / "CHANGELOG.md",
+        ROOT / "docs" / "product.md", ROOT / "docs" / "architecture.md",
+        ROOT / "docs" / "usage-guide.md", ROOT / "docs" / "runbook.md",
+        ROOT / "docs" / "release.md", ROOT / "docs" / "workflow.md",
+        ROOT / ".agent-harness" / "project.json",
+    ]
+    test_re = re.compile(r"(\d+)\s*个(?:回归)?测试")
+    skill_re = re.compile(r"(\d+)\s*个(?:工作流)?技能(?:命令|模板)?")
+
+    errors: list[str] = []
+    for path in scan_files:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        rel = str(path.relative_to(ROOT))
+        for m in test_re.finditer(text):
+            found = int(m.group(1))
+            if found != actual_tests:
+                errors.append(f"  {rel}: 写了 {found} 个测试，实际 {actual_tests}")
+        for m in skill_re.finditer(text):
+            found = int(m.group(1))
+            if found != actual_skills:
+                errors.append(f"  {rel}: 写了 {found} 个技能，实际 {actual_skills}")
+    if errors:
+        detail = "\n".join(errors[:10])
+        raise SystemExit(f"文档中的计数与实际不一致：\n{detail}")
+
+
 def main() -> None:
     check_required_files()
     check_agents_length()
@@ -234,6 +277,7 @@ def main() -> None:
     check_framework_has_no_sample_service()
     check_example_config_is_valid_json()
     check_dogfood_drift()
+    check_count_consistency()
     print("repository checks passed")
 
 
