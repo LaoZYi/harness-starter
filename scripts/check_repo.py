@@ -194,6 +194,12 @@ def check_dogfood_drift() -> None:
     answers = json.loads(pj.read_text(encoding="utf-8"))
     answers["project_name"] = answers.get("project_name", "")
     answers["summary"] = answers.get("project_summary", "")
+    if "commands" in answers and isinstance(answers["commands"], dict):
+        cmds = answers["commands"]
+        answers.setdefault("run_command", cmds.get("run", "TODO"))
+        answers.setdefault("test_command", cmds.get("test", "TODO"))
+        answers.setdefault("check_command", cmds.get("check", "TODO"))
+        answers.setdefault("ci_command", cmds.get("ci", "TODO"))
     _, _, context = prepare_initialization(ROOT, answers)
     rendered = render_templates(TEMPLATE_ROOT, context)
     if SUPERPOWERS_ROOT.is_dir():
