@@ -149,10 +149,7 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
         "assessment_readiness": assessment.readiness,
         "assessment_strengths_bullets": _bullet_list(assessment.strengths, fallback="当前没有额外优势项"),
         "assessment_gaps_bullets": _bullet_list(assessment.gaps, fallback="当前没有明显缺口"),
-        "assessment_recommendations_bullets": _bullet_list(
-            assessment.recommendations,
-            fallback="初始化完成后可以直接开始补充项目细节。",
-        ),
+        "assessment_recommendations_bullets": _bullet_list(assessment.recommendations, fallback="初始化完成后可以直接开始补充项目细节。"),
         "assessment_confidence": assessment.confidence,
         "project_description": description,
         "features_bullets": features_bullets,
@@ -187,8 +184,7 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
         "ci_paths_json": _json_value(profile.ci_paths),
         "external_systems_json": _json_value(profile.external_systems),
         "notes_json": _json_value(profile.notes),
-        "gitlab_api_url": str(answers.get("gitlab_api_url", "")),
-        "gitlab_project_path": str(answers.get("gitlab_project_path", "")),
+        **{k: str(answers.get(k, "")) for k in ("gitlab_api_url", "gitlab_project_path")},
     }
     return profile, assessment, context
 

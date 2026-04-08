@@ -31,5 +31,7 @@
   "external_systems": [
   "openai"
 ],
-  "notes": []
+  "notes": [],
+  "gitlab_api_url": "http://192.168.4.102/api/v4",
+  "gitlab_project_path": "ai-x%2Fzjaf-harness"
 }
