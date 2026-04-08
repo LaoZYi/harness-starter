@@ -265,6 +265,57 @@ def check_count_consistency() -> None:
         raise SystemExit(f"文档中的计数与实际不一致：\n{detail}")
 
 
+def check_skill_documentation_coverage() -> None:
+    """Every skill must appear in key documentation files."""
+    skill_dir = PKG / "templates" / "superpowers" / ".claude" / "commands"
+    skills = sorted(
+        "/" + f.stem.removesuffix(".md")
+        for f in skill_dir.glob("*.md.tmpl")
+    )
+
+    # Files where every skill must be mentioned (as /skill-name)
+    # README is excluded — it's a summary that groups skills by category
+    must_mention_all = {
+        "workflow rule": PKG / "templates" / "superpowers" / ".claude" / "rules" / "superpowers-workflow.md.tmpl",
+        "decision tree": PKG / "templates" / "superpowers" / ".claude" / "commands" / "use-superpowers.md.tmpl",
+        "evolve comparison": PKG / "templates" / "superpowers" / ".claude" / "commands" / "evolve.md.tmpl",
+        "usage-guide": ROOT / "docs" / "usage-guide.md",
+    }
+
+    errors: list[str] = []
+    for label, path in must_mention_all.items():
+        if not path.exists():
+            continue
+        content = path.read_text(encoding="utf-8")
+        for skill in skills:
+            # /use-superpowers doesn't need to reference itself in the decision tree
+            if skill == "/use-superpowers" and label == "decision tree":
+                continue
+            if skill not in content:
+                errors.append(f"  {label}: 缺少 {skill}")
+
+    # Check that every directory created by superpowers templates is documented in usage-guide file tree
+    superpowers_tmpl = PKG / "templates" / "superpowers"
+    gitkeep_dirs = set()
+    for gk in superpowers_tmpl.rglob(".gitkeep.tmpl"):
+        rel = str(gk.parent.relative_to(superpowers_tmpl))
+        gitkeep_dirs.add(rel)
+
+    if gitkeep_dirs:
+        usage_guide = ROOT / "docs" / "usage-guide.md"
+        if usage_guide.exists():
+            ug_content = usage_guide.read_text(encoding="utf-8")
+            for d in sorted(gitkeep_dirs):
+                # Check the last component of the path appears in the file tree
+                dirname = d.split("/")[-1]
+                if dirname not in ug_content:
+                    errors.append(f"  usage-guide 文件树: 缺少目录 {d}")
+
+    if errors:
+        detail = "\n".join(errors[:15])
+        raise SystemExit(f"技能文档覆盖不完整：\n{detail}")
+
+
 def main() -> None:
     check_required_files()
     check_agents_length()
@@ -278,6 +329,7 @@ def main() -> None:
     check_example_config_is_valid_json()
     check_dogfood_drift()
     check_count_consistency()
+    check_skill_documentation_coverage()
     print("repository checks passed")
 
 
