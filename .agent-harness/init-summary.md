@@ -1,6 +1,6 @@
 # 初始化摘要
 
-framework version: `0.5.0`
+framework version: `1.0.0`
 
 ## 项目
 

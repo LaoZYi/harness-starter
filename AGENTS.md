@@ -57,5 +57,5 @@ harness stats /path/to/repo
 - `src/agent_harness/initializer.py`：初始化主流程（含插件渲染）。
 - `src/agent_harness/templates/common/`：生成到目标项目的骨架文件（含 .claude/rules/）。
 - `src/agent_harness/presets/`：8 种项目类型预设。
-- `tests/test_cli.py`：CLI 集成回归（64 个测试）。
+- `tests/test_cli.py`：CLI 集成回归（82 个测试）。
 - `scripts/check_repo.py`：框架仓库守卫。
