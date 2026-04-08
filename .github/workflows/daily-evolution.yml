@@ -121,22 +121,7 @@ jobs:
 
           # 构建 Issue body 到文件（避免 shell 注入）
           cat /tmp/evolution-report.md > /tmp/issue-body.md
-          cat >> /tmp/issue-body.md << 'FOOTER'
-
----
-
-## 如何实施
-
-对感兴趣的项目，在本地 Claude Code 中运行：
-
-```
-/lfg #<本Issue编号>
-```
-
-/lfg 会自动读取本 Issue 内容，进入进化集成模式，按框架规范完成分析、集成、测试和文档更新。
-
-*此 Issue 由 daily-evolution workflow 自动创建。*
-FOOTER
+          printf '\n- - -\n\n## 如何实施\n\n对感兴趣的项目，在本地 Claude Code 中运行：\n\n```\n/lfg #<本Issue编号>\n```\n\n/lfg 会自动读取本 Issue 内容，进入进化集成模式，按框架规范完成分析、集成、测试和文档更新。\n\n*此 Issue 由 daily-evolution workflow 自动创建。*\n' >> /tmp/issue-body.md
 
           gh issue create \
             --title "🧬 [Evolution] 每日进化报告 $DATE" \
