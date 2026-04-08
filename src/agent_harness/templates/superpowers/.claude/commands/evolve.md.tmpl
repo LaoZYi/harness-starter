@@ -66,7 +66,18 @@ gh api repos/EveryInc/compound-engineering-plugin/commits --jq '.[0:5] | .[] | .
 gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/dev/null
 ```
 
-### 1.4 初筛条件
+### 1.5 已处理项目去重
+
+在评估任何候选项目之前，先拉取所有（open + closed）带 `evolution` 标签的 Issue，提取已处理的项目链接：
+
+```bash
+gh issue list --label evolution --state all --json title,body,state --limit 100 \
+  | python3 -c "import sys,json; [print(i['state'], i['title']) for i in json.load(sys.stdin)]"
+```
+
+将已出现在 Issue 标题中的项目加入**排除列表**。无论该 Issue 是 open（待处理）还是 closed（已吸收或已拒绝），都不要重复提案。
+
+### 1.6 初筛条件
 
 从搜索结果中筛选，保留满足以下条件的项目：
 
@@ -75,6 +86,7 @@ gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/de
 - 非 fork（原创项目）
 - 与 AI 编码工具/方法论/工作流相关
 - 不是已跟踪的 3 个上游仓库
+- **不在已处理项目排除列表中**（步骤 1.5）
 
 ---
 
@@ -278,6 +290,6 @@ Issue body 必须包含以下所有章节，每个章节都要展开写，不能
 ## 注意事项
 
 - **不要自动实施任何集成**。`/evolve` 只搜索、评估和提案，不写代码
-- **不要创建重复 Issue**。搜索现有 Issue 确认没有同一项目的提案
+- **不要创建重复 Issue**。步骤 1.5 已拉取所有状态的 evolution Issue（含已关闭），确保已吸收、已拒绝或待处理的项目不会重复提案
 - **控制 Issue 数量**。每天最多创建 3 个"吸收"提案，避免信息过载
 - **标记搜索日期**。在 Issue 中注明发现日期，方便追踪新鲜度
