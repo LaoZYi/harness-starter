@@ -8,30 +8,50 @@
 
 ## 第 1 步：搜索新项目
 
-### 1.1 GitHub 搜索
+### 1.1 固定关键词搜索（覆盖研发全生命周期）
 
-执行以下搜索（用 `gh search repos` 或 WebSearch），寻找最近 30 天内活跃的相关项目：
+按研发阶段组织关键词，确保不遗漏：
 
 ```bash
-# AI 编码工具和插件
-gh search repos "claude code plugin" --sort updated --limit 20
-gh search repos "ai coding agent skills" --sort stars --limit 20
-gh search repos "llm development workflow" --sort updated --limit 20
-gh search repos "ai pair programming tool" --sort stars --limit 20
-gh search repos "claude code slash command" --sort updated --limit 20
-gh search repos "coding agent framework" --sort stars --limit 20
+# Agent 生态
+gh search repos "agent skill" --sort stars --limit 15
+gh search repos "claude code" --sort updated --limit 15
+# 编码/实现
+gh search repos "ai coding agent" --sort stars --limit 15
+# 设计/架构
+gh search repos "architecture decision record" --sort stars --limit 15
+# 评审/质量
+gh search repos "ai code review" --sort stars --limit 15
+# 部署/发布
+gh search repos "changelog generator" --sort stars --limit 15
+gh search repos "release automation tool" --sort stars --limit 15
+# 运维/监控
+gh search repos "incident response tool" --sort stars --limit 15
 ```
 
-### 1.2 Web 搜索
+### 1.2 新项目发现（不依赖关键词）
 
-用 WebSearch 搜索最新的文章和实践：
+用 GitHub API 按 topic + 创建时间搜索，捕获用新概念命名的项目：
 
-- "best ai coding tools 2026"
-- "claude code plugin new"
-- "ai agent engineering workflow"
-- "LLM software development methodology"
+```bash
+# 最近 30 天创建的 AI agent 相关项目（star > 30）
+gh api search/repositories \
+  -f q="topic:ai-agent created:>$(date -u -v-30d '+%Y-%m-%d' 2>/dev/null || date -u -d '30 days ago' '+%Y-%m-%d') stars:>30" \
+  -f sort=stars -f order=desc -f per_page=15 \
+  --jq '.items[] | "\(.full_name)\t\(.stargazers_count)\t\(.description)"'
+```
 
-### 1.3 监控已知上游
+### 1.3 趋势概念捕获（WebSearch → 关键词提取 → GitHub 搜索）
+
+用 WebSearch 搜索最新趋势文章，从中**提取新出现的概念术语**，再拿回 GitHub 搜：
+
+1. 执行 WebSearch：
+   - "AI coding agent new methodology {当前年份}"
+   - "software engineering agent trend {当前年份}"
+2. 从文章中提取 2-3 个新概念关键词（如 "vibe coding"、"ADLC"、"multi-agent coding"）
+3. 用这些关键词执行 `gh search repos "<新概念>" --sort stars --limit 10`
+
+### 1.4 监控已知上游
 
 检查已跟踪的 3 个上游仓库是否有新的技能发布：
 
@@ -130,47 +150,75 @@ gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/de
 
 **GitHub Issue**（默认）：
 
-```bash
-gh issue create \
-  --title "🧬 [Evolution] 发现可吸收项目：<项目名>" \
-  --label "evolution" \
-  --body "$(cat <<'ISSUE_EOF'
+Issue body 必须包含以下所有章节，每个章节都要展开写，不能只写一行概括：
+
+```markdown
 ## 项目信息
 
 - **链接**：<GitHub URL>
 - **Star**：<数量>
+- **最近更新**：<日期>
 - **核心能力**：<一句话描述>
 - **技术栈**：<语言/框架>
 
-## 独特价值
+## 目标项目亮点分析
 
-<这个项目提供了什么我们目前没有的能力？具体列出 1-3 个>
+<展开 3-5 段详细说明这个项目做得好的地方：>
+<- 它解决了什么问题？用什么独特方法？>
+<- 它的核心设计哲学是什么？>
+<- 它的用户体验/开发体验有什么可借鉴之处？>
+<- 哪些具体功能或模式让人眼前一亮？>
+<- 引用 README 或代码中的关键描述，用 > 引用块标注>
 
-## 建议吸收的技能
+## 我们要吸收什么
 
-| 新技能名 | 对应源项目功能 | 嵌入 /lfg 的阶段 |
-|---------|-------------|-----------------|
-| `/xxx` | <功能描述> | <阶段 N> |
+<明确列出要吸收的具体内容，每一项展开说明：>
 
-## 可行性
+### 吸收项 1：<能力名称>
+- **源项目中的实现**：<它怎么做的，读了哪些文件，核心逻辑是什么>
+- **我们缺少什么**：<对比现有技能，具体差在哪里>
+- **吸收后变成什么**：<新技能名或增强哪个现有技能>
+- **嵌入 /lfg 阶段**：<阶段 N，为什么放在这个阶段>
 
-- 可模板化：是/否
-- 外部依赖：无/需要 xxx
-- 通用性：所有项目/仅 xxx 类型
+### 吸收项 2：<能力名称>
+- （同上格式）
 
-## 风险
+## 怎么吸收（实施方案）
 
-<可能的问题或注意事项>
+<具体的实施步骤，每步都要可执行：>
 
-## 实施建议
+1. **模板创建**：在 `templates/superpowers/.claude/commands/` 下创建 `<skill-name>.md.tmpl`
+2. **核心逻辑**：<要写什么内容，从源项目提取哪些方法论，如何改写为中文>
+3. **集成点**：<修改哪些现有文件——workflow 规则、决策树、preset、lfg.md>
+4. **测试**：<在 tests/ 中添加什么测试>
+5. **文档同步**：<更新 product.md/architecture.md 的哪些章节>
+6. **dogfood**：运行 `make dogfood && make ci` 验证
 
-<用 /lfg 实施时的注意事项>
+## 预期效果
 
----
-*此 Issue 由 /evolve 自动创建。审批后可通过 /lfg 实施集成。*
-ISSUE_EOF
-)"
+<吸收后框架能力会有什么变化：>
+
+- **覆盖的研发阶段**：<从"缺少 X 阶段"到"完整覆盖 X">
+- **用户体验改善**：<用户原来要 Y 步手动操作，现在自动化为 Z>
+- **与竞品的差距**：<吸收后在 X 维度上追平/超越 Y 项目>
+
+## 可行性与风险
+
+| 维度 | 评估 |
+|------|------|
+| 可模板化 | <是/否，为什么> |
+| 外部依赖 | <无/需要 xxx，如何处理> |
+| 通用性 | <所有项目/仅 xxx 类型> |
+| 工作量预估 | <改动文件数、新增行数量级> |
+| 风险 | <可能的问题、与现有技能的冲突、维护负担> |
+
+发现日期：<YYYY-MM-DD>
+发现来源：<第 1 层固定关键词 / 第 2 层新项目发现 / 第 3 层趋势概念>
+
+*此 Issue 由 /evolve 自动创建。审批后可通过 `/lfg #<编号>` 实施集成。*
 ```
+
+使用 `gh issue create --title "..." --label "evolution" --body "<上述内容>"` 创建。
 
 **GitLab Issue**（用户指定时）：
 

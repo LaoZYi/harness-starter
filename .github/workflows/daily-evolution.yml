@@ -25,13 +25,16 @@ jobs:
           echo "搜索时间：$(date -u '+%Y-%m-%d %H:%M UTC')" >> /tmp/evolution-report.md
           echo "" >> /tmp/evolution-report.md
 
-          # 搜索关键词列表
+          # 搜索关键词列表（按研发生命周期阶段组织）
           QUERIES=(
-            "claude code plugin"
-            "ai coding agent skills"
-            "llm development workflow"
-            "claude code slash command"
-            "coding agent framework"
+            "agent skill"
+            "claude code"
+            "ai coding agent"
+            "architecture decision record"
+            "ai code review"
+            "changelog generator"
+            "release automation tool"
+            "incident response tool"
           )
 
           # 已跟踪的上游仓库（排除）
