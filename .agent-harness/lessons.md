@@ -18,6 +18,12 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 根因：`gh issue list` 默认只返回 open 状态，需要显式传 `--state all`
 - 规则：进化去重必须检查 open + closed 两种状态。同时需要区分"新发现"（evolution 标签）和"已吸收项目有更新"（evolution-update 标签）两条通道
 
+## 2026-04-08 GitLab Issue 搜索禁用 search 参数
+
+- 错误：LFG 收尾关闭 GitLab Issue 时用 `search=architecture-decision-record` 查找对应 Issue，返回空结果，导致 GitLab Issue 未同步关闭
+- 根因：GitLab API 的 `search` 参数对中文标题和混合语言内容匹配不可靠，无法可靠找到目标 Issue
+- 规则：查找 GitLab Issue 时必须用 `labels` 过滤缩小范围，再在本地用 Python 做标题子串匹配。禁止依赖 GitLab API 的 `search` 参数
+
 ## 2026-04-08 新增技能时文档散布计数需全量扫描
 
 - 错误：新增 `/spec` 技能后，技能数从 27 变 28，但 12+ 处散布的计数引用容易遗漏
