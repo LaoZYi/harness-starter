@@ -1,0 +1,133 @@
+name: Daily Evolution
+
+on:
+  schedule:
+    # 每天 UTC 01:37（北京时间 09:37）
+    - cron: "37 1 * * *"
+  workflow_dispatch: # 支持手动触发
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Search GitHub for new AI coding tool projects
+        id: search
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## 搜索结果" > /tmp/evolution-report.md
+          echo "" >> /tmp/evolution-report.md
+          echo "搜索时间：$(date -u '+%Y-%m-%d %H:%M UTC')" >> /tmp/evolution-report.md
+          echo "" >> /tmp/evolution-report.md
+
+          # 搜索关键词列表
+          QUERIES=(
+            "claude code plugin"
+            "ai coding agent skills"
+            "llm development workflow"
+            "claude code slash command"
+            "coding agent framework"
+          )
+
+          # 已跟踪的上游仓库（排除）
+          TRACKED="obra/superpowers EveryInc/compound-engineering-plugin garrytan/gstack openai/codex-plugin-cc"
+
+          echo "| 项目 | Star | 更新时间 | 描述 |" >> /tmp/evolution-report.md
+          echo "|------|------|---------|------|" >> /tmp/evolution-report.md
+
+          > /tmp/all-repos.txt
+
+          for query in "${QUERIES[@]}"; do
+            gh search repos "$query" \
+              --sort updated \
+              --limit 10 \
+              --json fullName,stargazersCount,updatedAt,description,isFork \
+              --jq '.[] | select(.isFork == false and .stargazersCount >= 50) | "\(.fullName)\t\(.stargazersCount)\t\(.updatedAt)\t\(.description)"' \
+              >> /tmp/all-repos.txt 2>/dev/null || true
+            sleep 2  # 避免 rate limit
+          done
+
+          # 去重、排除已跟踪仓库、取最近30天更新的
+          THIRTY_DAYS_AGO=$(date -u -d '30 days ago' '+%Y-%m-%d' 2>/dev/null || date -u -v-30d '+%Y-%m-%d')
+          sort -u /tmp/all-repos.txt | while IFS=$'\t' read -r name stars updated desc; do
+            # 跳过已跟踪仓库
+            skip=false
+            for tracked in $TRACKED; do
+              if [ "$name" = "$tracked" ]; then skip=true; break; fi
+            done
+            if $skip; then continue; fi
+
+            # 只保留最近30天更新的
+            update_date="${updated:0:10}"
+            if [[ "$update_date" > "$THIRTY_DAYS_AGO" || "$update_date" = "$THIRTY_DAYS_AGO" ]]; then
+              echo "| [$name](https://github.com/$name) | $stars | $update_date | ${desc:0:80} |" >> /tmp/evolution-report.md
+              echo "$name" >> /tmp/candidates.txt
+            fi
+          done
+
+          # 统计候选数量
+          CANDIDATE_COUNT=$(wc -l < /tmp/candidates.txt 2>/dev/null || echo 0)
+          echo "" >> /tmp/evolution-report.md
+          echo "候选项目数：$CANDIDATE_COUNT" >> /tmp/evolution-report.md
+
+          echo "candidate_count=$CANDIDATE_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Check upstream updates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "" >> /tmp/evolution-report.md
+          echo "## 上游动态" >> /tmp/evolution-report.md
+          echo "" >> /tmp/evolution-report.md
+
+          for repo in obra/superpowers EveryInc/compound-engineering-plugin garrytan/gstack; do
+            echo "### $repo" >> /tmp/evolution-report.md
+            latest=$(gh api "repos/$repo/commits?per_page=3" --jq '.[].commit.message' 2>/dev/null | head -3)
+            if [ -z "$latest" ]; then
+              echo "无法获取（可能需要认证）" >> /tmp/evolution-report.md
+            else
+              echo '```' >> /tmp/evolution-report.md
+              echo "$latest" >> /tmp/evolution-report.md
+              echo '```' >> /tmp/evolution-report.md
+            fi
+            echo "" >> /tmp/evolution-report.md
+          done
+
+      - name: Create evolution report Issue
+        if: steps.search.outputs.candidate_count > 0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date -u '+%Y-%m-%d')
+
+          # 检查今天是否已创建过报告
+          EXISTING=$(gh issue list --label evolution --search "进化报告 $DATE" --json number --jq 'length')
+          if [ "$EXISTING" -gt "0" ]; then
+            echo "今天已创建过进化报告，跳过"
+            exit 0
+          fi
+
+          # 创建 Issue
+          gh issue create \
+            --title "🧬 [Evolution] 每日进化报告 $DATE" \
+            --label "evolution" \
+            --body "$(cat /tmp/evolution-report.md)
+
+          ---
+
+          ## 下一步
+
+          1. 查看上方候选项目列表
+          2. 对感兴趣的项目，回复 \`approve <项目名>\` 并描述要吸收什么
+          3. 在本地用 \`/lfg\` 实施集成
+
+          *此 Issue 由 daily-evolution workflow 自动创建。*"
+
+      - name: No candidates found
+        if: steps.search.outputs.candidate_count == 0
+        run: echo "今天没有发现新的候选项目"
