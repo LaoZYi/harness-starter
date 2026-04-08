@@ -390,6 +390,34 @@ Lint：<之前> → <之后>（<变化>）
 - <引用的 lessons.md 条目，或"无">
 ```
 
+#### 10.4 关闭源 Issue（仅 Issue 驱动时）
+
+如果本次 LFG 是由 Issue 编号触发的（`#N`、`gh#N` 或 `gl#N`），完成报告输出后**必须同步关闭所有远端的对应 Issue**：
+
+**GitHub Issue**：
+```bash
+gh issue close <编号> --comment "✅ 已通过 /lfg 集成完成。提交：<首个SHA>..<末个SHA>"
+```
+
+**GitLab Issue**（同步关闭）：
+```bash
+# 先评论
+curl -sS --request POST \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data '{"body":"✅ 已通过 /lfg 集成完成。提交：<首个SHA>..<末个SHA>"}' \
+  "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues/<编号>/notes"
+# 再关闭
+curl -sS --request PUT \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data '{"state_event":"close"}' \
+  "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues/<编号>"
+```
+
+> 注意：GitHub 和 GitLab 的 Issue 编号可能不同。如果只知道一端的编号，用标题搜索另一端的对应 Issue 再关闭。
+> 如果 `GITLAB_TOKEN` 未设置或 API 调用失败，告知用户"GitHub Issue 已关闭但 GitLab 同步失败"。
+
 ---
 
 ## 进度追踪与中断恢复
