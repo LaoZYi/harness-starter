@@ -120,11 +120,13 @@ jobs:
 
           ---
 
-          ## 下一步
+          ## 如何实施
 
-          1. 查看上方候选项目列表
-          2. 对感兴趣的项目，回复 \`approve <项目名>\` 并描述要吸收什么
-          3. 在本地用 \`/lfg\` 实施集成
+          对感兴趣的项目，在本地 Claude Code 中运行：
+
+          \`\`\`
+          /lfg 分析 https://github.com/<项目名> 这个项目，判断哪些能力可以融合到本框架的技能模板中。参考之前融合 superpowers/compound/gstack 的模式：1) 只吸收纯方法论技能（可模板化的），不吸收需要运行时依赖的功能 2) 改写为中文命令模板放入 templates/superpowers/.claude/commands/ 3) 更新 workflow 规则、决策树、preset、测试、文档 4) make dogfood 同步 5) make ci 验证
+          \`\`\`
 
           *此 Issue 由 daily-evolution workflow 自动创建。*"
 
