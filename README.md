@@ -160,19 +160,20 @@ harness stats /path/to/repo
 - `AGENTS.md` / `CLAUDE.md` / `CLAUDE.local.md.example` / `CONTRIBUTING.md`
 - `docs/`：product、architecture、workflow、runbook、release
 - `.claude/rules/`：safety、database、api、testing、autonomy、superpowers-workflow
-- `.claude/commands/`：27 个结构化工作流技能命令（见下方）
+- `.claude/commands/`：28 个结构化工作流技能命令（见下方）
 - `.agent-harness/`：project.json、current-task、task-log、lessons、init-summary
 - `.github/`：PR 模板、Issue 模板
 - `docs/superpowers/specs/`：设计文档和实现计划存放目录
 
 ## 内置工作流技能（Superpowers）
 
-初始化时默认生成 27 个 Claude Code 命令，覆盖完整开发生命周期：
+初始化时默认生成 28 个 Claude Code 命令，覆盖完整开发生命周期：
 
 | 阶段 | 命令 | 用途 |
 |------|------|------|
 | 构思 | `/ideate` | 多角度结构化构思，生成候选方案 |
 | 设计 | `/brainstorm` | 结构化头脑风暴，产出设计文档 |
+| 规格 | `/spec` | 规格驱动开发（先定义验收标准再动手） |
 | 计划 | `/write-plan` | 编写 2-5 分钟粒度的实现计划 |
 | 执行 | `/tdd`, `/execute-plan` | 测试驱动开发、按计划逐步实施 |
 | 排障 | `/debug` | 4 阶段系统性排障（根因优先） |

@@ -34,6 +34,8 @@ _EXPECTED_COMMANDS = [
     # compound-engineering additions
     "ideate.md", "compound.md", "multi-review.md", "lfg.md",
     "git-commit.md", "todo.md",
+    # agent-skills absorption
+    "spec.md",
     # gstack additions
     "cso.md", "retro.md", "doc-release.md", "health.md", "careful.md",
     # knowledge management
