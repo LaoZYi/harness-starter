@@ -66,18 +66,55 @@ gh api repos/EveryInc/compound-engineering-plugin/commits --jq '.[0:5] | .[] | .
 gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/dev/null
 ```
 
-### 1.5 已处理项目去重
+### 1.5 监控已吸收项目的更新
 
-在评估任何候选项目之前，先拉取所有（open + closed）带 `evolution` 标签的 Issue，提取已处理的项目链接：
+从已关闭的 `evolution` Issue 中提取吸收过的项目，检查它们是否有值得再次评估的新特性：
+
+```bash
+# 提取已吸收项目的 GitHub 链接
+gh issue list --label evolution --state closed --json body --limit 50 \
+  | python3 -c "
+import sys, json, re
+for i in json.load(sys.stdin):
+    urls = re.findall(r'https://github\.com/[\w-]+/[\w.-]+', i.get('body',''))
+    for u in urls: print(u)
+" | sort -u
+```
+
+对每个已吸收的项目，检查自上次吸收以来的更新：
+
+```bash
+# 获取最近 commit（与上游监控逻辑一致）
+gh api repos/<owner>/<repo>/commits --jq '.[0:10] | .[] | "\(.commit.author.date) \(.commit.message)"' 2>/dev/null
+# 检查是否有新的 release
+gh api repos/<owner>/<repo>/releases/latest --jq '.tag_name + " " + .published_at' 2>/dev/null
+```
+
+**判断标准**：如果发现以下情况，创建 `evolution-update` 标签的 Issue（不是 `evolution`）：
+
+- 新增了我们尚未吸收的技能/模块
+- 对已吸收的技能有重大方法论更新
+- 发布了新版本且 CHANGELOG 中有与我们相关的变更
+
+> 注意：已吸收项目的**重复能力**不需要再次提案，只关注**新增的、我们没有的**能力。
+
+### 1.6 已处理项目去重
+
+在评估新发现的候选项目之前，先拉取所有（open + closed）带 `evolution` 或 `evolution-update` 标签的 Issue：
 
 ```bash
 gh issue list --label evolution --state all --json title,body,state --limit 100 \
   | python3 -c "import sys,json; [print(i['state'], i['title']) for i in json.load(sys.stdin)]"
+gh issue list --label evolution-update --state all --json title,body,state --limit 100 \
+  | python3 -c "import sys,json; [print(i['state'], i['title']) for i in json.load(sys.stdin)]"
 ```
 
-将已出现在 Issue 标题中的项目加入**排除列表**。无论该 Issue 是 open（待处理）还是 closed（已吸收或已拒绝），都不要重复提案。
+**去重规则**：
+- `evolution` Issue 中出现过的项目 → **排除**（不创建新的 `evolution` 提案）
+- 但步骤 1.5 仍会检查这些项目的更新（可能创建 `evolution-update` 提案）
+- `evolution-update` Issue 中的项目 → 如果还是 open 状态则跳过，closed 状态则允许再次检查更新
 
-### 1.6 初筛条件
+### 1.7 初筛条件
 
 从搜索结果中筛选，保留满足以下条件的项目：
 
@@ -86,7 +123,7 @@ gh issue list --label evolution --state all --json title,body,state --limit 100 
 - 非 fork（原创项目）
 - 与 AI 编码工具/方法论/工作流相关
 - 不是已跟踪的 3 个上游仓库
-- **不在已处理项目排除列表中**（步骤 1.5）
+- **不在已处理项目排除列表中**（步骤 1.6）
 
 ---
 
@@ -290,6 +327,6 @@ Issue body 必须包含以下所有章节，每个章节都要展开写，不能
 ## 注意事项
 
 - **不要自动实施任何集成**。`/evolve` 只搜索、评估和提案，不写代码
-- **不要创建重复 Issue**。步骤 1.5 已拉取所有状态的 evolution Issue（含已关闭），确保已吸收、已拒绝或待处理的项目不会重复提案
+- **不要创建重复 Issue**。步骤 1.6 已拉取所有状态的 evolution Issue（含已关闭），确保已处理的项目不会重复提案。已吸收项目的**新特性**用 `evolution-update` 标签单独提案（步骤 1.5）
 - **控制 Issue 数量**。每天最多创建 3 个"吸收"提案，避免信息过载
 - **标记搜索日期**。在 Issue 中注明发现日期，方便追踪新鲜度
