@@ -146,9 +146,30 @@ gh api repos/garrytan/gstack/commits --jq '.[0:5] | .[] | .commit.message' 2>/de
 
 ## 第 3 步：创建提案 Issue
 
-对每个结论为"吸收"的项目，创建 Issue。默认创建到 GitHub，如果用户指定则创建到 GitLab。
+对每个结论为"吸收"的项目，**同时在所有远端仓库创建 Issue**（GitHub + GitLab）。
 
-**GitHub Issue**（默认）：
+### 创建流程（每个 Issue 必须执行两步）
+
+**第一步：创建 GitHub Issue**
+
+```bash
+gh issue create --title "..." --label "evolution" --body "..."
+```
+
+**第二步：立即同步到 GitLab**
+
+```bash
+curl -sS --request POST \
+  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data '{"title":"<同 GitHub>","description":"<同 GitHub body>","labels":"evolution"}' \
+  "http://192.168.4.102/api/v4/projects/ai-x%2Fzjaf-harness/issues"
+```
+
+> 如果 `GITLAB_TOKEN` 未设置 → **🔴 停下来提示用户**：`export GITLAB_TOKEN=<your-token>`
+> 如果 GitLab API 调用失败，告知用户"GitHub Issue 已创建但 GitLab 同步失败"，不要静默忽略。
+
+### Issue 内容模板
 
 Issue body 必须包含以下所有章节，每个章节都要展开写，不能只写一行概括：
 
@@ -218,27 +239,9 @@ Issue body 必须包含以下所有章节，每个章节都要展开写，不能
 *此 Issue 由 /evolve 自动创建。审批后可通过 `/lfg #<编号>` 实施集成。*
 ```
 
-使用 `gh issue create --title "..." --label "evolution" --body "<上述内容>"` 创建。
+对结论为"参考"的项目，同样双向创建 Issue 但标签为 `evolution-reference`，降低优先级。
 
-**GitLab Issue**（用户指定时）：
-
-> 前提：`GITLAB_TOKEN` 环境变量已设置。未设置则 **🔴 停下来提示用户**。
-
-```bash
-curl -sS --request POST \
-  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  --header "Content-Type: application/json" \
-  --data '{
-    "title": "🧬 [Evolution] 发现可吸收项目：<项目名>",
-    "description": "<与 GitHub Issue body 相同的 Markdown 内容>",
-    "labels": "evolution"
-  }' \
-  "http://192.168.4.102/api/v4/projects/ai-x%2Fzjaf-harness/issues"
-```
-
-对结论为"参考"的项目，同样创建 Issue 但标签为 `evolution-reference`，降低优先级。
-
-**提示**：审批后用 `/lfg gl#<编号>` 执行 GitLab Issue，用 `/lfg #<编号>` 执行 GitHub Issue。
+**提示**：审批后用 `/lfg #<编号>` 执行 GitHub Issue，用 `/lfg gl#<编号>` 执行 GitLab Issue。
 
 ---
 
