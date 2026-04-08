@@ -7,7 +7,7 @@
 - [快速开始](#快速开始)
 - [初始化项目](#初始化项目)
 - [生成的文件结构](#生成的文件结构)
-- [29 个工作流技能命令](#28-个工作流技能命令)
+- [29 个工作流技能命令](#29-个工作流技能命令)
 - [推荐工作流](#推荐工作流)
 - [日常运维](#日常运维)
 - [升级已有项目](#升级已有项目)
@@ -28,10 +28,12 @@ Agent Harness Framework 是一个通用初始化框架，用来给 AI agent（Cl
 3. **初始化** — 生成文档、规则、任务追踪和 29 个工作流技能命令
 4. **升级** — 对已接入的项目做增量升级，支持 diff 预览和自动备份
 
-工作流技能融合了 3 个开源项目的精华：
+工作流技能融合了 3 个开源项目 + 2 个吸收项目的精华：
 - [obra/superpowers](https://github.com/obra/superpowers)（14 个基础技能）
 - [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)（6 个增强技能）
 - [garrytan/gstack](https://github.com/garrytan/gstack)（5 个运维技能）
+- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)（1 个：spec）
+- [joelparkerhenderson/architecture-decision-record](https://github.com/joelparkerhenderson/architecture-decision-record)（1 个：adr）
 
 ---
 
@@ -176,6 +178,7 @@ project/
 │   ├── workflow.md                        # 协作流程和评审要点
 │   ├── runbook.md                         # 运行、测试、排障手册
 │   ├── release.md                         # 发布检查清单
+│   ├── decisions/                          # 架构决策记录（ADR）存放目录
 │   └── superpowers/
 │       └── specs/                         # 设计文档和实现计划存放目录
 │

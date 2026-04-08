@@ -163,6 +163,7 @@ harness stats /path/to/repo
 - `.claude/commands/`：29 个结构化工作流技能命令（见下方）
 - `.agent-harness/`：project.json、current-task、task-log、lessons、init-summary
 - `.github/`：PR 模板、Issue 模板
+- `docs/decisions/`：架构决策记录（ADR）存放目录
 - `docs/superpowers/specs/`：设计文档和实现计划存放目录
 
 ## 内置工作流技能（Superpowers）
@@ -192,7 +193,7 @@ harness stats /path/to/repo
 | 进化 | `/evolve` | 自动搜索新项目 → 评估 → 创建 Issue 提案 |
 | 管理 | `/todo`, `/use-superpowers` | 任务拆分管理、技能选择引导 |
 
-推荐工作流：`/ideate` → `/brainstorm` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound`
+推荐工作流：`/ideate` → `/brainstorm` → `/spec` → `/adr` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound`
 
 不需要 superpowers 工作流？加 `--no-superpowers` 即可跳过。
 

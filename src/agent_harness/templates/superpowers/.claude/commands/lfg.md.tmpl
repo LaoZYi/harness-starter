@@ -346,10 +346,10 @@
 
 #### 9.2 ADR 状态维护
 
-检查本次任务是否涉及架构决策记录：
-- 如果阶段 3 创建了新 ADR：确认状态是否应从 `Proposed` 更新为 `Accepted`
+浏览 `docs/decisions/` 目录，检查架构决策记录状态：
+- 如果有 `Proposed` 状态的 ADR 与本次任务相关（不论是阶段 3 创建的还是之前手动创建的）：确认是否应更新为 `Accepted`
 - 如果本次变更影响了已有 ADR 的前提条件：标记该 ADR 为 `Deprecated` 或创建 superseding ADR
-- 如果没有涉及 ADR：跳过此步骤
+- 如果 `docs/decisions/` 为空或无相关 ADR：跳过此步骤
 
 #### 9.3 知识库健康检查
 
@@ -496,7 +496,7 @@ fi
 - [x] 评审 — 第 1 轮 PASS WITH CONDITIONS → 修复 1 轮 → 第 2 轮 PASS
 - [x] 验证 — pytest ✓ (48/48), ruff ✓, 验收 4/4
 - [x] 质量对比 — 测试 +6, Lint -1
-- [x] 沉淀 — "搜索接口需做输入消毒防注入" 写入 lessons.md，lint 检查通过
+- [x] 沉淀 — 经验提炼完成，ADR 状态已更新（或无 ADR），lint 检查通过
 - [ ] 收尾 — 待用户选择合并方式
 ```
 
