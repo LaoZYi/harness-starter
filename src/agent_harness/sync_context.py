@@ -162,6 +162,15 @@ def generate_microservice_rule(ctx: ServiceContext) -> str:
     )
 
 
+def _copy_file(src: Path, dest: Path) -> None:
+    """Copy a file, using text mode for text files and binary mode for others."""
+    try:
+        content = src.read_text(encoding="utf-8")
+        dest.write_text(content, encoding="utf-8")
+    except (UnicodeDecodeError, ValueError):
+        dest.write_bytes(src.read_bytes())
+
+
 def _distribute_plugins(meta_root: Path, target: Path, *, dry_run: bool = False) -> list[str]:
     plugins_root = meta_root / "shared-plugins"
     if not plugins_root.is_dir():
@@ -179,13 +188,16 @@ def _distribute_plugins(meta_root: Path, target: Path, *, dry_run: bool = False)
             if not dry_run:
                 dest = target / out_rel
                 dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+                _copy_file(f, dest)
             written.append(out_rel)
     return written
 
 
 def _distribute_domain(meta_root: Path, target: Path, domain: str, *, dry_run: bool = False) -> list[str]:
     """Distribute business domain knowledge files to the service repo."""
+    if "/" in domain or "\\" in domain or domain in (".", ".."):
+        console.print(f"  [yellow]![/yellow] domain 值不合法：'{domain}'，跳过领域分发")
+        return []
     domain_dir = meta_root / "business" / "domains" / domain
     if not domain_dir.is_dir():
         return []
@@ -197,7 +209,7 @@ def _distribute_domain(meta_root: Path, target: Path, domain: str, *, dry_run: b
         if not dry_run:
             dest = target / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+            _copy_file(f, dest)
         written.append(rel)
     return written
 
@@ -249,6 +261,14 @@ def resolve_meta(meta_arg: str | None, target: Path | None = None) -> Path:
     )
 
 
+def _resolve_repo(repo_path: str, meta_root: Path) -> Path:
+    """Resolve a repo path (absolute or relative to meta_root), expanding ~."""
+    repo = Path(repo_path).expanduser()
+    if not repo.is_absolute():
+        repo = (meta_root / repo).resolve()
+    return repo
+
+
 def run_sync(target: Path, meta_root: Path, *, dry_run: bool = False) -> list[str]:
     target, meta_root = target.resolve(), meta_root.resolve()
     registry, graph = load_meta(meta_root)
@@ -269,9 +289,7 @@ def run_sync_all(meta_root: Path, *, dry_run: bool = False) -> dict[str, list[st
         if not repo_path:
             console.print(f"  [yellow]![/yellow] {svc_name}: 缺少 repo，跳过")
             continue
-        repo = Path(repo_path).expanduser()
-        if not repo.is_absolute():
-            repo = (meta_root / repo).resolve()
+        repo = _resolve_repo(repo_path, meta_root)
         if not repo.is_dir():
             console.print(f"  [yellow]![/yellow] {svc_name}: {repo} 不存在，跳过")
             continue

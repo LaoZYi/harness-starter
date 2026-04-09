@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from agent_harness.sync_context import (
+    _distribute_domain,
     _distribute_plugins,
     detect_meta_root,
     extract_service_context,
@@ -248,6 +249,125 @@ class SyncEndToEndTests(unittest.TestCase):
             self.assertIn("order-service", results)
             self.assertTrue((payment / "docs" / "service-context.md").exists())
             self.assertTrue((order / "docs" / "service-context.md").exists())
+
+
+class DistributeDomainTests(unittest.TestCase):
+    def test_copies_domain_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            meta = root / "meta"
+            domain_dir = meta / "business" / "domains" / "payment"
+            domain_dir.mkdir(parents=True)
+            (domain_dir / "glossary.md").write_text("# 术语表", encoding="utf-8")
+            (domain_dir / "rules.md").write_text("# 规则", encoding="utf-8")
+            target = root / "service"
+            target.mkdir()
+            written = _distribute_domain(meta, target, "payment")
+            self.assertIn("docs/domain/glossary.md", written)
+            self.assertIn("docs/domain/rules.md", written)
+            self.assertEqual((target / "docs" / "domain" / "glossary.md").read_text(encoding="utf-8"), "# 术语表")
+
+    def test_nonexistent_domain_returns_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            written = _distribute_domain(Path(tmpdir), Path(tmpdir) / "svc", "nonexistent")
+        self.assertEqual(written, [])
+
+    def test_rejects_path_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            written = _distribute_domain(root, root / "svc", "../../etc")
+            self.assertEqual(written, [])
+
+    def test_rejects_dotdot_domain(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            written = _distribute_domain(root, root / "svc", "..")
+            self.assertEqual(written, [])
+
+    def test_handles_binary_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            meta = root / "meta"
+            domain_dir = meta / "business" / "domains" / "assets"
+            domain_dir.mkdir(parents=True)
+            (domain_dir / "diagram.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 20)
+            target = root / "service"
+            target.mkdir()
+            written = _distribute_domain(meta, target, "assets")
+            self.assertIn("docs/domain/diagram.png", written)
+            self.assertEqual((target / "docs" / "domain" / "diagram.png").read_bytes()[:4], b"\x89PNG")
+
+
+class SyncRelativePathTests(unittest.TestCase):
+    def test_sync_all_resolves_relative_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            payment = root / "payment-service"
+            payment.mkdir()
+            order = root / "order-service"
+            order.mkdir()
+            meta = root / "meta"
+            (meta / "services").mkdir(parents=True)
+            reg = _REGISTRY_YAML.format(
+                repo_payment="../payment-service",
+                repo_order="../order-service",
+            )
+            (meta / "services" / "registry.yaml").write_text(reg, encoding="utf-8")
+            (meta / "services" / "dependency-graph.yaml").write_text(_GRAPH_YAML, encoding="utf-8")
+            results = run_sync_all(meta)
+            self.assertIn("payment-service", results)
+            self.assertIn("order-service", results)
+            self.assertTrue((payment / "docs" / "service-context.md").exists())
+
+
+class SyncDomainIntegrationTests(unittest.TestCase):
+    def test_sync_distributes_domain_knowledge(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            service = root / "payment-service"
+            service.mkdir()
+            meta = root / "meta"
+            (meta / "services").mkdir(parents=True)
+            reg = (
+                "payment-service:\n"
+                f"  repo: {service}\n"
+                "  domain: payment\n"
+                "  owner: test\n"
+                "  summary: test\n"
+            )
+            (meta / "services" / "registry.yaml").write_text(reg, encoding="utf-8")
+            (meta / "services" / "dependency-graph.yaml").write_text(
+                "payment-service:\n  provides:\n    - GET /api/test\n", encoding="utf-8"
+            )
+            domain_dir = meta / "business" / "domains" / "payment"
+            domain_dir.mkdir(parents=True)
+            (domain_dir / "glossary.md").write_text("# 支付术语", encoding="utf-8")
+            written = run_sync(service, meta)
+            self.assertIn("docs/domain/glossary.md", written)
+            self.assertEqual(
+                (service / "docs" / "domain" / "glossary.md").read_text(encoding="utf-8"),
+                "# 支付术语",
+            )
+
+    def test_sync_skips_domain_when_not_set(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            service = root / "payment-service"
+            service.mkdir()
+            meta = root / "meta"
+            (meta / "services").mkdir(parents=True)
+            reg = (
+                "payment-service:\n"
+                f"  repo: {service}\n"
+                "  owner: test\n"
+                "  summary: test\n"
+            )
+            (meta / "services" / "registry.yaml").write_text(reg, encoding="utf-8")
+            (meta / "services" / "dependency-graph.yaml").write_text(
+                "payment-service:\n  provides:\n    - GET /api/test\n", encoding="utf-8"
+            )
+            written = run_sync(service, meta)
+            self.assertFalse(any("domain" in f for f in written))
 
 
 if __name__ == "__main__":
