@@ -77,26 +77,23 @@ def _generate_changelog(plan: UpgradePlanResult) -> str:
 
 def save_base(target_root: Path, rendered: dict[str, str]) -> None:
     base_root = target_root / BASE_DIR
-    for rel_path, content in rendered.items():
-        bp = base_root / rel_path
+    for rp, content in rendered.items():
+        bp = base_root / rp
         bp.parent.mkdir(parents=True, exist_ok=True)
         bp.write_text(content, encoding="utf-8")
 
-
-def _build_checklist(create: list[str], update: list[str], rendered: dict, root: Path) -> list[str]:
-    cl: list[str] = []
-    if create:
-        cl.append("新增文件可以直接接入。")
-    n_merge = sum(1 for f in update if get_category(f) in ("three_way", "json_merge"))
-    n_over = sum(1 for f in update if get_category(f) == "overwrite")
-    n_skip = sum(1 for rp in rendered if get_category(rp) == "skip" and (root / rp).exists())
-    if n_merge:
-        cl.append(f"{n_merge} 个文件将三方合并（保留用户内容）。")
-    if n_over:
-        cl.append(f"{n_over} 个模板文件直接覆盖。")
-    if n_skip:
-        cl.append(f"{n_skip} 个用户数据文件已保护。")
-    return cl or ["文件已是最新，无需升级。"]
+def _build_checklist(create, update, rendered, root):
+    cl = []
+    if create: cl.append("新增文件可以直接接入。")
+    nm = sum(1 for f in update if get_category(f) in ("three_way", "json_merge"))
+    no = sum(1 for f in update if get_category(f) == "overwrite")
+    ns = sum(1 for r in rendered if get_category(r) == "skip" and (root / r).exists())
+    nb = sum(1 for f in update if get_category(f) == "three_way" and not (root / BASE_DIR / f).exists())
+    if nm: cl.append(f"{nm} 个文件将三方合并（保留用户内容）。")
+    if no: cl.append(f"{no} 个模板文件直接覆盖。")
+    if ns: cl.append(f"{ns} 个用户数据文件已保护。")
+    if nb: cl.append(f"⚠️ {nb} 个文件无基准版本，将备份后覆盖。")
+    return cl or ["文件已是最新。"]
 
 
 def plan_upgrade(
@@ -155,18 +152,10 @@ def execute_upgrade(
     rendered = _filter_rendered(_render_all(target_root, answers), only_files)
     plan = plan_upgrade(target_root, answers, only_files=only_files)
     changelog = _generate_changelog(plan)
-
     if dry_run:
-        return UpgradeExecutionResult(
-            target_root=str(target_root),
-            created_files=plan.create_files,
-            updated_files=plan.update_files,
-            unchanged_files=plan.unchanged_files,
-            selected_files=sorted(rendered.keys()),
-            dry_run=True,
-            changelog=changelog,
-        )
-
+        return UpgradeExecutionResult(target_root=str(target_root), created_files=plan.create_files,
+            updated_files=plan.update_files, unchanged_files=plan.unchanged_files,
+            selected_files=sorted(rendered.keys()), dry_run=True, changelog=changelog)
     base_root = target_root / BASE_DIR
     backup_root: Path | None = None
     if plan.update_files:
@@ -197,16 +186,25 @@ def execute_upgrade(
         new_content = rendered[rp]
         current = output_path.read_text(encoding="utf-8")
         base_path = base_root / rp
-        base_content = base_path.read_text(encoding="utf-8") if base_path.exists() else ""
+        try:
+            base_content = base_path.read_text(encoding="utf-8") if base_path.exists() else ""
+        except (UnicodeDecodeError, OSError):
+            base_content = ""
 
         if cat == "overwrite":
             output_path.write_text(new_content, encoding="utf-8")
             updated.append(rp)
         elif cat == "three_way":
-            if not base_content:
-                # No base: first upgrade after migration, overwrite with backup
+            if not base_path.exists():
+                # No base dir at all: first upgrade after migration
                 output_path.write_text(new_content, encoding="utf-8")
                 updated.append(rp)
+                conflicts[rp] = ["无基准版本，已用框架版本覆盖（备份至 backups/）"]
+            elif not base_content:
+                # Base exists but empty/corrupted: warn and overwrite
+                output_path.write_text(new_content, encoding="utf-8")
+                updated.append(rp)
+                conflicts[rp] = ["基准文件损坏或为空，已用框架版本覆盖（备份至 backups/）"]
             else:
                 result_text, conflict_list = merge3(base_content, current, new_content)
                 output_path.write_text(result_text, encoding="utf-8")
@@ -230,27 +228,15 @@ def execute_upgrade(
         if get_category(rp) == "skip" and (target_root / rp).exists() and rp not in plan.create_files:
             skipped.append(rp)
 
-    # Save base for future merges
     save_base(target_root, rendered)
-
-    # Write changelog
     cl_path = target_root / ".agent-harness" / "upgrade-changelog.md"
     cl_path.parent.mkdir(parents=True, exist_ok=True)
     cl_path.write_text(changelog, encoding="utf-8")
-
-    return UpgradeExecutionResult(
-        target_root=str(target_root),
-        created_files=created,
-        updated_files=updated,
-        unchanged_files=plan.unchanged_files,
-        skipped_files=skipped,
-        merged_files=merged,
-        conflicts=conflicts,
+    return UpgradeExecutionResult(target_root=str(target_root), created_files=created,
+        updated_files=updated, unchanged_files=plan.unchanged_files, skipped_files=skipped,
+        merged_files=merged, conflicts=conflicts,
         backup_root=str(backup_root) if backup_root else None,
-        selected_files=sorted(rendered.keys()),
-        dry_run=False,
-        changelog=changelog,
-    )
+        selected_files=sorted(rendered.keys()), dry_run=False, changelog=changelog)
 
 
 _PLACEHOLDER_RE = re.compile(r"\{\{\s*[a-z0-9_]+\s*\}\}")
@@ -277,4 +263,15 @@ def verify_upgrade(target_root: Path) -> list[str]:
             unfilled = _PLACEHOLDER_RE.findall(text)
             if unfilled:
                 warnings.append(f"{md.name} 中存在未填充的占位符：{', '.join(unfilled[:3])}")
+    # Check for unresolved merge conflict markers in three_way files
+    marker = "<<<<<<< "
+    for md in sorted(target_root.glob("**/*.md")):
+        rel = str(md.relative_to(target_root))
+        if get_category(rel) in ("overwrite", "skip"):
+            continue
+        try:
+            if marker in md.read_text(encoding="utf-8"):
+                warnings.append(f"{rel} 中存在未解决的合并冲突标记")
+        except (UnicodeDecodeError, OSError):
+            pass
     return warnings

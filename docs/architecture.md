@@ -10,7 +10,8 @@
 - `src/agent_harness/discovery.py`：扫描目标项目并给出结构化画像。
 - `src/agent_harness/assessment.py`：根据画像给出接入评分、缺口和建议。
 - `src/agent_harness/initializer.py`：整合探测结果、预设和用户输入，渲染模板并生成文件。含插件渲染逻辑。
-- `src/agent_harness/upgrade.py`：比较模板生成结果与现有文件，给出升级计划并执行。含 verify_upgrade 验证。
+- `src/agent_harness/upgrade.py`：比较模板生成结果与现有文件，给出升级计划并执行。含文件分类（overwrite/skip/three_way/json_merge）、基线存储和 verify_upgrade 验证。
+- `src/agent_harness/_merge3.py`：三方合并算法。merge3() 做行级文本合并，json_merge() 做 JSON 结构化合并。冲突时插入 `<<<<<<< 当前内容` 标记。
 - `src/agent_harness/templating.py`：模板发现、占位符替换和落盘。
 
 ### 运维工具层

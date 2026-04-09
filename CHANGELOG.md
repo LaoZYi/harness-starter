@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0] - 2026-04-09
+
+### Added
+
+- **三方合并升级**：`harness upgrade apply` 现在使用存储基线 + 三方合并，自动保留用户在 `AGENTS.md`、`docs/*.md` 等文件中的手动编辑。冲突时插入 `<<<<<<< 当前内容` 标记并醒目提示
+- **文件四级分类**：overwrite（纯模板）、skip（用户数据）、three_way（混合文件）、json_merge（配置文件）
+- **基线存储**：init/upgrade 时自动存储渲染结果到 `.agent-harness/.base/`，为后续三方合并提供基准
+- **冲突检测**：`verify_upgrade` 自动扫描未解决的冲突标记并警告
+- **自动计数守卫**：`make check` 自动校验文档中的测试数和技能数与实际一致
+- **技能文档覆盖守卫**：`make check` 自动校验每个技能在 workflow/决策树/evolve/usage-guide 中都有条目
+
 ## [1.0.0] - 2026-04-08
 
 ### Highlights

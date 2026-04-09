@@ -60,7 +60,9 @@ harness stats /path/to/repo
    先补 `presets/`，再补模板和测试。
 4. 团队想把初始化参数标准化
    在目标仓库中维护 `.harness.json`，之后 `harness init --non-interactive` 即可。
-5. 自动升级覆盖了本地自定义内容
-   先到 `.agent-harness/backups/<timestamp>/` 找回旧文件，再决定如何合并。
+5. 升级后出现合并冲突标记（`<<<<<<< 当前内容`）
+   在文件中搜索 `<<<<<<<`，手动选择保留哪个版本，删除冲突标记后保存。冲突只出现在用户和框架修改了同一行时。
+6. 升级覆盖了本地自定义内容
+   先到 `.agent-harness/backups/<timestamp>/` 找回旧文件。注意：升级默认使用三方合并保留用户内容，只有无基准版本的老项目首次升级时才会覆盖（有备份）。
 6. `make check` 报告"技能/规则模板已变更但生成产物未同步"
    运行 `make dogfood` 同步框架自身的 `.claude/commands/` 和 `.claude/rules/`，然后重新提交。
