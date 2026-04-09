@@ -7,7 +7,7 @@ from pathlib import Path
 from .assessment import assess_project
 from .discovery import discover_project
 from .models import InitializationResult
-from .templating import materialize_templates, render_templates
+from .templating import materialize_templates
 
 _PKG_DIR = Path(__file__).resolve().parent
 TEMPLATE_ROOT = _PKG_DIR / "templates" / "common"
@@ -212,10 +212,13 @@ def initialize_project(
         skipped.extend(ps)
     if not dry_run:
         from .upgrade import save_base
-        rendered = render_templates(TEMPLATE_ROOT, context)
-        if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
-            rendered.update(render_templates(SUPERPOWERS_ROOT, context))
-        save_base(target_root, rendered)
+        # Read back actual written files (not re-render) to guarantee base == current
+        actual: dict[str, str] = {}
+        for rel in written:
+            fp = target_root / rel
+            if fp.exists() and fp.is_file():
+                actual[rel] = fp.read_text(encoding="utf-8")
+        save_base(target_root, actual)
     return InitializationResult(
         target_root=str(target_root),
         context=context,
