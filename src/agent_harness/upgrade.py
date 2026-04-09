@@ -1,51 +1,102 @@
 from __future__ import annotations
 
+import fnmatch
 import json
 import re
 from datetime import UTC, datetime
 from difflib import unified_diff
 from pathlib import Path
 
+from ._merge3 import json_merge, merge3
 from .initializer import SUPERPOWERS_ROOT, TEMPLATE_ROOT, prepare_initialization
 from .models import UpgradeExecutionResult, UpgradePlanResult
 from .templating import render_templates
 
+BASE_DIR = ".agent-harness/.base"
+
+# --- File category manifest ---
+# overwrite: pure template output, safe to replace
+# skip: user data, never overwrite after init
+# json_merge: structured merge by key
+# (default): three_way line-based merge
+
+FILE_CATEGORIES: dict[str, str] = {
+    ".claude/commands/*": "overwrite",
+    ".claude/rules/*": "overwrite",
+    ".claude/hooks/*": "overwrite",
+    ".claude/settings.json": "overwrite",
+    ".github/*": "overwrite",
+    "CLAUDE.md": "overwrite",
+    "CLAUDE.local.md.example": "overwrite",
+    "docs/decisions/.gitkeep": "overwrite",
+    "docs/superpowers/specs/.gitkeep": "overwrite",
+    "notes/.gitkeep": "overwrite",
+    ".agent-harness/current-task.md": "skip",
+    ".agent-harness/task-log.md": "skip",
+    ".agent-harness/lessons.md": "skip",
+    ".agent-harness/init-summary.md": "skip",
+    ".agent-harness/project.json": "json_merge",
+}
+
+PROJECT_JSON_FW_KEYS = {"harness_version"}
+
+
+def get_category(rel_path: str) -> str:
+    for pattern, category in FILE_CATEGORIES.items():
+        if fnmatch.fnmatch(rel_path, pattern):
+            return category
+    return "three_way"
 
 def _filter_rendered(rendered: dict[str, str], only_files: list[str] | None) -> dict[str, str]:
     if not only_files:
         return rendered
-
     allowed = set(only_files)
     return {path: content for path, content in rendered.items() if path in allowed}
 
 
-def _build_diff(relative_path: str, current_content: str, expected_content: str) -> str:
-    return "".join(
-        unified_diff(
-            current_content.splitlines(keepends=True),
-            expected_content.splitlines(keepends=True),
-            fromfile=f"a/{relative_path}",
-            tofile=f"b/{relative_path}",
-        )
-    )
+def _build_diff(rp: str, cur: str, exp: str) -> str:
+    return "".join(unified_diff(cur.splitlines(keepends=True), exp.splitlines(keepends=True), fromfile=f"a/{rp}", tofile=f"b/{rp}"))
+
+
+def _render_all(root: Path, answers: dict[str, object]) -> dict[str, str]:
+    _, _, ctx = prepare_initialization(root, answers)
+    rendered = render_templates(TEMPLATE_ROOT, ctx)
+    if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
+        rendered.update(render_templates(SUPERPOWERS_ROOT, ctx))
+    return rendered
 
 
 def _generate_changelog(plan: UpgradePlanResult) -> str:
-    lines = ["# 升级变更摘要\n"]
-    lines.append(f"时间：{datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
-    if plan.create_files:
-        lines.append(f"\n## 新增文件（{len(plan.create_files)} 个）\n")
-        for f in plan.create_files:
-            lines.append(f"- `{f}`")
-    if plan.update_files:
-        lines.append(f"\n## 更新文件（{len(plan.update_files)} 个）\n")
-        for f in plan.update_files:
-            lines.append(f"- `{f}`")
-    if plan.unchanged_files:
-        lines.append(f"\n## 未变化文件（{len(plan.unchanged_files)} 个）\n")
-        for f in plan.unchanged_files:
-            lines.append(f"- `{f}`")
+    lines = [f"# 升级变更摘要\n\n时间：{datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n"]
+    for label, files in [("新增", plan.create_files), ("更新", plan.update_files), ("未变化", plan.unchanged_files)]:
+        if files:
+            lines.append(f"\n## {label}文件（{len(files)} 个）\n")
+            lines.extend(f"- `{f}`" for f in files)
     return "\n".join(lines) + "\n"
+
+
+def save_base(target_root: Path, rendered: dict[str, str]) -> None:
+    base_root = target_root / BASE_DIR
+    for rel_path, content in rendered.items():
+        bp = base_root / rel_path
+        bp.parent.mkdir(parents=True, exist_ok=True)
+        bp.write_text(content, encoding="utf-8")
+
+
+def _build_checklist(create: list[str], update: list[str], rendered: dict, root: Path) -> list[str]:
+    cl: list[str] = []
+    if create:
+        cl.append("新增文件可以直接接入。")
+    n_merge = sum(1 for f in update if get_category(f) in ("three_way", "json_merge"))
+    n_over = sum(1 for f in update if get_category(f) == "overwrite")
+    n_skip = sum(1 for rp in rendered if get_category(rp) == "skip" and (root / rp).exists())
+    if n_merge:
+        cl.append(f"{n_merge} 个文件将三方合并（保留用户内容）。")
+    if n_over:
+        cl.append(f"{n_over} 个模板文件直接覆盖。")
+    if n_skip:
+        cl.append(f"{n_skip} 个用户数据文件已保护。")
+    return cl or ["文件已是最新，无需升级。"]
 
 
 def plan_upgrade(
@@ -55,11 +106,7 @@ def plan_upgrade(
     only_files: list[str] | None = None,
 ) -> UpgradePlanResult:
     target_root = target_root.resolve()
-    _, _, context = prepare_initialization(target_root, answers)
-    rendered = render_templates(TEMPLATE_ROOT, context)
-    if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
-        rendered.update(render_templates(SUPERPOWERS_ROOT, context))
-    rendered = _filter_rendered(rendered, only_files)
+    rendered = _filter_rendered(_render_all(target_root, answers), only_files)
 
     create_files: list[str] = []
     update_files: list[str] = []
@@ -67,7 +114,13 @@ def plan_upgrade(
     diffs: dict[str, str] = {}
 
     for relative_path, expected_content in rendered.items():
+        cat = get_category(relative_path)
         path = target_root / relative_path
+
+        if cat == "skip" and path.exists():
+            unchanged_files.append(relative_path)
+            continue
+
         if not path.exists():
             create_files.append(relative_path)
             continue
@@ -79,17 +132,7 @@ def plan_upgrade(
             update_files.append(relative_path)
             diffs[relative_path] = _build_diff(relative_path, current_content, expected_content)
 
-    checklist: list[str] = []
-    if create_files:
-        checklist.append("新增文件可以直接接入，优先检查 docs/ 和 .agent-harness/ 下的新入口。")
-    if update_files:
-        checklist.append("存在会变化的文件，升级前请先 review 差异并保留本地自定义内容。")
-    if ".agent-harness/project.json" in update_files or ".agent-harness/project.json" in create_files:
-        checklist.append("升级后请确认 .agent-harness/project.json 里的命令和目录仍准确。")
-    if "AGENTS.md" in update_files or "AGENTS.md" in create_files:
-        checklist.append("升级后请确认 AGENTS.md 仍符合团队当前协作习惯。")
-    if not checklist:
-        checklist.append("当前生成结果与仓库内 harness 文件一致，可以按需跳过升级。")
+    checklist = _build_checklist(create_files, update_files, rendered, target_root)
 
     return UpgradePlanResult(
         target_root=str(target_root),
@@ -109,6 +152,7 @@ def execute_upgrade(
     dry_run: bool = False,
 ) -> UpgradeExecutionResult:
     target_root = target_root.resolve()
+    rendered = _filter_rendered(_render_all(target_root, answers), only_files)
     plan = plan_upgrade(target_root, answers, only_files=only_files)
     changelog = _generate_changelog(plan)
 
@@ -118,44 +162,91 @@ def execute_upgrade(
             created_files=plan.create_files,
             updated_files=plan.update_files,
             unchanged_files=plan.unchanged_files,
-            selected_files=sorted(plan.create_files + plan.update_files + plan.unchanged_files),
+            selected_files=sorted(rendered.keys()),
             dry_run=True,
             changelog=changelog,
         )
 
-    _, _, context = prepare_initialization(target_root, answers)
-    rendered = render_templates(TEMPLATE_ROOT, context)
-    if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
-        rendered.update(render_templates(SUPERPOWERS_ROOT, context))
-    rendered = _filter_rendered(rendered, only_files)
-
+    base_root = target_root / BASE_DIR
     backup_root: Path | None = None
     if plan.update_files:
-        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-        backup_root = target_root / ".agent-harness" / "backups" / timestamp
+        backup_root = target_root / ".agent-harness" / "backups" / datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    for rp in plan.update_files:
+        src = target_root / rp
+        if backup_root and src.exists():
+            bp = backup_root / rp
+            bp.parent.mkdir(parents=True, exist_ok=True)
+            bp.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
 
-    for relative_path in plan.update_files:
-        source_path = target_root / relative_path
-        backup_path = backup_root / relative_path if backup_root else None
-        if backup_path is not None:
-            backup_path.parent.mkdir(parents=True, exist_ok=True)
-            backup_path.write_text(source_path.read_text(encoding="utf-8"), encoding="utf-8")
+    # Process files by category
+    created: list[str] = []
+    updated: list[str] = []
+    skipped: list[str] = []
+    merged: list[str] = []
+    conflicts: dict[str, list[str]] = {}
 
-    for relative_path in plan.create_files + plan.update_files:
-        output_path = target_root / relative_path
+    for rp in plan.create_files:
+        output_path = target_root / rp
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(rendered[relative_path], encoding="utf-8")
+        output_path.write_text(rendered[rp], encoding="utf-8")
+        created.append(rp)
 
-    changelog_path = target_root / ".agent-harness" / "upgrade-changelog.md"
-    changelog_path.parent.mkdir(parents=True, exist_ok=True)
-    changelog_path.write_text(changelog, encoding="utf-8")
+    for rp in plan.update_files:
+        cat = get_category(rp)
+        output_path = target_root / rp
+        new_content = rendered[rp]
+        current = output_path.read_text(encoding="utf-8")
+        base_path = base_root / rp
+        base_content = base_path.read_text(encoding="utf-8") if base_path.exists() else ""
+
+        if cat == "overwrite":
+            output_path.write_text(new_content, encoding="utf-8")
+            updated.append(rp)
+        elif cat == "three_way":
+            if not base_content:
+                # No base: first upgrade after migration, overwrite with backup
+                output_path.write_text(new_content, encoding="utf-8")
+                updated.append(rp)
+            else:
+                result_text, conflict_list = merge3(base_content, current, new_content)
+                output_path.write_text(result_text, encoding="utf-8")
+                if conflict_list:
+                    conflicts[rp] = conflict_list
+                    merged.append(rp)
+                else:
+                    merged.append(rp)
+        elif cat == "json_merge":
+            result_text, warnings = json_merge(
+                base_content, current, new_content,
+                framework_keys=PROJECT_JSON_FW_KEYS,
+            )
+            output_path.write_text(result_text, encoding="utf-8")
+            if warnings:
+                conflicts[rp] = warnings
+            merged.append(rp)
+
+    # Collect skipped files
+    for rp in rendered:
+        if get_category(rp) == "skip" and (target_root / rp).exists() and rp not in plan.create_files:
+            skipped.append(rp)
+
+    # Save base for future merges
+    save_base(target_root, rendered)
+
+    # Write changelog
+    cl_path = target_root / ".agent-harness" / "upgrade-changelog.md"
+    cl_path.parent.mkdir(parents=True, exist_ok=True)
+    cl_path.write_text(changelog, encoding="utf-8")
 
     return UpgradeExecutionResult(
         target_root=str(target_root),
-        created_files=plan.create_files,
-        updated_files=plan.update_files,
+        created_files=created,
+        updated_files=updated,
         unchanged_files=plan.unchanged_files,
-        backup_root=str(backup_root) if backup_root is not None else None,
+        skipped_files=skipped,
+        merged_files=merged,
+        conflicts=conflicts,
+        backup_root=str(backup_root) if backup_root else None,
         selected_files=sorted(rendered.keys()),
         dry_run=False,
         changelog=changelog,

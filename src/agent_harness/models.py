@@ -67,6 +67,9 @@ class UpgradeExecutionResult:
     created_files: list[str] = field(default_factory=list)
     updated_files: list[str] = field(default_factory=list)
     unchanged_files: list[str] = field(default_factory=list)
+    skipped_files: list[str] = field(default_factory=list)
+    merged_files: list[str] = field(default_factory=list)
+    conflicts: dict[str, list[str]] = field(default_factory=dict)
     backup_root: str | None = None
     selected_files: list[str] = field(default_factory=list)
     dry_run: bool = False

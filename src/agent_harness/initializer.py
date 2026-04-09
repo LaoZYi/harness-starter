@@ -7,7 +7,7 @@ from pathlib import Path
 from .assessment import assess_project
 from .discovery import discover_project
 from .models import InitializationResult
-from .templating import materialize_templates
+from .templating import materialize_templates, render_templates
 
 _PKG_DIR = Path(__file__).resolve().parent
 TEMPLATE_ROOT = _PKG_DIR / "templates" / "common"
@@ -200,26 +200,22 @@ def initialize_project(
     if not dry_run:
         target_root.mkdir(parents=True, exist_ok=True)
     _, _, context = prepare_initialization(target_root, answers)
-
-    written, skipped = materialize_templates(
-        TEMPLATE_ROOT,
-        target_root,
-        context,
-        force=force,
-        dry_run=dry_run,
-    )
-
+    written, skipped = materialize_templates(TEMPLATE_ROOT, target_root, context, force=force, dry_run=dry_run)
     if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
         sw, ss = materialize_templates(SUPERPOWERS_ROOT, target_root, context, force=force, dry_run=dry_run)
         written.extend(sw)
         skipped.extend(ss)
-
     plugin_root = target_root / ".harness-plugins"
     if plugin_root.is_dir():
         pw, ps = _materialize_plugins(plugin_root, target_root, context, force=force, dry_run=dry_run)
         written.extend(pw)
         skipped.extend(ps)
-
+    if not dry_run:
+        from .upgrade import save_base
+        rendered = render_templates(TEMPLATE_ROOT, context)
+        if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
+            rendered.update(render_templates(SUPERPOWERS_ROOT, context))
+        save_base(target_root, rendered)
     return InitializationResult(
         target_root=str(target_root),
         context=context,

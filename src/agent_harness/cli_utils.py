@@ -72,16 +72,30 @@ def print_upgrade_apply(result: object) -> None:
         console.print(f"  新增 [green]{len(result.created_files)}[/green] 个文件")
         for path in result.created_files:
             console.print(f"    [green]+[/green] {path}")
+    if result.merged_files:
+        console.print(f"  合并 [cyan]{len(result.merged_files)}[/cyan] 个文件（保留了用户内容）")
+        for path in result.merged_files:
+            console.print(f"    [cyan]M[/cyan] {path}")
     if result.updated_files:
         console.print(f"  更新 [yellow]{len(result.updated_files)}[/yellow] 个文件")
         for path in result.updated_files:
             console.print(f"    [yellow]~[/yellow] {path}")
+    if result.skipped_files:
+        console.print(f"  保护 [blue]{len(result.skipped_files)}[/blue] 个用户数据文件（未触碰）")
     if result.unchanged_files:
         console.print(f"  未变 [dim]{len(result.unchanged_files)}[/dim] 个文件")
     if result.backup_root:
         console.print(f"  备份: [yellow]{result.backup_root}[/yellow]")
-    if result.selected_files:
-        console.print(f"  选定: {', '.join(result.selected_files)}")
+    if result.conflicts:
+        console.print()
+        console.print("[bold red]⚠️  升级产生了合并冲突！以下文件需要手动处理：[/bold red]")
+        console.print()
+        for path, descriptions in result.conflicts.items():
+            console.print(f"  [bold red]CONFLICT[/bold red]  {path}")
+            for d in descriptions:
+                console.print(f"             {d}")
+        console.print()
+        console.print("[yellow]请在上述文件中搜索 <<<<<<< 标记并手动解决冲突。[/yellow]")
 
 
 def print_verify_warnings(warnings: list[str]) -> None:
