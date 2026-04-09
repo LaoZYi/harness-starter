@@ -1,0 +1,31 @@
+# 微服务协作约定
+
+> 本规则由 {{project_name}} 统一维护，分发到各服务仓库的 `.claude/rules/`。
+
+## 错误响应格式
+
+所有服务的错误响应必须统一为：
+
+```json
+{
+  "error": {
+    "code": "SERVICE_ERROR_CODE",
+    "message": "人类可读的错误描述",
+    "details": {}
+  }
+}
+```
+
+- `code`：大写蛇形，前缀为服务域名（如 `PAYMENT_`、`ORDER_`）
+- HTTP 状态码：400 客户端错误、404 不存在、409 冲突、500 服务端错误
+
+## 日志规范
+
+结构化日志必须包含：`trace_id`（UUID v4，跨服务传递）、`service`（服务名）、`level`、`timestamp`（ISO 8601 UTC）。
+
+## 接口变更流程
+
+1. 查 `docs/service-context.md` 确认调用方
+2. 接口变更必须向后兼容，或提前协调上游
+3. 变更后更新 meta repo 的 `services/dependency-graph.yaml`
+4. 运行 `harness sync --all` 同步到所有服务

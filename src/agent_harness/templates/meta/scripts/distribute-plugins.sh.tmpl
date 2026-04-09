@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# 将共享插件分发到指定的服务仓库
+#
+# 用法：
+#   ./scripts/distribute-plugins.sh /path/to/payment-service
+#   ./scripts/distribute-plugins.sh /path/to/payment-service /path/to/order-service
+#
+# 分发后在服务仓库运行 harness upgrade apply . 即可渲染插件内容。
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+META_ROOT="$(dirname "$SCRIPT_DIR")"
+PLUGINS_SRC="$META_ROOT/shared-plugins"
+
+if [ $# -eq 0 ]; then
+    echo "用法: $0 <service-repo-path> [<service-repo-path> ...]"
+    echo ""
+    echo "示例:"
+    echo "  $0 /path/to/payment-service"
+    echo "  $0 ~/projects/payment-service ~/projects/order-service"
+    exit 1
+fi
+
+if [ ! -d "$PLUGINS_SRC" ]; then
+    echo "错误：找不到共享插件目录: $PLUGINS_SRC"
+    exit 1
+fi
+
+for TARGET in "$@"; do
+    TARGET="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "错误：路径不存在: $TARGET"; continue; }
+    DEST="$TARGET/.harness-plugins"
+
+    echo "分发到: $TARGET"
+    mkdir -p "$DEST/rules" "$DEST/templates"
+
+    # 复制 rules
+    if [ -d "$PLUGINS_SRC/rules" ]; then
+        cp -r "$PLUGINS_SRC/rules/"* "$DEST/rules/" 2>/dev/null || true
+        echo "  + rules/ ($(ls "$PLUGINS_SRC/rules/" 2>/dev/null | wc -l | tr -d ' ') 个文件)"
+    fi
+
+    # 复制 templates
+    if [ -d "$PLUGINS_SRC/templates" ]; then
+        cp -r "$PLUGINS_SRC/templates/"* "$DEST/templates/" 2>/dev/null || true
+        echo "  + templates/"
+    fi
+
+    echo "  完成。运行 'cd $TARGET && harness upgrade apply .' 以渲染插件。"
+    echo ""
+done
+
+echo "分发完成。共处理 $# 个服务仓库。"

@@ -1,0 +1,33 @@
+# 跨服务约定
+
+> 本文件由 {{project_name}} 统一维护，分发到各服务仓库。
+> 完整约定见 meta repo 的 `conventions/README.md`。
+
+## 错误响应格式
+
+```json
+{
+  "error": {
+    "code": "SERVICE_ERROR_CODE",
+    "message": "人类可读的错误描述",
+    "details": {}
+  }
+}
+```
+
+## 日志必含字段
+
+| 字段 | 说明 |
+|------|------|
+| `trace_id` | 分布式追踪 ID（UUID v4），跨服务传递 |
+| `service` | 服务名，与 registry 中一致 |
+| `level` | info / warn / error |
+| `timestamp` | ISO 8601 UTC |
+
+## 认证方式
+
+（由 meta repo 的 conventions/README.md 定义，分发时填入具体方式）
+
+## 超时与重试
+
+（由 meta repo 的 conventions/README.md 定义，分发时填入具体策略）

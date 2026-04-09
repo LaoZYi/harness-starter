@@ -19,6 +19,7 @@ from .init_flow import (
     interactive_init, non_interactive_init,
 )
 from .initializer import initialize_project
+from .models import ProjectProfile
 from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade, verify_upgrade as _verify
 
 PROJECT_FIELDS = (
@@ -60,7 +61,7 @@ def _add_common_project_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--has-production", action="store_true")
     parser.add_argument("--no-production", action="store_true")
 
-def _resolve_answers(args: argparse.Namespace, profile: object, config: dict[str, object]) -> dict[str, object]:
+def _resolve_answers(args: argparse.Namespace, profile: ProjectProfile, config: dict[str, object]) -> dict[str, object]:
     answers: dict[str, object] = {}
     for key in PROJECT_FIELDS:
         cli_value = getattr(args, key.replace("-", "_"), None)
@@ -121,9 +122,9 @@ def _cmd_init(args: argparse.Namespace) -> None:
     print_init_result(result)
     if not result.dry_run:
         print_verify_warnings(_verify(target))
-        _maybe_git_commit(target, args)
+        _maybe_git_commit(target, args, result.written_files)
 
-def _maybe_git_commit(target: Path, args: argparse.Namespace) -> None:
+def _maybe_git_commit(target: Path, args: argparse.Namespace, written_files: list[str] | None = None) -> None:
     import subprocess
     if not (target / ".git").is_dir():
         return
@@ -137,7 +138,8 @@ def _maybe_git_commit(target: Path, args: argparse.Namespace) -> None:
         answer = questionary.select("是否创建 git 初始提交", choices=["是", "否"], default="是").ask()
         if answer != "是":
             return
-    subprocess.run(["git", "-C", str(target), "add", "-A"], check=True, capture_output=True)
+    files_to_stage = written_files or ["."]
+    subprocess.run(["git", "-C", str(target), "add", "--"] + files_to_stage, check=True, capture_output=True)
     subprocess.run(["git", "-C", str(target), "commit", "-m", "chore: initialize agent harness"], check=True, capture_output=True)
     console.print("  [green]已创建 git 提交[/green]: chore: initialize agent harness")
 
@@ -179,6 +181,15 @@ def _cmd_export(args: argparse.Namespace) -> None:
 def _cmd_stats(args: argparse.Namespace) -> None:
     from .stats import run_stats
     run_stats(Path(args.target).resolve())
+
+def _cmd_sync(args: argparse.Namespace) -> None:
+    from .sync_context import resolve_meta, run_sync, run_sync_all
+    target = Path(args.target).resolve() if not args.all else None
+    meta = resolve_meta(args.meta, target)
+    if args.all:
+        run_sync_all(meta, dry_run=args.dry_run)
+    else:
+        run_sync(target, meta, dry_run=args.dry_run)
 
 
 # ── parser ──
@@ -237,6 +248,13 @@ def build_parser() -> argparse.ArgumentParser:
     sta_p = subs.add_parser("stats", help="任务数据统计")
     sta_p.add_argument("target", help="目标项目路径")
     sta_p.set_defaults(func=_cmd_stats)
+
+    sync_p = subs.add_parser("sync", help="从 meta repo 同步跨服务上下文和共享规则")
+    sync_p.add_argument("target", nargs="?", default=".", help="服务仓库路径")
+    sync_p.add_argument("--meta", default=None, help="meta 仓库路径（可省略，自动检测）")
+    sync_p.add_argument("--all", action="store_true", help="同步 registry 中所有服务")
+    sync_p.add_argument("--dry-run", action="store_true", help="预演不写文件")
+    sync_p.set_defaults(func=_cmd_sync)
 
     return root
 

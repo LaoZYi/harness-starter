@@ -1,0 +1,26 @@
+# 服务依赖关系图 — {{project_name}}
+#
+# 记录每个服务提供和消费的接口，保持与实际调用链一致。
+# 修改任何服务的对外接口后，必须同步更新本文件。
+#
+# 字段说明：
+#   provides: 本服务对外暴露的接口（METHOD /path）
+#   consumes: 本服务调用的其他服务接口（target: METHOD /path）
+
+# payment-service:
+#   provides:
+#     - POST /api/payments/create
+#     - GET /api/payments/{id}
+#     - POST /api/payments/{id}/refund
+#   consumes:
+#     - order-service: GET /api/orders/{id}
+#     - notification-service: POST /api/notify
+
+# order-service:
+#   provides:
+#     - POST /api/orders
+#     - GET /api/orders/{id}
+#     - PUT /api/orders/{id}/status
+#   consumes:
+#     - payment-service: POST /api/payments/create
+#     - inventory-service: POST /api/inventory/reserve

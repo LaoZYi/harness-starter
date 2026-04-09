@@ -83,7 +83,7 @@ harness init /path/to/project
 
 1. **项目名称** — 例如 "Acme API"
 2. **一句话目标** — 例如 "Handle internal automation requests"
-3. **项目类型** — 从 8 种类型中选择（见下表）
+3. **项目类型** — 从 9 种类型中选择（见下表）
 4. **敏感级别** — standard / internal / high
 5. **是否已有生产环境** — 是 / 否
 
@@ -99,6 +99,7 @@ harness init /path/to/project
 | `mobile-app` | iOS/Android、React Native、Flutter |
 | `monorepo` | 多包工作空间 |
 | `data-pipeline` | ETL、dbt、Airflow |
+| `meta` | 微服务全局上下文（服务注册、依赖图、接口契约） |
 
 每种类型有独立的 preset，定义该类型的行为变化判定、架构关注点、发布检查项和推荐技能。
 
@@ -792,7 +793,7 @@ CLI 参数 > --config 文件 > .harness.json > 自动探测值
 | `features` | string | 功能列表，逗号或换行分隔（可选） |
 | `constraints` | string | 约束条件（可选） |
 | `done_criteria` | string | 完成标准（可选，不填则从 preset 生成） |
-| `project_type` | string | 项目类型（8 种之一） |
+| `project_type` | string | 项目类型（9 种之一） |
 | `language` | string | 编程语言 |
 | `package_manager` | string | 包管理器 |
 | `run_command` | string | 运行命令 |

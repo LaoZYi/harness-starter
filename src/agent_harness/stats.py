@@ -5,6 +5,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from ._shared import require_harness
 from .cli_utils import console
 
 _TASK_RE = re.compile(r"^## (\d{4}-\d{2}-\d{2}) ")
@@ -31,10 +32,7 @@ def run_stats(target: Path) -> None:
     from rich.panel import Panel
 
     target = target.resolve()
-    if not (target / ".agent-harness").is_dir() and not (target / "AGENTS.md").exists():
-        raise SystemExit(f"错误：{target} 尚未初始化 harness。请先运行 harness init {target}")
-
-    target = target.resolve()
+    require_harness(target)
     tl = target / ".agent-harness" / "task-log.md"
     ll = target / ".agent-harness" / "lessons.md"
 

@@ -20,6 +20,12 @@ def merge3(base: str, current: str, new: str) -> tuple[str, list[str]]:
     Returns (merged_text, conflict_descriptions).
     Empty conflict list means clean merge.
     """
+    # Normalize line endings to LF to prevent CRLF/LF mismatches from
+    # causing silent data loss (SequenceMatcher treats them as different lines)
+    base = base.replace("\r\n", "\n").replace("\r", "\n")
+    current = current.replace("\r\n", "\n").replace("\r", "\n")
+    new = new.replace("\r\n", "\n").replace("\r", "\n")
+
     if current == base:
         return new, []
     if new == base:
@@ -27,9 +33,20 @@ def merge3(base: str, current: str, new: str) -> tuple[str, list[str]]:
     if current == new:
         return current, []
 
+    # Reject files with pre-existing conflict markers to avoid nested markers
+    if CONFLICT_CURRENT in current:
+        return current, ["文件中存在未解决的冲突标记，请先手动解决后再升级"]
+
     base_lines = base.splitlines(keepends=True)
     cur_lines = current.splitlines(keepends=True)
     new_lines = new.splitlines(keepends=True)
+    # Ensure all lines end with \n to prevent line-joining bugs
+    if base_lines and not base_lines[-1].endswith("\n"):
+        base_lines[-1] += "\n"
+    if cur_lines and not cur_lines[-1].endswith("\n"):
+        cur_lines[-1] += "\n"
+    if new_lines and not new_lines[-1].endswith("\n"):
+        new_lines[-1] += "\n"
 
     merged: list[str] = []
     conflicts: list[str] = []

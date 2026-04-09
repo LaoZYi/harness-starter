@@ -126,8 +126,14 @@ class ConflictReportingTests(unittest.TestCase):
             # by verifying the upgrade runs without error
             result = execute_upgrade(root, {**_BASE_ANSWERS})
 
-        # The upgrade should complete (no crash)
+        # The upgrade should complete and detect the conflict
         self.assertIsNotNone(result)
+        # Verify that either conflicts were reported or the merge preserved user content
+        agents_after = (root / "AGENTS.md").read_text(encoding="utf-8") if (root / "AGENTS.md").exists() else ""
+        has_conflict_marker = "<<<<<<< " in agents_after
+        has_conflict_report = bool(result.conflicts)
+        self.assertTrue(has_conflict_marker or has_conflict_report or "USER RULE OVERRIDE" in agents_after,
+            "Conflict should be detected or user content preserved")
 
 
 class BaseStorageTests(unittest.TestCase):
@@ -144,9 +150,23 @@ class BaseStorageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "project"
             initialize_project(root, {**_BASE_ANSWERS})
+            # Modify a file so upgrade actually does something
+            agents = root / "AGENTS.md"
+            agents.write_text(agents.read_text(encoding="utf-8") + "\n# user note\n", encoding="utf-8")
             execute_upgrade(root, {**_BASE_ANSWERS})
             base_dir = root / ".agent-harness" / ".base"
             self.assertTrue((base_dir / "AGENTS.md").exists())
+            # Base should contain the rendered template content, not user edits
+            base_content = (base_dir / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertNotIn("# user note", base_content)
+
+    def test_upgrade_progress_marker_cleaned_up(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            execute_upgrade(root, {**_BASE_ANSWERS})
+            marker = root / ".agent-harness" / ".upgrade-in-progress"
+            self.assertFalse(marker.exists(), "Progress marker should be cleaned up after upgrade")
 
 
 if __name__ == "__main__":

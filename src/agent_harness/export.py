@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from ._shared import require_harness
 from .cli_utils import console
 
 
@@ -84,8 +85,7 @@ def _render_markdown(snapshot: dict[str, object]) -> str:
 
 def run_export(target: Path, *, output: str | None = None, as_json: bool = False) -> None:
     target = target.resolve()
-    if not (target / ".agent-harness").is_dir() and not (target / "AGENTS.md").exists():
-        raise SystemExit(f"错误：{target} 尚未初始化 harness。请先运行 harness init {target}")
+    require_harness(target)
     snapshot = _build_snapshot(target)
 
     if as_json:

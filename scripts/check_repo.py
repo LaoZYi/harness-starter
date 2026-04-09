@@ -82,6 +82,7 @@ REQUIRED_FILES = [
     PKG / "presets" / "mobile-app.json",
     PKG / "presets" / "monorepo.json",
     PKG / "presets" / "data-pipeline.json",
+    PKG / "presets" / "meta.json",
     ROOT / "VERSION",
 ]
 

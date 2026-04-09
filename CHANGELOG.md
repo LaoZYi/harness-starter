@@ -46,7 +46,7 @@
 
 ### Infrastructure
 
-- 105 个回归测试（含技能存在性、占位符、决策树完整性）
+- 134 个回归测试（含技能存在性、占位符、决策树完整性）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索
@@ -55,4 +55,4 @@
 
 ## [0.5.0] - 2026-04-07 (pre-superpowers)
 
-初始版本。提供探测、评估、初始化、升级四种能力。8 种项目类型 preset。插件机制。Doctor/Export/Stats 运维命令。
+初始版本。提供探测、评估、初始化、升级四种能力。9 种项目类型 preset。插件机制。Doctor/Export/Stats 运维命令。

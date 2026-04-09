@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（104 个）。
+- `make test`：运行框架级回归测试（134 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -31,6 +31,9 @@ harness doctor /path/to/repo
 harness export /path/to/repo
 harness export /path/to/repo -o snapshot.md --json
 harness stats /path/to/repo
+harness sync --all                                          # 在 meta repo 内同步所有服务
+harness sync /path/to/service --meta /path/to/meta          # 同步单个服务
+harness sync /path/to/service                               # 再次同步（meta 路径已记住）
 ```
 
 未安装时也可通过 `PYTHONPATH=src python -m agent_harness` 替代 `harness`。

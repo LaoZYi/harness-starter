@@ -1,0 +1,41 @@
+# 共享插件 — {{project_name}}
+
+本目录包含可分发到各微服务仓库的共享规则和模板。
+
+## 目录结构
+
+```
+shared-plugins/
+├── rules/                          # 跨服务规则 → 服务 repo 的 .claude/rules/
+│   └── microservice-conventions.md # 统一的微服务协作约定
+└── templates/                      # 共享模板 → 服务 repo 的项目根
+    └── docs/
+        └── upstream-conventions.md # 跨服务约定文档副本
+```
+
+## 分发方式
+
+### 方式一：harness sync（推荐）
+
+`harness sync` 一条命令完成所有同步：上下文 + 共享插件。
+
+```bash
+# 在 meta repo 内运行，同步所有服务
+harness sync --all
+
+# 或同步单个服务
+harness sync /path/to/payment-service --meta /path/to/this-repo
+```
+
+### 方式二：手动复制
+
+```bash
+cp -r shared-plugins/* /path/to/payment-service/.harness-plugins/
+cd /path/to/payment-service && harness upgrade apply .
+```
+
+## 编辑规则
+
+- 修改共享规则后，重新运行 `harness sync --all` 即可分发
+- 插件文件支持模板变量占位符（在 `harness init/upgrade` 时渲染）
+- 支持 `.tmpl` 后缀（渲染时自动去除）

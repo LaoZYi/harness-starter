@@ -207,6 +207,28 @@ class PluginTests(unittest.TestCase):
             self.assertTrue(guide.exists())
             self.assertIn("Test Project", guide.read_text(encoding="utf-8"))
 
+    def test_plugin_tmpl_suffix_stripped(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            # rules with .md.tmpl suffix
+            rules_dir = target / ".harness-plugins" / "rules"
+            rules_dir.mkdir(parents=True)
+            (rules_dir / "team-rule.md.tmpl").write_text("# {{project_name}} 团队规则", encoding="utf-8")
+            # templates with .tmpl suffix
+            tmpl_dir = target / ".harness-plugins" / "templates" / "docs"
+            tmpl_dir.mkdir(parents=True)
+            (tmpl_dir / "onboarding.md.tmpl").write_text("# {{project_name}} 入职指南", encoding="utf-8")
+            _init_test_project(target)
+            # .tmpl suffix should be stripped
+            rule = target / ".claude" / "rules" / "team-rule.md"
+            self.assertTrue(rule.exists(), ".tmpl suffix should be stripped from rule filename")
+            self.assertIn("Test Project", rule.read_text(encoding="utf-8"))
+            self.assertFalse((target / ".claude" / "rules" / "team-rule.md.tmpl").exists())
+            doc = target / "docs" / "onboarding.md"
+            self.assertTrue(doc.exists(), ".tmpl suffix should be stripped from template filename")
+            self.assertIn("Test Project", doc.read_text(encoding="utf-8"))
+            self.assertFalse((target / "docs" / "onboarding.md.tmpl").exists())
+
 
 class GitCommitTests(unittest.TestCase):
     def test_no_git_commit_flag(self) -> None:

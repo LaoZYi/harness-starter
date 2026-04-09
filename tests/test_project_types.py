@@ -63,6 +63,24 @@ class ProjectTypeDetectionTests(unittest.TestCase):
             profile = discover_project(root)
         self.assertEqual(profile.project_type, "data-pipeline")
 
+    def test_meta_from_services_registry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "services").mkdir()
+            (root / "services" / "registry.yaml").write_text("payment-service:\n  repo: git@example.com/payment\n", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "meta")
+
+    def test_meta_not_detected_when_source_code_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "services").mkdir()
+            (root / "services" / "registry.yaml").write_text("payment-service:\n", encoding="utf-8")
+            (root / "src").mkdir()
+            (root / "src" / "main.py").write_text("print('hello')", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertNotEqual(profile.project_type, "meta")
+
     def test_monorepo_priority_over_web_app(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

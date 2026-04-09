@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+import logging
 import re
 from pathlib import Path
 
 PLACEHOLDER_PATTERN = re.compile(r"{{\s*([a-z0-9_]+)\s*}}")
+_log = logging.getLogger(__name__)
 
 
 def render_template(template_text: str, context: dict[str, str]) -> str:
     def replace(match: re.Match[str]) -> str:
-        return context.get(match.group(1), "")
+        key = match.group(1)
+        if key not in context:
+            _log.warning("模板占位符 {{%s}} 无对应值，已替换为空串", key)
+        return context.get(key, "")
 
     return PLACEHOLDER_PATTERN.sub(replace, template_text)
 
@@ -35,6 +40,9 @@ def materialize_templates(
 
     for output_relative, content in render_templates(template_root, context).items():
         output_path = target_root / output_relative
+
+        if not output_path.resolve().is_relative_to(target_root.resolve()):
+            continue
 
         if output_path.exists() and not force:
             skipped.append(output_relative)

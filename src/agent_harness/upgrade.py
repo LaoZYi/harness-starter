@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import fnmatch
 import json
-import re
 from datetime import UTC, datetime
 from difflib import unified_diff
 from pathlib import Path
 
 from ._merge3 import json_merge, merge3
-from .initializer import SUPERPOWERS_ROOT, TEMPLATE_ROOT, prepare_initialization
+from ._shared import META_ROOT, PLACEHOLDER_RE, SUPERPOWERS_ROOT, TEMPLATE_ROOT
+from .initializer import prepare_initialization
 from .models import UpgradeExecutionResult, UpgradePlanResult
 from .templating import render_templates
 
@@ -63,6 +63,8 @@ def _render_all(root: Path, answers: dict[str, object]) -> dict[str, str]:
     rendered = render_templates(TEMPLATE_ROOT, ctx)
     if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
         rendered.update(render_templates(SUPERPOWERS_ROOT, ctx))
+    if str(answers.get("project_type")) == "meta" and META_ROOT.is_dir():
+        rendered.update(render_templates(META_ROOT, ctx))
     return rendered
 
 
@@ -101,9 +103,10 @@ def plan_upgrade(
     answers: dict[str, object],
     *,
     only_files: list[str] | None = None,
+    _rendered: dict[str, str] | None = None,
 ) -> UpgradePlanResult:
     target_root = target_root.resolve()
-    rendered = _filter_rendered(_render_all(target_root, answers), only_files)
+    rendered = _rendered or _filter_rendered(_render_all(target_root, answers), only_files)
 
     create_files: list[str] = []
     update_files: list[str] = []
@@ -150,12 +153,13 @@ def execute_upgrade(
 ) -> UpgradeExecutionResult:
     target_root = target_root.resolve()
     rendered = _filter_rendered(_render_all(target_root, answers), only_files)
-    plan = plan_upgrade(target_root, answers, only_files=only_files)
+    plan = plan_upgrade(target_root, answers, only_files=only_files, _rendered=rendered)
     changelog = _generate_changelog(plan)
     if dry_run:
-        return UpgradeExecutionResult(target_root=str(target_root), created_files=plan.create_files,
-            updated_files=plan.update_files, unchanged_files=plan.unchanged_files,
-            selected_files=sorted(rendered.keys()), dry_run=True, changelog=changelog)
+        return UpgradeExecutionResult(target_root=str(target_root), created_files=plan.create_files, updated_files=plan.update_files, unchanged_files=plan.unchanged_files, selected_files=sorted(rendered.keys()), dry_run=True, changelog=changelog)
+    progress_marker = target_root / ".agent-harness" / ".upgrade-in-progress"
+    progress_marker.parent.mkdir(parents=True, exist_ok=True)
+    progress_marker.touch()
     base_root = target_root / BASE_DIR
     backup_root: Path | None = None
     if plan.update_files:
@@ -229,6 +233,7 @@ def execute_upgrade(
             skipped.append(rp)
 
     save_base(target_root, rendered)
+    progress_marker.unlink(missing_ok=True)
     cl_path = target_root / ".agent-harness" / "upgrade-changelog.md"
     cl_path.parent.mkdir(parents=True, exist_ok=True)
     cl_path.write_text(changelog, encoding="utf-8")
@@ -237,9 +242,6 @@ def execute_upgrade(
         merged_files=merged, conflicts=conflicts,
         backup_root=str(backup_root) if backup_root else None,
         selected_files=sorted(rendered.keys()), dry_run=False, changelog=changelog)
-
-
-_PLACEHOLDER_RE = re.compile(r"\{\{\s*[a-z0-9_]+\s*\}\}")
 
 
 def verify_upgrade(target_root: Path) -> list[str]:
@@ -260,12 +262,12 @@ def verify_upgrade(target_root: Path) -> list[str]:
     for md in (target_root / "AGENTS.md", target_root / "CLAUDE.md"):
         if md.exists():
             text = md.read_text(encoding="utf-8")
-            unfilled = _PLACEHOLDER_RE.findall(text)
+            unfilled = PLACEHOLDER_RE.findall(text)
             if unfilled:
                 warnings.append(f"{md.name} 中存在未填充的占位符：{', '.join(unfilled[:3])}")
-    # Check for unresolved merge conflict markers in three_way files
+    # Check for unresolved merge conflict markers in all mergeable files
     marker = "<<<<<<< "
-    for md in sorted(target_root.glob("**/*.md")):
+    for md in sorted(p for pat in ("**/*.md", "**/*.yml", "**/*.yaml", "**/*.py", "**/*.toml") for p in target_root.glob(pat)):
         rel = str(md.relative_to(target_root))
         if get_category(rel) in ("overwrite", "skip"):
             continue

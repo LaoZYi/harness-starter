@@ -138,7 +138,7 @@ class SuperpowersPlaceholderTests(unittest.TestCase):
 class SuperpowersPresetTests(unittest.TestCase):
     def test_different_presets_produce_different_workflow_summary(self) -> None:
         summaries = {}
-        for ptype in ("backend-service", "web-app", "cli-tool"):
+        for ptype in ("backend-service", "web-app", "cli-tool", "meta"):
             with tempfile.TemporaryDirectory() as tmpdir:
                 root = Path(tmpdir) / "project"
                 answers = {**_BASE_ANSWERS, "project_type": ptype}
@@ -147,6 +147,7 @@ class SuperpowersPresetTests(unittest.TestCase):
                 summaries[ptype] = rule.read_text(encoding="utf-8")
         self.assertNotEqual(summaries["backend-service"], summaries["web-app"])
         self.assertNotEqual(summaries["web-app"], summaries["cli-tool"])
+        self.assertNotEqual(summaries["cli-tool"], summaries["meta"])
 
 
 class SuperpowersIdempotentTests(unittest.TestCase):

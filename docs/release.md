@@ -4,14 +4,14 @@
 
 ## 发布前检查
 
-1. `make ci` 是否通过（当前 105 个测试）。
+1. `make ci` 是否通过（当前 134 个测试）。
 2. `VERSION` 文件是否已 bump。
 3. `README.md` 是否准确描述所有命令。
 4. `docs/runbook.md` 是否覆盖最新命令。
 5. `docs/product.md` 是否反映最新功能清单。
 6. `docs/architecture.md` 是否反映最新模块结构。
 7. `src/agent_harness/templates/common/` 是否仍然通用，没有带入样例业务。
-8. `src/agent_harness/presets/` 是否覆盖当前支持的 8 种项目类型。
+8. `src/agent_harness/presets/` 是否覆盖当前支持的 9 种项目类型。
 9. 在临时目录里跑一次完整的 init + doctor + export + stats 验证。
 
 ## 发布动作

@@ -4,6 +4,11 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from .models import (
+    AssessmentResult, InitializationResult, ProjectProfile,
+    UpgradeExecutionResult, UpgradePlanResult,
+)
+
 console = Console()
 
 LANGUAGE_DEFAULTS: dict[str, dict[str, str]] = {
@@ -28,7 +33,7 @@ def print_detected(answers: dict[str, object]) -> None:
     console.print(Panel(table, title="[bold]自动探测结果[/bold]", border_style="green"))
 
 
-def print_init_result(result: object) -> None:
+def print_init_result(result: InitializationResult) -> None:
     label = "[bold green]初始化完成[/bold green]" if not result.dry_run else "[bold yellow]预演完成[/bold yellow]"
     console.print(f"\n{label}  {result.target_root}")
     if result.written_files:
@@ -43,7 +48,7 @@ def print_init_result(result: object) -> None:
         console.print(f"  摘要: [yellow]{result.summary_path}[/yellow]")
 
 
-def print_upgrade_plan(result: object, show_diff: bool = False) -> None:
+def print_upgrade_plan(result: UpgradePlanResult, show_diff: bool = False) -> None:
     console.print(f"\n[bold]升级计划[/bold]  {result.target_root}")
     if result.create_files:
         console.print(f"  新增 [green]{len(result.create_files)}[/green] 个文件")
@@ -65,7 +70,7 @@ def print_upgrade_plan(result: object, show_diff: bool = False) -> None:
             console.print(diff_text.rstrip())
 
 
-def print_upgrade_apply(result: object) -> None:
+def print_upgrade_apply(result: UpgradeExecutionResult) -> None:
     label = "[bold green]升级完成[/bold green]" if not result.dry_run else "[bold yellow]预演完成[/bold yellow]"
     console.print(f"\n{label}  {result.target_root}")
     if result.created_files:
@@ -107,7 +112,7 @@ def print_verify_warnings(warnings: list[str]) -> None:
         console.print("\n[bold green]验证通过[/bold green]")
 
 
-def print_profile(profile: object) -> None:
+def print_profile(profile: ProjectProfile) -> None:
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="dim")
     table.add_column()
@@ -123,7 +128,7 @@ def print_profile(profile: object) -> None:
             console.print(f"  [dim]-[/dim] {note}")
 
 
-def print_assessment(result: object) -> None:
+def print_assessment(result: AssessmentResult) -> None:
     color = "green" if result.readiness == "high" else "yellow" if result.readiness == "medium" else "red"
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="dim")

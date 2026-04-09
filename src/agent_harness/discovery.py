@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-import re
 import tomllib
 from pathlib import Path
 
+from ._shared import slugify
 from .lang_detect import (
     detect_api_docs,
     detect_commands,
@@ -17,14 +17,10 @@ from .models import ProjectProfile
 
 PROJECT_TYPES = (
     "backend-service", "web-app", "cli-tool", "library", "worker",
-    "mobile-app", "monorepo", "data-pipeline",
+    "mobile-app", "monorepo", "data-pipeline", "meta",
 )
 SENSITIVITY_LEVELS = ("standard", "internal", "high")
 
-
-def _slugify(value: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-    return slug or "project"
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -120,6 +116,13 @@ def _detect_project_name(root: Path, language: str) -> tuple[str, str]:
 
 
 def _detect_project_type(root: Path, language: str) -> str:
+    # Meta repo: service registry or dependency graph without source code
+    services_dir = root / "services"
+    if services_dir.is_dir() and any(services_dir.glob("*.y*ml")):
+        source_dirs = {"src", "app", "apps", "packages", "services"}
+        has_code = any((root / d).is_dir() and d != "services" for d in source_dirs)
+        if not has_code:
+            return "meta"
     if (root / "pnpm-workspace.yaml").exists() or (root / "lerna.json").exists():
         return "monorepo"
     if (root / "package.json").exists():
@@ -187,7 +190,7 @@ def discover_project(root: Path) -> ProjectProfile:
     root = root.resolve()
     language = detect_language(root)
     project_name, summary = _detect_project_name(root, language)
-    project_slug = _slugify(project_name)
+    project_slug = slugify(project_name)
     project_type = _detect_project_type(root, language)
     make_targets = _parse_make_targets(root / "Makefile")
     run_command, test_command, check_command, ci_command = detect_commands(

@@ -7,7 +7,9 @@ from pathlib import Path
 
 import questionary
 
+from ._shared import slugify
 from .cli_utils import LANGUAGE_DEFAULTS, console, print_detected
+from .models import ProjectProfile
 from rich.panel import Panel
 from rich.table import Table
 
@@ -15,7 +17,7 @@ SCAFFOLD_SKIP = {".git", "node_modules", ".venv", "__pycache__", ".DS_Store", ".
 
 PROJECT_TYPE_CHOICES = [
     "backend-service", "web-app", "cli-tool", "library",
-    "worker", "mobile-app", "monorepo", "data-pipeline",
+    "worker", "mobile-app", "monorepo", "data-pipeline", "meta",
 ]
 SENSITIVITY_CHOICES = ["standard", "internal", "high"]
 
@@ -28,6 +30,8 @@ def copy_scaffold(scaffold: Path, target: Path) -> int:
     target.mkdir(parents=True, exist_ok=True)
     count = 0
     for src in sorted(scaffold.rglob("*")):
+        if src.is_symlink():
+            continue
         rel = src.relative_to(scaffold)
         if any(part in SCAFFOLD_SKIP for part in rel.parts):
             continue
@@ -40,9 +44,6 @@ def copy_scaffold(scaffold: Path, target: Path) -> int:
             count += 1
     return count
 
-
-def _slugify(value: str) -> str:
-    return "".join(ch.lower() if ch.isalnum() else "-" for ch in value).strip("-") or "project"
 
 
 def _lang_default(lang_defs: dict[str, str], key: str, profile_val: str, slug: str) -> str:
@@ -79,14 +80,15 @@ def _ask_with_back(message: str, choices: list[str], default: str, *, allow_back
     return questionary.select(message, choices=opts, default=default).ask()
 
 
-def interactive_init(target: Path, profile: object, config: dict[str, object]) -> dict[str, object]:
+def interactive_init(target: Path, profile: ProjectProfile, config: dict[str, object]) -> dict[str, object]:
     console.print("\n[bold]项目初始化[/bold]\n")
 
     default_type = profile.project_type if profile.project_type in PROJECT_TYPE_CHOICES else "backend-service"
     collected: dict[str, str] = {}
     step = 0
 
-    while step <= 4:
+    max_step = 4
+    while step <= max_step:
         if step == 0:
             val = questionary.text(
                 "项目名称",
@@ -121,6 +123,13 @@ def interactive_init(target: Path, profile: object, config: dict[str, object]) -
                 step -= 1
                 continue
             collected["project_type"] = val
+            if val == "meta":
+                # Meta repo 没有生产环境，跳过敏感级别和生产环境问题
+                collected["sensitivity"] = "standard"
+                collected["has_production_raw"] = "否"
+                max_step = 2  # 到此结束
+            else:
+                max_step = 4
             step += 1
 
         elif step == 3:
@@ -152,12 +161,13 @@ def interactive_init(target: Path, profile: object, config: dict[str, object]) -
             step += 1
 
     # -- 确认环节 --
+    visible_steps = _STEP_LABELS[:3] if collected.get("project_type") == "meta" else _STEP_LABELS
     while True:
         console.print()
         table = Table(show_header=False, box=None, padding=(0, 2))
         table.add_column(style="dim")
         table.add_column(style="cyan")
-        for i, label in enumerate(_STEP_LABELS):
+        for i, label in enumerate(visible_steps):
             if label == "生产环境":
                 table.add_row(f"[{i}] {label}", collected.get("has_production_raw", "否"))
             else:
@@ -165,14 +175,14 @@ def interactive_init(target: Path, profile: object, config: dict[str, object]) -
                 table.add_row(f"[{i}] {label}", str(collected.get(key, "")))
         console.print(Panel(table, title="[bold]初始化配置[/bold]", border_style="blue"))
 
-        confirm_choices = ["✓ 确认继续"] + [f"修改 [{i}] {label}" for i, label in enumerate(_STEP_LABELS)]
+        confirm_choices = ["✓ 确认继续"] + [f"修改 [{i}] {label}" for i, label in enumerate(visible_steps)]
         choice = questionary.select("确认或修改", choices=confirm_choices).ask()
         if choice is None:
             raise SystemExit(1)
         if choice.startswith("✓"):
             break
         # 跳回对应步骤
-        for i in range(len(_STEP_LABELS)):
+        for i in range(len(visible_steps)):
             if f"[{i}]" in choice:
                 step = i
                 break
@@ -189,6 +199,10 @@ def interactive_init(target: Path, profile: object, config: dict[str, object]) -
             val = questionary.select("项目类型", choices=PROJECT_TYPE_CHOICES, default=collected.get("project_type", default_type)).ask()
             if val is not None:
                 collected["project_type"] = val
+                if val == "meta":
+                    collected["sensitivity"] = "standard"
+                    collected["has_production_raw"] = "否"
+                visible_steps = _STEP_LABELS[:3] if collected.get("project_type") == "meta" else _STEP_LABELS
         elif step == 3:
             val = questionary.select("敏感级别", choices=SENSITIVITY_CHOICES, default=collected.get("sensitivity", "standard")).ask()
             if val is not None:
@@ -200,7 +214,7 @@ def interactive_init(target: Path, profile: object, config: dict[str, object]) -
 
     # -- 组装 answers --
     name = collected["project_name"]
-    slug = _slugify(name)
+    slug = slugify(name)
     has_production = collected.get("has_production_raw") == "是"
     lang = profile.language or "unknown"
     lang_defs = LANGUAGE_DEFAULTS.get(lang, {})
@@ -231,7 +245,7 @@ def interactive_init(target: Path, profile: object, config: dict[str, object]) -
 
 def non_interactive_init(
     args: argparse.Namespace,
-    profile: object,
+    profile: ProjectProfile,
     config: dict[str, object],
     resolve_answers_fn: object,
 ) -> dict[str, object]:

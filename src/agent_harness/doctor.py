@@ -5,9 +5,9 @@ import json
 import re
 from pathlib import Path
 
+from ._shared import PLACEHOLDER_RE, require_harness
 from .cli_utils import console
 
-_PLACEHOLDER_RE = re.compile(r"\{\{\s*[a-z0-9_]+\s*\}\}")
 _TASK_HEADING_RE = re.compile(r"^## \d{4}-\d{2}-\d{2} ")
 _REWORK_RE = re.compile(r"^## \d{4}-\d{2}-\d{2} 返工")
 _LESSON_RE = re.compile(r"^### ")
@@ -27,16 +27,11 @@ def _count_pattern_in_dir(root: Path, pattern: re.Pattern[str], glob: str = "*.m
     return count
 
 
-def _require_harness(target: Path) -> None:
-    if not (target / ".agent-harness").is_dir() and not (target / "AGENTS.md").exists():
-        raise SystemExit(f"错误：{target} 尚未初始化 harness。请先运行 harness init {target}")
-
-
 def run_doctor(target: Path) -> None:
     from rich.table import Table
 
     target = target.resolve()
-    _require_harness(target)
+    require_harness(target)
     table = Table(show_header=False, box=None, padding=(0, 2))
     table.add_column(style="dim", min_width=20)
     table.add_column()
@@ -100,7 +95,7 @@ def run_doctor(target: Path) -> None:
     placeholder_count = 0
     for md in (target / "AGENTS.md", target / "CLAUDE.md"):
         if md.exists():
-            placeholder_count += len(_PLACEHOLDER_RE.findall(md.read_text(encoding="utf-8")))
+            placeholder_count += len(PLACEHOLDER_RE.findall(md.read_text(encoding="utf-8")))
     table.add_row("未填充占位符", f"[red]{placeholder_count} 处[/red]" if placeholder_count else "[green]0 处[/green]")
     if placeholder_count:
         issues.append(f"AGENTS.md/CLAUDE.md 中有 {placeholder_count} 处未填充占位符")

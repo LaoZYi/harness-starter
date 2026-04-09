@@ -4,23 +4,14 @@ import json
 from dataclasses import replace
 from pathlib import Path
 
+from ._shared import (
+    FRAMEWORK_VERSION, META_ROOT, PRESET_ROOT, SUPERPOWERS_ROOT, TEMPLATE_ROOT,
+    shell_escape_single, slugify,
+)
 from .assessment import assess_project
 from .discovery import discover_project
-from .models import InitializationResult
+from .models import AssessmentResult, InitializationResult, ProjectProfile
 from .templating import materialize_templates
-
-_PKG_DIR = Path(__file__).resolve().parent
-TEMPLATE_ROOT = _PKG_DIR / "templates" / "common"
-SUPERPOWERS_ROOT = _PKG_DIR / "templates" / "superpowers"
-PRESET_ROOT = _PKG_DIR / "presets"
-FRAMEWORK_VERSION = (_PKG_DIR / "VERSION").read_text(encoding="utf-8").strip()
-
-if not TEMPLATE_ROOT.is_dir():
-    raise RuntimeError(
-        f"Template directory not found: {TEMPLATE_ROOT}\n"
-        "This usually means the package was installed without data files. "
-        "Reinstall with: pip install -e ."
-    )
 
 
 def _load_preset(project_type: str) -> dict[str, object]:
@@ -29,9 +20,6 @@ def _load_preset(project_type: str) -> dict[str, object]:
         path = PRESET_ROOT / "backend-service.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
-
-def _slugify(value: str) -> str:
-    return "".join(ch.lower() if ch.isalnum() else "-" for ch in value).strip("-") or "project"
 
 
 def _bullet_list(items: list[str], *, fallback: str) -> str:
@@ -65,11 +53,11 @@ def _auto_done_criteria(features_raw: str, preset: dict[str, object]) -> str:
     return "\n".join(f"- [ ] {item}" for item in items)
 
 
-def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tuple[object, object, dict[str, str]]:
+def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tuple[ProjectProfile, AssessmentResult, dict[str, str]]:
     target_root = target_root.resolve()
     profile = discover_project(target_root)
     project_name = str(answers.get("project_name") or profile.project_name or target_root.name)
-    project_slug = str(answers.get("project_slug") or profile.project_slug or _slugify(project_name))
+    project_slug = str(answers.get("project_slug") or profile.project_slug or slugify(project_name))
     project_type = str(answers.get("project_type") or profile.project_type)
     preset = _load_preset(project_type)
 
@@ -184,6 +172,8 @@ def prepare_initialization(target_root: Path, answers: dict[str, object]) -> tup
         "ci_paths_json": _json_value(profile.ci_paths),
         "external_systems_json": _json_value(profile.external_systems),
         "notes_json": _json_value(profile.notes),
+        "test_command_shell": shell_escape_single(test_command),
+        "check_command_shell": shell_escape_single(check_command),
         **{k: str(answers.get(k, "")) for k in ("gitlab_api_url", "gitlab_project_path")},
     }
     return profile, assessment, context
@@ -205,6 +195,10 @@ def initialize_project(
         sw, ss = materialize_templates(SUPERPOWERS_ROOT, target_root, context, force=force, dry_run=dry_run)
         written.extend(sw)
         skipped.extend(ss)
+    if str(answers.get("project_type")) == "meta" and META_ROOT.is_dir():
+        mw, ms = materialize_templates(META_ROOT, target_root, context, force=force, dry_run=dry_run)
+        written.extend(mw)
+        skipped.extend(ms)
     plugin_root = target_root / ".harness-plugins"
     if plugin_root.is_dir():
         pw, ps = _materialize_plugins(plugin_root, target_root, context, force=force, dry_run=dry_run)
@@ -242,11 +236,12 @@ def _materialize_plugins(
     written: list[str] = []
     skipped: list[str] = []
 
-    # rules/ → .claude/rules/
+    # rules/ → .claude/rules/ (supports both .md and .md.tmpl)
     rules_dir = plugin_root / "rules"
     if rules_dir.is_dir():
-        for f in sorted(rules_dir.glob("*.md")):
-            output_rel = f".claude/rules/{f.name}"
+        for f in sorted(list(rules_dir.glob("*.md")) + list(rules_dir.glob("*.md.tmpl"))):
+            output_name = f.name.removesuffix(".tmpl")
+            output_rel = f".claude/rules/{output_name}"
             output_path = target_root / output_rel
             content = render_template(f.read_text(encoding="utf-8"), context)
             if output_path.exists() and not force:
@@ -257,14 +252,18 @@ def _materialize_plugins(
                     output_path.write_text(content, encoding="utf-8")
                 written.append(output_rel)
 
-    # templates/ → project root (preserving subdirectory structure)
+    # templates/ → project root (preserving subdirectory structure, stripping .tmpl suffix)
     tmpl_dir = plugin_root / "templates"
     if tmpl_dir.is_dir():
         for f in sorted(tmpl_dir.rglob("*")):
-            if f.is_dir():
+            if f.is_dir() or f.is_symlink():
                 continue
             output_rel = str(f.relative_to(tmpl_dir))
+            if output_rel.endswith(".tmpl"):
+                output_rel = output_rel[:-5]
             output_path = target_root / output_rel
+            if not output_path.resolve().is_relative_to(target_root.resolve()):
+                continue
             content = render_template(f.read_text(encoding="utf-8"), context)
             if output_path.exists() and not force:
                 skipped.append(output_rel)

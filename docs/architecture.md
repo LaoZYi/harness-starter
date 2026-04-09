@@ -13,6 +13,7 @@
 - `src/agent_harness/upgrade.py`：比较模板生成结果与现有文件，给出升级计划并执行。含文件分类（overwrite/skip/three_way/json_merge）、基线存储和 verify_upgrade 验证。
 - `src/agent_harness/_merge3.py`：三方合并算法。merge3() 做行级文本合并，json_merge() 做 JSON 结构化合并。冲突时插入 `<<<<<<< 当前内容` 标记。
 - `src/agent_harness/templating.py`：模板发现、占位符替换和落盘。
+- `src/agent_harness/sync_context.py`：跨服务上下文同步（读取 meta repo、生成 service-context、分发共享插件）。
 
 ### 运维工具层
 - `src/agent_harness/doctor.py`：健康检查（task-log 使用率、教训积累、占位符、长度）。
@@ -23,17 +24,19 @@
 - `src/agent_harness/cli_utils.py`：rich 输出函数、语言默认值映射。
 - `src/agent_harness/lang_detect.py`：语言/框架/ORM 检测。
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
+- `src/agent_harness/_shared.py`：共享常量（TEMPLATE_ROOT、META_ROOT 等）、slugify、require_harness。
 
 ### 资源层
 - `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、命令、文档、任务追踪等。
 - `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（29 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）和 2 个本地原创技能（lint-lessons、evolve）。
-- `src/agent_harness/presets/`：8 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。
+- `src/agent_harness/templates/meta/`：meta 项目类型专属模板（services/registry、dependency-graph、conventions、shared-plugins 骨架）。
+- `src/agent_harness/presets/`：9 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。
 - `scripts/check_repo.py`：框架仓库守卫脚本。
 - `scripts/sync_superpowers.py`：上游 skills 同步工具，支持三个上游源（superpowers + compound + gstack）。
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：105 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、superpowers/compound/gstack 技能和决策树完整性。
+- `tests/`：134 个回归测试，覆盖探测、评估、初始化、升级、CLI 集成、superpowers/compound/gstack 技能和决策树完整性。
 
 ## 约束
 
@@ -52,7 +55,7 @@ discover_project() → ProjectProfile
      ↓
 assess_project() → AssessmentResult
      ↓
-prepare_initialization() → context dict (69 个模板变量)
+prepare_initialization() → context dict (63 个模板变量)
      ↓
 materialize_templates() → 写入目标项目（common 模板）
      ↓
