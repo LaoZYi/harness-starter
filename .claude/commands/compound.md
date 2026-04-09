@@ -3,8 +3,8 @@
 每一次解决问题都是知识积累的机会。核心原则：**第一次靠研究，记录下来，下一次只需几分钟。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`python -m unittest discover -s tests -v`
-检查命令：`python scripts/check_repo.py`
+测试命令：`make test`
+检查命令：`make check`
 
 ## 适用时机
 
@@ -125,6 +125,10 @@ cat .agent-harness/lessons.md 2>/dev/null | grep -i "<关键词>"
 写入位置：.agent-harness/lessons.md
 操作类型：新建 / 更新已有条目
 ```
+
+## ADR 联动
+
+如果 `docs/decisions/` 目录下有架构决策记录，检查本次任务是否影响了已有 ADR 的前提条件。如果是，运行 `/adr` 更新相关 ADR 的状态（Proposed → Accepted，或标记为 Deprecated）。
 
 ## 关键约束
 

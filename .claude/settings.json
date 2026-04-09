@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '\"command\"\\s*:\\s*\"git commit'; then echo '提交前请确认已运行 python -m unittest discover -s tests -v 且测试通过。如未运行测试，请先运行测试再提交。'; fi"
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '\"command\"\\s*:\\s*\"git commit'; then echo '提交前请确认已运行 make test 且测试通过。如未运行测试，请先运行测试再提交。'; fi"
           }
         ]
       }

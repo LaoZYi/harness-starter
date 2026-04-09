@@ -3,8 +3,8 @@
 核心原则：**先有证据，再有结论。永远如此。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`python -m unittest discover -s tests -v`
-检查命令：`python scripts/check_repo.py`
+测试命令：`make test`
+检查命令：`make check`
 
 ## 五步验证门
 
@@ -16,9 +16,9 @@
 
 | 验证内容 | 命令 |
 |---|---|
-| 测试通过 | `python -m unittest discover -s tests -v` |
-| 代码质量 | `python scripts/check_repo.py` |
-| 构建成功 | `PYTHONPATH=src python -m agent_harness.cli` |
+| 测试通过 | `make test` |
+| 代码质量 | `make check` |
+| 构建成功 | `harness` |
 | 特定功能 | 根据场景确定 |
 
 ### 第 2 步：完整执行命令
@@ -49,9 +49,25 @@
 - 结论
 
 ```
-✓ 验证完成：运行 `python -m unittest discover -s tests -v`，42 个测试全部通过，0 失败，0 跳过。
-✗ 验证失败：运行 `python -m unittest discover -s tests -v`，40 通过，2 失败。失败测试：test_xxx, test_yyy。
+✓ 验证完成：运行 `make test`，42 个测试全部通过，0 失败，0 跳过。
+✗ 验证失败：运行 `make test`，40 通过，2 失败。失败测试：test_xxx, test_yyy。
 ```
+
+### 第 6 步：实操穷举验证（关键功能必做）
+
+如果改动涉及数据安全、用户内容、文件读写等关键路径，单元测试通过**不够**。必须写一个端到端验证脚本：
+
+1. **一次性列出所有场景**——正常路径、边界情况、错误路径、冲突场景、组合场景，不要分批补充
+2. 在临时目录中模拟真实使用流程
+3. 每项检查输出 ✅/❌，末尾汇总
+4. 全部通过才能继续
+
+> 典型做法：写一个 Python 脚本，在 `/tmp/` 下创建测试项目，模拟用户操作，自动断言结果。
+
+判断是否需要此步骤：
+- 会不会丢用户数据？→ **必做**
+- 会不会破坏用户文件？→ **必做**
+- 只改了内部逻辑，对外无影响？→ 可跳过
 
 ## 绝对禁止
 
@@ -96,9 +112,9 @@
 
 所有需要确认结果的场景：
 
-1. **测试**：`python -m unittest discover -s tests -v` — 新功能、Bug 修复、重构后
-2. **代码检查**：`python scripts/check_repo.py` — 每次提交前
-3. **构建**：`PYTHONPATH=src python -m agent_harness.cli` — 修改构建配置后
+1. **测试**：`make test` — 新功能、Bug 修复、重构后
+2. **代码检查**：`make check` — 每次提交前
+3. **构建**：`harness` — 修改构建配置后
 4. **需求验证**：对照需求文档逐条确认
 5. **代理工作**：其他 agent 完成的工作也要验证
 

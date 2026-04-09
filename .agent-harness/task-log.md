@@ -89,3 +89,52 @@
   - [x] dogfood 同步完成
   - [x] GitHub Issue #7 待关闭
 
+## 2026-04-09 升级三方合并策略 — 让 harness upgrade 保留用户内容
+
+- 需求：升级时保留用户编辑的内容，不要粗暴覆盖
+- 做了什么：
+  - 文件分类策略：overwrite/skip/three_way/json_merge 四种升级方式
+  - 三方合并算法（_merge3.py）：merge3() 行级文本合并 + json_merge() 结构化合并
+  - 冲突标记（<<<<<<< 当前内容）+ CLI 醒目红色提示
+  - init 时存储基线到 .agent-harness/.base/
+  - 老项目（无 .base/）退化为备份+覆盖
+  - verify_upgrade() 验证升级结果
+- 关键决策：
+  - 基线存储在 .agent-harness/.base/ 而非 .git，避免对版本控制的侵入
+  - 冲突标记使用中文（"当前内容"/"新内容"）便于理解
+  - 老项目无基线时优雅退化，不阻塞升级
+- 改了：upgrade.py, _merge3.py(新建), initializer.py, cli.py, tests/test_upgrade.py 等
+- 完成标准：
+  - [x] skip 文件升级时不被覆盖
+  - [x] three_way 文件用户编辑在升级后保留
+  - [x] json_merge 文件用户自定义 key 不丢失
+  - [x] 冲突时 CLI 醒目红色提示
+  - [x] init 时存储基线到 .agent-harness/.base/
+  - [x] 老项目（无 .base/）升级时退化为备份+覆盖
+  - [x] make ci 全绿（104 tests）
+
+> 注：此记录为补录。原任务在"待验证"状态时被 /lfg #9 覆盖，收尾步骤遗漏。
+
+## 2026-04-09 进化集成：spencermarx/open-code-review（Issue #9）
+
+- 需求：从 open-code-review 吸收评审辩论（Discourse）方法论到 /multi-review 技能
+- 做了什么：
+  - /multi-review 新增 Step 3.5（大变更集导航地图，20+ 文件时触发）
+  - /multi-review 新增 Step 4（Discourse Round），定义 AGREE/CHALLENGE/CONNECT/SURFACE 四种辩论操作
+  - 评审报告增加辩论轮摘要行
+  - evolve 对比表中 /multi-review 更新描述
+  - session-start.sh 模板移除 evolution cron 检查（用户要求改为手动触发 /evolve）
+  - 测试数 104→105，文档计数同步
+- 关键决策：
+  - 辩论轮设为智能简化：P0/P1 不超过 2 个时自动简化为快速确认，避免小 PR 过度流程化
+  - 不新增技能数量，作为 /multi-review 内部增强
+  - 导航地图阈值设为 20 文件，参考 open-code-review 的设计
+- 改了：multi-review.md.tmpl, evolve.md.tmpl, session-start.sh.tmpl, test_superpowers.py, docs/architecture.md, CHANGELOG.md, docs/release.md
+- 完成标准：
+  - [x] Discourse Round 含 AGREE/CHALLENGE/CONNECT/SURFACE
+  - [x] 大变更集导航地图（20+ 文件）
+  - [x] 105 测试通过，make ci 全绿
+  - [x] dogfood 同步完成
+  - [x] GitHub Issue #9 已关闭
+  - [x] GitLab Issue #4 已关闭
+

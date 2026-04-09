@@ -207,6 +207,18 @@ class CompoundEngineeringTests(unittest.TestCase):
             self.assertIn("/multi-review", content)
             self.assertIn("/lfg", content)
 
+    def test_multi_review_has_discourse_round(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            content = (root / ".claude" / "commands" / "multi-review.md").read_text(encoding="utf-8")
+            self.assertIn("Discourse", content)
+            self.assertIn("AGREE", content)
+            self.assertIn("CHALLENGE", content)
+            self.assertIn("CONNECT", content)
+            self.assertIn("SURFACE", content)
+            self.assertIn("导航地图", content)
+
     def test_no_unfilled_placeholders_in_compound_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "project"

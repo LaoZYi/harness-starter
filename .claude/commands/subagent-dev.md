@@ -23,8 +23,8 @@
 
 - 任务的精确描述和验收标准
 - 相关文件路径和接口定义
-- 测试命令：`python -m unittest discover -s tests -v`
-- 检查命令：`python scripts/check_repo.py`
+- 测试命令：`make test`
+- 检查命令：`make check`
 - 禁止修改的文件列表（如有）
 
 ### 2. 接收实现结果
@@ -45,14 +45,14 @@
 - 实现是否满足任务描述的所有要求
 - 是否符合 Agent Harness Framework 的接口约定
 - 是否遗漏了边界情况
-- `python -m unittest discover -s tests -v` 是否全部通过
+- `make test` 是否全部通过
 
 **第二阶段：代码质量审查**
 
 - 代码风格是否符合项目规范
 - 是否存在不必要的复杂性
 - 是否有性能或安全隐患
-- `python scripts/check_repo.py` 是否通过
+- `make check` 是否通过
 
 **绝不跳过或调换两个审查阶段的顺序。**
 

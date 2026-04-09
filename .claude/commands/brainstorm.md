@@ -92,7 +92,7 @@ docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md
 
 设计文档写入后，提示用户：
 
-> 设计已保存。下一步建议运行 `/write-plan` 生成实现计划。
+> 设计已保存。如果本次讨论产生了架构级决策（技术选型、模式选择），先运行 `/adr` 记录决策，再运行 `/write-plan` 生成实现计划。
 
 ## 关键约束
 

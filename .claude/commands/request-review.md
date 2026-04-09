@@ -20,8 +20,8 @@
    - base commit SHA（分支起点）
    - head commit SHA（当前最新）
    - 涉及的文件和模块列表
-4. **测试状态**：`python -m unittest discover -s tests -v` 的运行结果
-5. **检查状态**：`python scripts/check_repo.py` 的运行结果
+4. **测试状态**：`make test` 的运行结果
+5. **检查状态**：`make check` 的运行结果
 
 ### 编写审查摘要
 
@@ -43,8 +43,8 @@
 - 语言：python
 
 ### 测试验证
-- python -m unittest discover -s tests -v：通过/失败
-- python scripts/check_repo.py：通过/失败
+- make test：通过/失败
+- make check：通过/失败
 
 ### 特别关注点
 [希望审查者重点关注的区域或决策]
@@ -65,7 +65,7 @@
 
 ### 修复后的验证
 
-1. 针对每个修复运行 `python -m unittest discover -s tests -v`
+1. 针对每个修复运行 `make test`
 2. 确认修复没有引入新问题
 3. 更新审查摘要中的状态
 

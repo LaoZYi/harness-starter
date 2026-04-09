@@ -183,7 +183,7 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/dispatch-agents` — 并行任务分发 | ? |
 | `/use-worktrees` — Git worktree 隔离 | ? |
 | `/verify` — 完成前验证 | ? |
-| `/multi-review` — 多角度评审 | ? |
+| `/multi-review` — 多角度评审 + 辩论质证 | ? |
 | `/request-review` — 评审请求准备 | ? |
 | `/receive-review` — 评审反馈处理 | ? |
 | `/compound` — 知识沉淀 | ? |

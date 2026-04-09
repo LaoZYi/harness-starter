@@ -3,8 +3,8 @@
 核心原则：**用数字说话，不靠感觉。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-测试命令：`python -m unittest discover -s tests -v`
-检查命令：`python scripts/check_repo.py`
+测试命令：`make test`
+检查命令：`make check`
 
 ## 六步质量评估
 
@@ -27,8 +27,8 @@
 按顺序运行以下工具，捕获退出码和输出：
 
 1. **类型检查**：运行语言对应的类型检查器
-2. **Lint**：运行 `python scripts/check_repo.py`，如果项目另有 lint 工具也运行
-3. **测试**：运行 `python -m unittest discover -s tests -v`，记录通过/失败/跳过的计数
+2. **Lint**：运行 `make check`，如果项目另有 lint 工具也运行
+3. **测试**：运行 `make test`，记录通过/失败/跳过的计数
 4. **死代码检测**：运行对应工具扫描未使用的导出和函数
 5. **Shell 脚本检查**：如果项目有 `.sh` 文件，运行 `shellcheck`
 

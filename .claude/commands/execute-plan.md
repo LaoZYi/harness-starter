@@ -18,14 +18,14 @@
 1. 在 `.agent-harness/current-task.md` 中标记当前任务为 `in_progress`
 2. 严格按照计划描述实现，不擅自扩展范围
 3. 每完成一个原子操作就保存进度
-4. 使用 `python -m unittest discover -s tests -v` 运行验证
-5. 使用 `python scripts/check_repo.py` 检查代码质量
+4. 使用 `make test` 运行验证
+5. 使用 `make check` 检查代码质量
 
 ### 第三步：验证
 
 每完成一步后必须验证：
 
-- 运行 `python -m unittest discover -s tests -v` 确保测试通过
+- 运行 `make test` 确保测试通过
 - 确认变更符合 Agent Harness Framework 的代码规范
 - 检查是否引入了意外的副作用
 - 确保 python 类型检查（如适用）通过
@@ -44,7 +44,7 @@
 
 - **阻塞问题**：依赖的服务不可用、权限不足、环境配置缺失
 - **缺失依赖**：计划引用了不存在的模块、接口或配置
-- **测试失败**：`python -m unittest discover -s tests -v` 失败且原因不在当前任务范围内
+- **测试失败**：`make test` 失败且原因不在当前任务范围内
 - **指令不清**：任务描述存在多种合理解读
 - **范围溢出**：发现需要修改计划未涉及的代码
 
@@ -56,7 +56,7 @@
 - 绝不擅自扩大任务范围
 - 每个任务都是原子的：要么完成，要么回退
 - 项目类型：cli-tool，语言：python
-- 启动命令：`PYTHONPATH=src python -m agent_harness.cli`
+- 启动命令：`harness`
 
 ## 进度记录格式
 

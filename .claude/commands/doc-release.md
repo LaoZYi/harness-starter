@@ -3,9 +3,9 @@
 核心原则：**代码已发布，文档必须跟上。读完再改，改完再提交。**
 
 当前项目：`Agent Harness Framework`（cli-tool / python）
-运行命令：`PYTHONPATH=src python -m agent_harness.cli`
-测试命令：`python -m unittest discover -s tests -v`
-检查命令：`python scripts/check_repo.py`
+运行命令：`harness`
+测试命令：`make test`
+检查命令：`make check`
 
 ## 第 1 步：预检
 
@@ -43,7 +43,7 @@ find . -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*"
 
 ### CONTRIBUTING.md
 - [ ] 开发环境搭建步骤是否可用？
-- [ ] 测试流程是否准确？（验证：`python -m unittest discover -s tests -v`）
+- [ ] 测试流程是否准确？（验证：`make test`）
 - [ ] 工作流说明是否与当前实践一致？
 
 ### AGENTS.md / CLAUDE.md
@@ -56,9 +56,9 @@ find . -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*"
 - [ ] 新增功能是否有对应描述？
 
 ### docs/runbook.md
-- [ ] 运行命令是否可用？（验证：`PYTHONPATH=src python -m agent_harness.cli`）
-- [ ] 测试命令是否可用？（验证：`python -m unittest discover -s tests -v`）
-- [ ] 检查命令是否可用？（验证：`python scripts/check_repo.py`）
+- [ ] 运行命令是否可用？（验证：`harness`）
+- [ ] 测试命令是否可用？（验证：`make test`）
+- [ ] 检查命令是否可用？（验证：`make check`）
 - [ ] 故障处理流程是否仍然有效？
 
 如果某个文件不存在，跳过该文件的审计，不报错。
