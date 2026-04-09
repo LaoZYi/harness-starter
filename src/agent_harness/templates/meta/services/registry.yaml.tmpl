@@ -4,21 +4,27 @@
 # 新增或下线服务时必须同步更新本文件。
 #
 # 字段说明：
-#   repo:    仓库地址
+#   repo:    本地仓库路径（支持 ~ 和相对路径，如 ../payment-service）
+#   domain:  所属业务领域（对应 business/domains/ 下的目录名）
 #   owner:   负责团队或个人
 #   summary: 一句话描述职责
 #   port:    服务端口（可选）
 #   status:  active / deprecated / planned
+#
+# 提示：repo 必须是本地路径，harness sync 会直接往该目录写入文件。
+#       相对路径基于本 meta 仓库目录解析（如 ../payment-service、../../other/svc 均可）。
 
 # payment-service:
-#   repo: git@github.com:your-org/payment-service.git
+#   repo: ../payment-service
+#   domain: payment
 #   owner: 支付团队
 #   summary: 处理支付创建、查询和退款
 #   port: 8001
 #   status: active
 
 # order-service:
-#   repo: git@github.com:your-org/order-service.git
+#   repo: ../order-service
+#   domain: order
 #   owner: 交易团队
 #   summary: 管理订单生命周期
 #   port: 8002

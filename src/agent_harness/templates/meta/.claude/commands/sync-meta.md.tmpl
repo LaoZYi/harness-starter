@@ -1,0 +1,46 @@
+# 同步 Meta 上下文到服务仓库
+
+将本 meta 仓库的服务注册表、依赖图和共享规则同步到各服务仓库。
+
+## 使用方式
+
+- `/sync-meta` — 同步所有服务
+- `/sync-meta <服务路径>` — 同步单个服务
+- `/sync-meta --dry-run` — 预览模式，不写文件
+
+参数：$ARGUMENTS
+
+## 执行步骤
+
+### 第 1 步：确认当前目录是 meta 仓库
+
+检查当前目录是否存在 `services/registry.yaml`。如果不存在，报错并提示用户切换到 meta 仓库目录。
+
+### 第 2 步：检测 harness 命令是否可用
+
+运行 `command -v harness` 检查是否已安装。
+
+- **已安装** → 直接用 `harness sync` 命令
+- **未安装** → 改用 `pipx run agent-harness-framework sync` 或 `uvx agent-harness-framework sync`。如果都不可用，提示用户安装：`pip install agent-harness-framework`
+
+### 第 3 步：解析参数并执行
+
+根据 `$ARGUMENTS` 决定执行模式：
+
+| 参数 | 命令 |
+|------|------|
+| （空） | `harness sync --all` |
+| `--dry-run` | `harness sync --all --dry-run` |
+| `<路径>` | `harness sync <路径>` |
+| `<路径> --dry-run` | `harness sync <路径> --dry-run` |
+
+运行命令，完整展示输出。
+
+### 第 4 步：报告结果
+
+汇总同步结果：
+- 成功同步了几个服务
+- 每个服务写入了哪些文件
+- 是否有跳过的服务（缺少 repo 路径或目录不存在）
+
+如果有跳过的服务，提示用户检查 `services/registry.yaml` 中的 `repo` 字段。

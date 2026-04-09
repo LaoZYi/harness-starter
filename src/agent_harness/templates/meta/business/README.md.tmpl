@@ -1,0 +1,53 @@
+# 业务知识 — {{project_name}}
+
+## 目录结构
+
+```
+business/
+├── domains/           # 领域模型（按领域分目录）
+│   └── <domain>/
+│       ├── glossary.md        # 术语表
+│       ├── rules.md           # 业务规则
+│       └── flows.md           # 业务流程
+├── products/          # 产品需求
+│   └── <feature>.md           # PRD / 用户故事 / 验收标准
+└── roadmap.md         # 版本规划和里程碑
+```
+
+## 领域与服务的关联
+
+在 `services/registry.yaml` 中为每个服务指定 `domain` 字段：
+
+```yaml
+payment-service:
+  repo: ../payment-service
+  domain: payment        # 对应 business/domains/payment/
+  owner: 支付团队
+  summary: 处理支付创建、查询和退款
+```
+
+运行 `harness sync` 时，该服务会自动收到 `business/domains/payment/` 下的所有文件，
+写入服务仓库的 `docs/domain/` 目录。
+
+## 原始文档
+
+零散的非结构化文档（旧 PRD、会议纪要、设计文档等）**不需要放进 meta 仓库**。
+
+用 `/populate-meta --docs <路径>` 直接指向文档所在的位置即可：
+
+```bash
+/populate-meta --docs ~/Desktop/旧文档/
+/populate-meta --docs /nas/shared-prds/
+```
+
+提取完成后，价值已经沉淀到 `domains/` 和 `products/` 中的结构化文件里。
+原始文档留在原地，不需要搬运或纳入版本管理。
+
+如果需要在初始化阶段集中收集一批文档，可以临时放到 `_sources/`（已 gitignore），跑完后清理即可。
+
+## 写作建议
+
+- **术语表**：定义领域内的关键术语，消除团队和 AI 的歧义
+- **业务规则**：写清楚"什么条件下该怎么做"，越具体越好，AI 能直接参考
+- **业务流程**：用步骤或流程图描述关键流程，标注分支和异常
+- **产品需求**：每个功能一个文件，包含用户故事和验收标准

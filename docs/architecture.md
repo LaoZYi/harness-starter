@@ -13,7 +13,7 @@
 - `src/agent_harness/upgrade.py`：比较模板生成结果与现有文件，给出升级计划并执行。含文件分类（overwrite/skip/three_way/json_merge）、基线存储和 verify_upgrade 验证。
 - `src/agent_harness/_merge3.py`：三方合并算法。merge3() 做行级文本合并，json_merge() 做 JSON 结构化合并。冲突时插入 `<<<<<<< 当前内容` 标记。
 - `src/agent_harness/templating.py`：模板发现、占位符替换和落盘。
-- `src/agent_harness/sync_context.py`：跨服务上下文同步（读取 meta repo、生成 service-context、分发共享插件）。
+- `src/agent_harness/sync_context.py`：跨服务上下文同步（读取 meta repo、生成 service-context、分发共享插件、分发领域知识）。相对路径基于 meta_root 解析。
 
 ### 运维工具层
 - `src/agent_harness/doctor.py`：健康检查（task-log 使用率、教训积累、占位符、长度）。
@@ -29,7 +29,7 @@
 ### 资源层
 - `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、命令、文档、任务追踪等。
 - `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（29 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）和 2 个本地原创技能（lint-lessons、evolve）。
-- `src/agent_harness/templates/meta/`：meta 项目类型专属模板（services/registry、dependency-graph、conventions、shared-plugins 骨架）。
+- `src/agent_harness/templates/meta/`：meta 项目类型专属模板（services/registry、dependency-graph、conventions、shared-plugins、business 领域知识骨架、BEST-PRACTICES 指南、/sync-meta 和 /populate-meta 命令）。
 - `src/agent_harness/presets/`：9 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。
 - `scripts/check_repo.py`：框架仓库守卫脚本。
 - `scripts/sync_superpowers.py`：上游 skills 同步工具，支持三个上游源（superpowers + compound + gstack）。

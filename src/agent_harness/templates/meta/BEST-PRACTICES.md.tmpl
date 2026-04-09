@@ -1,0 +1,201 @@
+# Meta 仓库最佳实践 — {{project_name}}
+
+## 一句话理解 Meta 仓库
+
+Meta 仓库是微服务系统的**中央大脑**——不写业务代码，只回答三个问题：
+**有哪些服务、它们怎么协作、业务规则是什么。**
+
+---
+
+## 目录职责速查
+
+```
+{{project_name}}/
+├── services/
+│   ├── registry.yaml          # 服务在哪（名称、路径、负责人、状态）
+│   └── dependency-graph.yaml  # 谁调谁（接口、依赖方向）
+├── business/
+│   ├── domains/               # 业务领域知识（术语、规则、流程）
+│   │   └── <domain>/
+│   │       ├── glossary.md    #   术语表
+│   │       ├── rules.md       #   业务规则
+│   │       └── flows.md       #   业务流程
+│   ├── products/              # 产品需求（PRD、用户故事）
+│   └── roadmap.md             # 版本规划
+├── shared-plugins/
+│   ├── rules/                 # 分发到各服务的 Claude Code 规则
+│   └── templates/             # 分发到各服务的文档模板
+├── conventions/               # 跨服务技术约定（源文档）
+├── contracts/                 # 接口契约（Proto、OpenAPI 等）
+└── .claude/commands/
+    └── sync-meta.md           # /sync-meta 命令
+```
+
+---
+
+## 起步三件事
+
+### 1. 填 registry.yaml
+
+每个服务一条记录，`repo` 和 `domain` 是关键字段：
+
+```yaml
+payment-service:
+  repo: ../payment-service       # 本地路径，相对于 meta 仓库
+  domain: payment                # 对应 business/domains/payment/
+  owner: 支付团队
+  summary: 处理支付创建、查询和退款
+  port: 8001
+  status: active
+```
+
+### 2. 画 dependency-graph.yaml
+
+只记接口级别的依赖，不记实现细节：
+
+```yaml
+payment-service:
+  provides:
+    - POST /api/payments/create
+    - GET /api/payments/{id}
+  consumes:
+    - order-service: GET /api/orders/{id}
+```
+
+### 3. 写领域知识
+
+在 `business/domains/<domain>/` 下至少写一个 `glossary.md`：
+
+```markdown
+# 支付领域术语表
+
+| 术语 | 定义 | 备注 |
+|------|------|------|
+| 支付单 | 一次支付行为的唯一记录 | 创建后不可修改金额 |
+| 退款单 | 针对某笔支付的退款请求 | 金额不能超过原支付单 |
+```
+
+然后 `/sync-meta`，所有服务就能拿到自己需要的上下文了。
+
+---
+
+## 日常工作流
+
+### 新增服务
+
+1. `registry.yaml` 加一条记录
+2. `dependency-graph.yaml` 写 provides/consumes
+3. `business/domains/` 下建领域目录（如果是新领域）
+4. `/sync-meta` 分发
+
+### 接口变更
+
+1. 改 `dependency-graph.yaml` 中受影响的服务
+2. `/sync-meta` — 受影响服务的 `docs/service-context.md` 会自动更新
+3. 被影响的服务会在 context 里看到变更影响范围
+
+### 新增跨服务约定
+
+1. 在 `conventions/README.md` 写完整约定（源文档）
+2. 在 `shared-plugins/rules/` 写 Claude Code 可执行的规则摘要
+3. `/sync-meta` 分发到所有服务
+
+### 更新业务规则
+
+1. 改 `business/domains/<domain>/rules.md`
+2. `/sync-meta` — 相关服务会收到更新后的 `docs/domain/rules.md`
+
+---
+
+## 写好领域知识的关键
+
+### 术语表 (glossary.md) — 消除歧义
+
+**差的写法**：`订单 — 用户下的单`
+
+**好的写法**：
+
+| 术语 | 定义 | 与其他领域的区别 |
+|------|------|-----------------|
+| 订单 | 用户确认购买后生成的交易记录，包含商品、金额、状态 | 支付领域的"支付单"是订单的子对象 |
+
+关键：写清楚边界条件和与其他领域的关系，这是 AI 最容易搞混的地方。
+
+### 业务规则 (rules.md) — 写成可判断的条件
+
+**差的写法**：`退款要合理`
+
+**好的写法**：
+
+```
+## 退款规则
+
+- 支付完成后 30 天内可申请退款
+- 单笔退款金额 ≤ 原支付金额
+- 同一支付单累计退款 ≤ 原支付金额
+- 状态为"已发货"的订单，退款需人工审核
+```
+
+越具体，AI 写代码时越准确。
+
+### 业务流程 (flows.md) — 标注分支和异常
+
+写步骤，标清楚"如果...则..."：
+
+```
+## 下单流程
+
+1. 用户提交订单
+2. 校验库存 → 不足则返回错误，流程结束
+3. 锁定库存（15 分钟有效期）
+4. 创建支付单
+5. 等待支付回调
+   - 成功 → 确认订单，扣减库存
+   - 超时（15 分钟）→ 释放库存，取消订单
+   - 失败 → 释放库存，标记订单为支付失败
+```
+
+---
+
+## 共享规则的写法
+
+`shared-plugins/rules/` 下的文件会分发到所有服务的 `.claude/rules/`，直接影响 AI 行为。
+
+**原则**：只写跨服务必须统一的东西，不要写某个服务的特有逻辑。
+
+适合放共享规则的：
+- 错误响应格式
+- 日志规范
+- 接口变更流程
+- 认证方式
+
+不适合的：
+- 某个服务的内部实现模式
+- 某个领域的特有业务逻辑（放 `business/domains/` 更合适）
+
+---
+
+## sync 分发到服务仓库的文件
+
+| 来源 | 目标 | 说明 |
+|------|------|------|
+| registry + graph → 生成 | `docs/service-context.md` | 服务上下文（上下游、接口、影响范围） |
+| registry + graph → 生成 | `.claude/rules/microservice.md` | 微服务协作规则 |
+| `shared-plugins/rules/*` | `.claude/rules/*` | 共享 Claude Code 规则 |
+| `shared-plugins/templates/*` | 项目根目录对应路径 | 共享文档模板 |
+| `business/domains/<domain>/*` | `docs/domain/*` | 服务对应的领域知识 |
+
+以上文件都是自动生成/覆盖的，不要在服务仓库里手动编辑。
+
+---
+
+## 常见误区
+
+| 误区 | 正确做法 |
+|------|---------|
+| 把业务代码放 meta 仓库 | Meta 仓库零业务代码，只放知识和配置 |
+| 在服务仓库改 `docs/service-context.md` | 这个文件每次 sync 会被覆盖，改 meta 仓库的源文件 |
+| 只画依赖图不写术语表 | 术语表是 AI 理解业务的基础，优先级最高 |
+| 共享规则写得太细 | 共享规则只管跨服务统一，服务内部逻辑归服务自己 |
+| 领域知识写得太抽象 | 越具体 AI 越好用：写条件、写数字、写边界 |
+| dependency-graph 过时不更新 | 接口变更后必须同步更新，否则 sync 出去的上下文是错的 |

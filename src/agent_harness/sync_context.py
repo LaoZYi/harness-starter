@@ -184,6 +184,24 @@ def _distribute_plugins(meta_root: Path, target: Path, *, dry_run: bool = False)
     return written
 
 
+def _distribute_domain(meta_root: Path, target: Path, domain: str, *, dry_run: bool = False) -> list[str]:
+    """Distribute business domain knowledge files to the service repo."""
+    domain_dir = meta_root / "business" / "domains" / domain
+    if not domain_dir.is_dir():
+        return []
+    written: list[str] = []
+    for f in sorted(domain_dir.rglob("*")):
+        if f.is_dir() or f.is_symlink() or f.name.startswith("."):
+            continue
+        rel = f"docs/domain/{f.relative_to(domain_dir)}"
+        if not dry_run:
+            dest = target / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+        written.append(rel)
+    return written
+
+
 def _sync_one(target: Path, meta_root: Path, registry: dict, graph: dict, *, dry_run: bool) -> list[str]:
     service_name = find_service_name(target, registry)
     if not service_name:
@@ -201,6 +219,9 @@ def _sync_one(target: Path, meta_root: Path, registry: dict, graph: dict, *, dry
             dest.write_text(content, encoding="utf-8")
         written.append(rel)
     written.extend(_distribute_plugins(meta_root, target, dry_run=dry_run))
+    domain = str(registry.get(service_name, {}).get("domain", ""))
+    if domain:
+        written.extend(_distribute_domain(meta_root, target, domain, dry_run=dry_run))
     if not dry_run:
         _store_meta_path(target, meta_root)
     for rel in written:
@@ -249,6 +270,8 @@ def run_sync_all(meta_root: Path, *, dry_run: bool = False) -> dict[str, list[st
             console.print(f"  [yellow]![/yellow] {svc_name}: 缺少 repo，跳过")
             continue
         repo = Path(repo_path).expanduser()
+        if not repo.is_absolute():
+            repo = (meta_root / repo).resolve()
         if not repo.is_dir():
             console.print(f"  [yellow]![/yellow] {svc_name}: {repo} 不存在，跳过")
             continue

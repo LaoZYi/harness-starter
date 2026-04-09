@@ -1,0 +1,308 @@
+# 填充 Meta：从代码仓库推理 Meta 信息
+
+读取 `services/registry.yaml` 中已注册的服务仓库，通过三阶段流水线（确定性提取 → LLM 解读 → 交叉验证）填充 meta 仓库中的空缺。
+
+## 使用方式
+
+- `/populate-meta` — 处理所有已注册服务
+- `/populate-meta payment-service order-service` — 只处理指定服务
+- `/populate-meta --docs ~/shared-docs/` — 额外纳入散落文档
+
+参数：$ARGUMENTS
+
+## 前提
+
+`services/registry.yaml` 中已填好服务名和 `repo` 路径。本命令不发现新服务，只分析已注册的服务。
+
+## 核心原则
+
+- **确定性优先** — 能用 grep/glob/配置文件确认的事实，不要让 LLM 猜
+- **证据溯源** — 每条发现必须标注来源文件和行号
+- **置信度分级** — 不同来源可信度不同，分级处理
+- **增量填充** — 已有内容不覆盖，只补充空缺
+
+## 置信度体系
+
+| 等级 | 分值 | 来源 | 处理方式 |
+|------|------|------|---------|
+| CONFIRMED | 0.95 | 结构化制品直接声明（OpenAPI、proto、k8s manifest） | 自动写入 |
+| VERIFIED | 0.90 | 确定性提取 + 跨服务双向验证 | 自动写入 |
+| EXTRACTED | 0.75 | 确定性提取，单边证据 | 自动写入，标记来源 |
+| INFERRED | 0.70 | LLM 基于已提取事实推理 | 写入，标记待确认 |
+| SPECULATED | 0.50 | LLM 从代码模式推测 | 仅展示，不写入，等用户确认 |
+
+---
+
+## 阶段 1：确定性提取（零幻觉）
+
+本阶段不使用 LLM，只用 Glob、Grep、Read 做确定性搜索。为每个服务仓库**并行**执行以下提取。
+
+### 1.1 结构化制品扫描（置信度 CONFIRMED）
+
+按优先级查找并解析：
+
+| 制品 | 查找模式 | 提取内容 |
+|------|---------|---------|
+| OpenAPI / Swagger | `**/openapi.{yaml,json}`, `**/swagger.{yaml,json}` | 所有路径定义 → provides |
+| Proto 文件 | `**/*.proto` | service + rpc 定义 → provides |
+| docker-compose | `docker-compose*.{yml,yaml}` | 服务名、端口映射、depends_on → 基本信息+依赖 |
+| k8s manifest | `**/k8s/**/*.yaml`, `**/deploy/**/*.yaml` | Service 端口、环境变量中的服务 URL |
+| Dockerfile | `**/Dockerfile*` | EXPOSE 端口 |
+
+**操作方式**：用 Glob 找文件，Read 读内容，直接解析。不需要 LLM 参与。
+
+### 1.2 路由/接口扫描（置信度 EXTRACTED）
+
+根据检测到的语言和框架，用 Grep 做精确模式匹配：
+
+**Python:**
+```
+@app.route\(|@router\.(get|post|put|delete|patch)\(|@api_view\(
+```
+
+**JavaScript/TypeScript:**
+```
+\.(get|post|put|delete|patch)\s*\(|router\.(get|post|put|delete|patch)
+```
+
+**Go:**
+```
+\.(GET|POST|PUT|DELETE|PATCH)\(|HandleFunc\(|\.Handle\(
+```
+
+**Java:**
+```
+@(Get|Post|Put|Delete|Patch)Mapping|@RequestMapping
+```
+
+对每条匹配记录：`{method, path, file, line}`.
+
+### 1.3 外部调用扫描（置信度 EXTRACTED）
+
+用 Grep 查找出站 HTTP 调用和服务 URL 引用：
+
+**HTTP 客户端调用：**
+```
+requests\.(get|post|put|delete)|axios\.(get|post|put|delete)|fetch\(|http\.Client|HttpClient|RestTemplate|WebClient
+```
+
+**环境变量中的服务引用：**
+```
+_SERVICE_URL|_API_URL|_BASE_URL|_ENDPOINT|_HOST
+```
+
+**gRPC client 调用：**
+```
+\.NewClient\(|Stub\(|Channel\(|grpc\.dial
+```
+
+对每条匹配记录：`{target_hint, endpoint_hint, file, line}`。target_hint 从 env 变量名或 URL 前缀推断（如 `ORDER_SERVICE_URL` → target: order-service）。
+
+### 1.4 业务实体扫描（置信度 EXTRACTED）
+
+用 Glob + Grep 提取领域信号：
+
+**模型/实体定义：**
+- 查找 `**/models/**`, `**/entities/**`, `**/schemas/**`, `**/domain/**` 下的文件
+- Grep 类定义：`class \w+\(.*Model\)|class \w+\(.*Schema\)|type \w+ struct|interface \w+`
+
+**枚举/常量：**
+- Grep: `class \w+\(.*Enum\)|enum \w+|const \w+ =|ENUM\(|choices=`
+
+**校验逻辑：**
+- Grep: `raise.*Error|throw.*Exception|assert |validate|if.*<.*>|min_value|max_value|MaxLength|MinLength`
+
+### 1.5 基本信息提取（置信度 CONFIRMED/EXTRACTED）
+
+| 信息 | 提取方式 |
+|------|---------|
+| 项目名 | 读 package.json / pyproject.toml / go.mod / pom.xml / Cargo.toml |
+| 端口 | Dockerfile EXPOSE > docker-compose ports > 配置文件 |
+| 语言 | 根据项目文件自动判断 |
+| 职责描述 | README.md 第一段（EXTRACTED），无 README 则留空 |
+
+### 1.6 阶段 1 输出格式
+
+每个服务产出一个结构化结果：
+
+```yaml
+service: payment-service
+basic:
+  language: python
+  framework: fastapi
+  port: {value: 8001, source: "Dockerfile:12", confidence: CONFIRMED}
+  summary: {value: "处理支付创建、查询和退款", source: "README.md:1", confidence: EXTRACTED}
+provides:
+  - {method: POST, path: "/api/payments/create", source: "src/routes/payments.py:42", confidence: EXTRACTED}
+  - {method: GET, path: "/api/payments/{id}", source: "src/routes/payments.py:58", confidence: EXTRACTED}
+consumes:
+  - {target: order-service, endpoint: "GET /api/orders/{id}", source: "src/clients/order.py:15", confidence: EXTRACTED}
+  - {target: unknown, endpoint: "POST /api/notify", source: "src/tasks/notify.py:8", confidence: EXTRACTED}
+entities:
+  - {name: Payment, source: "src/models/payment.py:5", confidence: EXTRACTED}
+  - {name: Refund, source: "src/models/refund.py:3", confidence: EXTRACTED}
+enums:
+  - {name: PaymentStatus, values: [PENDING, COMPLETED, FAILED, REFUNDED], source: "src/models/enums.py:12", confidence: EXTRACTED}
+rules:
+  - {description: "退款金额不超过原支付金额", source: "src/validators.py:28", confidence: EXTRACTED}
+```
+
+---
+
+## 阶段 2：LLM 解读（在已提取事实上推理）
+
+本阶段用 LLM 对阶段 1 的结构化结果做**解读和补充**，不直接读代码。
+
+### 2.1 补充分析（每个仓库一个 Agent，并行）
+
+为每个服务启动一个 Agent，输入是阶段 1 的结构化结果加上需要 LLM 判断的代码片段：
+
+> 你收到了服务 `<service-name>` 的确定性扫描结果（见下方 YAML）。
+> 请基于这些已验证的事实，补充以下分析：
+>
+> 1. **领域归属**：根据实体名和枚举，推断这个服务属于什么业务领域。给出领域名（一个词，如 payment、order、inventory）
+> 2. **术语表**：根据实体名和枚举值，生成业务术语表。每个术语给出定义。只基于已提取的实体和枚举，不要发明新术语
+> 3. **业务规则整理**：把扫描到的校验逻辑整理成人类可读的业务规则。只整理已提取的条目，不要补充
+> 4. **未识别的 consumes 目标**：对 target 为 unknown 的外部调用，根据 URL 模式和 env 变量名推测目标服务。标注 confidence: INFERRED
+> 5. **职责描述**：如果 README 没有好的描述，根据 provides 和实体写一句话描述。标注 confidence: INFERRED
+>
+> 规则：
+> - 每条输出必须引用阶段 1 结果中的具体条目作为依据
+> - 不确定的推断标注 confidence: SPECULATED
+> - 禁止声称发现了阶段 1 结果中不存在的接口、实体或调用
+
+### 2.2 散落文档分析（如有 --docs，单独一个 Agent）
+
+如果指定了 `--docs` 目录：
+
+> 分析以下文档目录中的文件，提取：
+> - 业务术语及定义
+> - 业务规则和约束
+> - 产品需求描述
+> - 服务间关系描述
+>
+> 对每条提取标注来自哪个文件。按领域分组返回。
+> 所有输出标注 confidence: INFERRED（文档可能过时）。
+
+---
+
+## 阶段 3：交叉验证
+
+### 3.1 依赖双向校验
+
+汇总所有服务的 provides 和 consumes，做交叉比对：
+
+```
+对每个 consumes 条目 (A consumes B.endpoint):
+  如果 B 的 provides 里有匹配的 endpoint:
+    → 置信度提升为 VERIFIED (0.90)
+  如果 B 的 provides 里没有匹配的 endpoint:
+    → 标记为 UNMATCHED，可能是：
+      a) B 的接口未被阶段 1 扫描到（框架不在扫描模式内）
+      b) A 的调用目标识别有误
+      c) B 确实没有这个接口（已废弃或错误）
+    → 保持原置信度，追加 "跨服务未验证" 标记
+```
+
+### 3.2 矛盾检测
+
+- 同一个 endpoint 被多个服务声明 provides → 标记冲突
+- 同一个服务被推断为多个 domain → 列出依据让用户裁决
+- env 变量指向的服务名不在 registry 中 → 标记为可能的未注册服务
+
+### 3.3 置信度汇总
+
+最终每条发现的置信度 = 最高证据等级：
+- CONFIRMED > VERIFIED > EXTRACTED > INFERRED > SPECULATED
+
+---
+
+## 展示结果
+
+按三个维度分别展示，每条附来源和置信度：
+
+```markdown
+## 1. registry.yaml 补充
+
+| 服务 | 字段 | 值 | 来源 | 置信度 |
+|------|------|-----|------|--------|
+| payment-service | port | 8001 | Dockerfile:12 | CONFIRMED |
+| payment-service | domain | payment | 实体: Payment, Refund | INFERRED |
+| payment-service | summary | 处理支付创建、查询和退款 | README.md:1 | EXTRACTED |
+
+## 2. dependency-graph.yaml
+
+payment-service:
+  provides:                                          # 置信度
+    - POST /api/payments/create                      # EXTRACTED (src/routes/payments.py:42)
+    - GET /api/payments/{id}                         # EXTRACTED (src/routes/payments.py:58)
+  consumes:
+    - order-service: GET /api/orders/{id}            # VERIFIED (双向匹配)
+    - notification-service: POST /api/notify         # INFERRED (从 NOTIFY_SERVICE_URL 推断)
+
+## 3. 领域知识
+
+### payment 领域 (关联服务: payment-service)
+
+**术语：**
+| 术语 | 定义 | 来源 |
+|------|------|------|
+| 支付单 (Payment) | 一次支付行为的记录 | src/models/payment.py:5 |
+| 退款单 (Refund) | 针对某笔支付的退款请求 | src/models/refund.py:3 |
+
+**业务规则：**
+- 退款金额 ≤ 原支付金额 (src/validators.py:28) [EXTRACTED]
+- 支付状态流转: PENDING → COMPLETED/FAILED → REFUNDED (src/models/enums.py:12) [EXTRACTED]
+
+**实体：** Payment, Refund, Channel
+
+## 4. 需要人工确认的条目
+
+| 条目 | 原因 |
+|------|------|
+| notification-service 目标推断 | 仅从 env 变量名推断，无双向验证 |
+| payment 领域归属 | LLM 推断，需确认是否准确 |
+
+## 5. 潜在问题
+
+- env 变量 AUDIT_SERVICE_URL 指向的服务不在 registry 中，可能需要注册
+- order-service 的接口 GET /api/orders/{id}/items 被调用但未在 provides 中声明
+```
+
+让用户逐段确认或整体确认。对于 SPECULATED 条目，逐条询问。
+
+## 写入
+
+用户确认后：
+
+1. **registry.yaml** — 补充空缺字段
+2. **dependency-graph.yaml** — 写入接口和依赖
+3. **business/domains/`<domain>`/glossary.md** — 写入术语表
+4. **business/domains/`<domain>`/rules.md** — 写入业务规则
+
+≥ INFERRED 的条目直接写入（标记来源）。SPECULATED 的只在用户明确确认后才写入。
+
+每个自动生成的文件顶部标注：
+```markdown
+<!-- 由 /populate-meta 自动生成 (YYYY-MM-DD)，请人工校对 -->
+```
+
+## 后续建议
+
+写入完成后提示：
+
+1. 校对"需要人工确认"中的每一条
+2. 补充异步依赖（消息队列、事件总线 — 静态分析盲区）
+3. 补充 `business/domains/<domain>/flows.md`（业务流程图无法从代码自动提取）
+4. 运行 `/sync-meta` 分发到各服务仓库
+5. 后续代码变更后可重新运行 `/populate-meta` 增量更新
+
+## 局限性
+
+| 盲区 | 原因 | 建议 |
+|------|------|------|
+| 消息队列依赖 | Kafka/RabbitMQ/Redis 的异步调用无标准模式 | 手动补充 consumes |
+| 动态路由 | 运行时拼接 URL、服务发现 | 结合运行时 trace 数据 |
+| 业务流程 | 代码有规则但无全局流程视图 | 手动写 flows.md |
+| 组织信息 | 代码不含谁负责什么 | 手动填 owner |
+| 未扫描到的框架 | Grep 模式未覆盖所有框架 | 报告未匹配路由数为 0 的服务 |
