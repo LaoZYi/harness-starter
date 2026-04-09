@@ -132,7 +132,8 @@ find . -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*"
 如果有任何文档被修改：
 
 ```bash
-git add -A
+# 逐文件暂存（禁止 git add -A，避免意外暂存敏感文件）
+git add <被修改的文档文件路径1> <被修改的文档文件路径2> ...
 git commit -m "docs: update project documentation"
 ```
 
