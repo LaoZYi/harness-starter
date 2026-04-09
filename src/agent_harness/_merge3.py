@@ -166,6 +166,17 @@ def _merge_with_conflict(base, cur, new, sm_cur, sm_new, overlap):
             regions.append(("clean", [base[i]], [base[i]], [base[i]]))
             i += 1
 
+    # Append trailing content added by either side beyond the base
+    end = len(base)
+    cur_trail = cur_lookup.get(end, {}).get("lines", [])
+    new_trail = new_lookup.get(end, {}).get("lines", [])
+    if cur_trail and new_trail and end in overlap:
+        regions.append(("conflict", [], cur_trail, new_trail))
+    elif cur_trail:
+        regions.append(("clean", [], cur_trail, cur_trail))
+    elif new_trail:
+        regions.append(("clean", [], new_trail, new_trail))
+
     return regions
 
 
