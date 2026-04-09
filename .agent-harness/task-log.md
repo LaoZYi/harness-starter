@@ -138,3 +138,22 @@
   - [x] GitHub Issue #9 已关闭
   - [x] GitLab Issue #4 已关闭
 
+## 2026-04-09 深度审计 + meta 项目类型 + harness sync 命令
+
+- 需求：深度分析项目潜在问题并全部修复，然后支持微服务 30 仓库架构的接入
+- 做了什么：
+  - **深度审计修复（16 项）**：CRLF 合并静默丢数据、shell 注入、symlink 路径穿越、git add -A 过宽、循环导入、_slugify 行为不一致 x3、升级事务标记、verify 扫描范围、插件 .tmpl 后缀、模板缺 key 警告、输出路径防护、类型标注、stats 双重 resolve、预存在冲突标记检测
+  - **新建 `_shared.py`**：提取共享常量，打破 initializer↔upgrade 循环导入
+  - **新增 `meta` 项目类型**：preset + 探测 + 专属模板（registry、dependency-graph、conventions、shared-plugins 骨架）
+  - **新增 `harness sync` 命令**：一条命令完成跨服务上下文同步 + 共享插件分发
+  - **测试 105 → 134**（29 个新测试）
+  - **文档全量同步**
+- 关键决策：sync 合并 sync-context + distribute-plugins 为一步；meta init 跳过无关问题；添加 pyyaml 依赖
+- 改了：41 个文件（12 新建 + 29 修改）
+- 完成标准：
+  - [x] 16 项审计问题全部修复
+  - [x] meta 项目类型可用
+  - [x] harness sync --all 端到端 41 项验证全过
+  - [x] 134 测试通过，make check 全绿
+  - [x] 文档全部一致
+
