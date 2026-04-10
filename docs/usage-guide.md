@@ -8,12 +8,14 @@
 - [初始化项目](#初始化项目)
 - [生成的文件结构](#生成的文件结构)
 - [29 个工作流技能命令](#29-个工作流技能命令)
+- [Meta 专属命令（4 个）](#meta-专属命令4-个)
 - [推荐工作流](#推荐工作流)
+- [/lfg 深度指南](#lfg-深度指南)
 - [日常运维](#日常运维)
+- [跨服务同步（harness sync）](#跨服务同步harness-sync)
 - [升级已有项目](#升级已有项目)
 - [配置参考](#配置参考)
 - [插件机制](#插件机制)
-- [/lfg 深度指南](#lfg-深度指南)
 - [上游同步](#上游同步)
 - [自举（Dogfooding）](#自举dogfooding)
 - [自我进化](#自我进化)
@@ -224,6 +226,44 @@ project/
 └── notes/                                 # 语音笔记存放目录
 ```
 
+### Meta 项目类型额外生成的文件
+
+当项目类型为 `meta` 时，除上述通用结构外，还会额外生成以下目录和文件：
+
+```
+project/
+├��─ services/
+│   ├── registry.yaml              # 服务注册表（名称、本地路径、领域、负责人）
+│   └── dependency-graph.yaml      # 依赖关系图（provides/consumes）
+├── business/
+│   ├── domains/                   # 按领域组织的业务知识
+│   │   └── <domain>/
+│   │       ├── glossary.md        #   术语表
+│   │       ├── rules.md           #   业务规则
+│   │       └── flows.md           #   业务流程
+│   ├── products/                  # 产品需求（PRD、用户故事）
+│   └── roadmap.md                 # 版本规划
+├── shared-plugins/
+│   ├── rules/                     # 分发到各服务的 Claude Code 规则
+│   │   └── microservice-conventions.md
+│   ├── templates/                 # 分发到各服务的文档模板
+│   │   └── docs/upstream-conventions.md
+│   └── README.md
+├── tasks/                         # 跨服务任务 YAML 文件
+│   └── TASK-*.yaml                #   由 /meta-create-task 生成
+├── workspaces/                    # worktree 工作空间（gitignored，动态创建）
+│   └── TASK-NNN/                  #   由 /meta-activate-task 创建
+├── conventions/                   # 跨服务技术约定（源文档）
+│   └── README.md
+├── contracts/                     # 接口契约（Proto、OpenAPI 等）
+├── BEST-PRACTICES.md              # Meta 仓库最佳实践指南
+└── .claude/commands/
+    ├── meta-sync.md               # /meta-sync 命令
+    ├── meta-populate.md           # /meta-populate 命令
+    ├── meta-create-task.md        # /meta-create-task 命令
+    └── meta-activate-task.md      # /meta-activate-task 命令
+```
+
 ---
 
 ## 29 个工作流技能命令
@@ -298,6 +338,92 @@ project/
 | `/evolve` | 自动搜索新项目 → 评估独特性 → 创建 Issue 提案 | 本地原创 |
 | `/use-superpowers` | 技能选择引导，1% 法则决策树 | superpowers |
 | `/write-skill` | 用 TDD 方法论编写新技能 | superpowers |
+
+---
+
+## Meta 专属命令（4 个）
+
+当项目类型为 `meta` 时，除上述 29 个通用技能外，还会额外生成 4 个 meta 专属命令（统一 `meta-` 前缀），用于微服务全局管理。
+
+| 命令 | 用途 | 说明 |
+|------|------|------|
+| `/meta-sync` | 同步 meta 上下文到服务仓库 | 将注册表、依赖图、共享规则和领域知识分发到各服务 |
+| `/meta-populate` | 从代码仓库推理填充 meta | 三阶段流水线（确定��提取 → LLM 解读 → 交叉验证），自动填充 registry 和 dependency-graph |
+| `/meta-create-task` | 从会议纪要创建跨服务任务 | AI 分析纪要 → 匹配服务 → 生成 YAML 任务草稿 → 人工确认 |
+| `/meta-activate-task` | 激活跨服务任务 | 创建 Git worktree 工作空间，注入 current-task.md，同步服务上下文 |
+
+### `/meta-sync`
+
+将 meta 仓库的服务注册表、依赖图和共享规则同步到各服务仓库。底层调用 `harness sync` 命令。
+
+```bash
+/meta-sync              # 同步所有服务
+/meta-sync ../payment   # 同步单个服务
+/meta-sync --dry-run    # 预览模式
+```
+
+同步到各服务的文件：
+
+| 来源 | 目标 | 说明 |
+|------|------|------|
+| registry + graph → 生成 | `docs/service-context.md` | 服务上下文（上下游、接口、影响范围） |
+| registry + graph → 生成 | `.claude/rules/microservice.md` | 微服务协作规则 |
+| `shared-plugins/rules/*` | `.claude/rules/*` | 共享 Claude Code 规则 |
+| `shared-plugins/templates/*` | 项目根目录对应路径 | 共享文档模板 |
+| `business/domains/<domain>/*` | `docs/domain/*` | 服务对应的领域知识 |
+
+### `/meta-populate`
+
+从已注册的代码仓库扫描推理，自动填充 meta 仓库中的空缺信息。
+
+```bash
+/meta-populate                          # 处理所有已注册服务
+/meta-populate payment-service          # 只处理指定服务
+/meta-populate --docs ~/shared-docs/    # 额外纳入散落文档
+```
+
+三阶段流水线：
+
+1. **确定性提取**（零幻觉）— 用 Glob/Grep/Read 做精确匹配：OpenAPI、Proto、路由定义、HTTP 客户端调用、模型定义等
+2. **LLM 解读** — 基于已提取事实做推理：领域归属、术语表、业务规则整理、未识别目标推测
+3. **交叉验证** — 依赖双向校验、矛盾检测、置信度汇总
+
+每条发现标注置信度（CONFIRMED / VERIFIED / EXTRACTED / INFERRED / SPECULATED），≥ INFERRED 自动写入，SPECULATED 需人工确认。
+
+### `/meta-create-task`
+
+从会议纪要或需求描述生成结构化的跨服务任务文件。
+
+```bash
+/meta-create-task                   # 交互模式，粘贴纪要
+/meta-create-task <需求文本>         # 直接从参数创建
+```
+
+生成的任务 YAML 包含：
+- 每个服务的 `goal`、`steps`、`tests`、`done_criteria`
+- 服务间 `depends_on` 依赖关系
+- 会议纪要原文作为 `context`
+- 状态为 `draft`，确认后可改为 `ready`
+
+### `/meta-activate-task`
+
+激活跨服务任务，为每个涉及的服务创建隔离工作空间。
+
+```bash
+/meta-activate-task TASK-001    # 激活指定任务
+/meta-activate-task 001         # 简写（自动补全前缀）
+```
+
+激活流程：
+1. 验证任务 YAML 结构和 `status: ready`
+2. 加载服务注册表，校验所有仓库路径
+3. 检测循环依赖，计算依赖层级
+4. 为每个服务创建 Git worktree（`workspaces/TASK-NNN/<service>/`）
+5. 注入 `current-task.md`（含跨服务上下文和依赖信息）
+6. 同步服务上下文（`harness sync`）
+7. 更新任务状态为 `active`
+
+支持中途失败回滚：已创建的 worktree 可选全部回滚或保留重试。
 
 ---
 
@@ -501,6 +627,51 @@ project/
 | **中** — 新增一个功能模块 | 30 分钟-2 小时 | `/brainstorm` → `/spec` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound` → `/finish-branch` |
 | **大** — 重构、新系统、多模块联动 | 半天以上 | `/ideate` → `/brainstorm` → `/spec` → `/write-plan` → `/lfg`（或手动走全流程） |
 | **不确定** | ? | `/use-superpowers` 让 AI 推荐 |
+
+### Meta 项目工作流
+
+当项目类型为 `meta` 时，除通用技能外还有 4 个专属命令，构成完整的微服务管理流程：
+
+#### 初始建立 Meta 仓库
+
+```
+harness init /path/to/meta-repo --project-type meta
+    ↓
+填写 services/registry.yaml     ← 手动登记每个服务的名称和本地路径
+    ↓
+/meta-populate                   ← AI 自动扫描代码仓库，填充依赖图和领域知识
+    ↓
+审阅并确认填充结果
+    ↓
+/meta-sync                       ← 将上下文分发到各服务仓库
+```
+
+#### 日常维护
+
+```
+接口变更 → 更新 dependency-graph.yaml → /meta-sync
+新增服务 → registry.yaml 加记录 → /meta-populate → /meta-sync
+业务规则变更 → 改 business/domains/ → /meta-sync
+新增跨服务约定 → conventions/ + shared-plugins/rules/ → /meta-sync
+```
+
+#### 跨服务任务（从需求到开发）
+
+```
+收到会议纪要或需求描述
+    ↓
+/meta-create-task               ← AI 生成任务草稿（含每个服务的目标和依赖）
+    ↓
+审阅 → 确认 → status: ready
+    ↓
+/meta-activate-task TASK-NNN    ← 创建 worktree 工作空间，注入 current-task.md
+    ↓
+按依赖层级开发：
+  · 层级 0 服务可并行启动
+  · 层级 N 服务等前置完成后启动
+    ↓
+各服务验证通过 → /finish-branch → 更新 status: done
+```
 
 ---
 
@@ -746,6 +917,56 @@ harness stats /path/to/project
 
 ---
 
+## 跨服务同步（harness sync）
+
+`harness sync` 是 meta 项目类型的核心 CLI 命令，将 meta 仓库中的服务注册表、依赖图、共享规则和领域知识同步到各服务仓库。
+
+### 基本用法
+
+```bash
+# 同步单个服务（指定服务仓库路径）
+harness sync /path/to/payment-service --meta /path/to/meta-repo
+
+# 同步单个服务（在 meta 仓库内运行，自动检测 meta 路径）
+harness sync /path/to/payment-service
+
+# 批量同步所有服务（在 meta 仓库内运行）
+harness sync --all
+
+# 预演模式（不写文件）
+harness sync --all --dry-run
+```
+
+### 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `target` | 服务仓库路径（`--all` 时可省略） |
+| `--meta` | meta 仓库路径（可省略，自动检测：优先当前目录，其次 `.agent-harness/project.json` 中记录的路径） |
+| `--all` | 同步 `services/registry.yaml` 中所有服务 |
+| `--dry-run` | 预演不写文件 |
+
+### 同步内容
+
+| 来源 | 写入服务仓库的路径 | 说明 |
+|------|------------------|------|
+| registry + graph → 生成 | `docs/service-context.md` | 服务上下文（上下游关系、接口、影响范围） |
+| registry + graph → 生成 | `.claude/rules/microservice.md` | 微服务协作规则（AI agent 自动遵守） |
+| `shared-plugins/rules/*` | `.claude/rules/*` | 共享 Claude Code 规则 |
+| `shared-plugins/templates/*` | 项目根目录对应路径 | 共享文档模板 |
+| `business/domains/<domain>/*` | `docs/domain/*` | 服务对应的领域知识（术语、规则、流程） |
+
+> **注意**：以上文件在服务仓库中是自动生成/覆盖的，不要在服务仓库里手动编辑。修改源头在 meta 仓库。
+
+### 与 `/meta-sync` 的关系
+
+`/meta-sync` 是 Claude Code 斜杠命令，内部调用 `harness sync`。区别在于：
+
+- `harness sync` — CLI 命令，可在终端直接运行，适合 CI/CD 和脚本
+- `/meta-sync` — 在 Claude Code 会话中使用，会自动检测 harness 安装方式并展示同步报告
+
+---
+
 ## 升级已有项目
 
 当框架版本更新后，已初始化的项目可以增量升级：
@@ -973,3 +1194,16 @@ harness init /path/to/project --assess-only --json
 # 非交互初始化
 harness init /path/to/project --config .harness.json --non-interactive --no-git-commit
 ```
+
+### Meta 项目类型如何起步？
+
+1. `harness init /path/to/meta-repo` 选择 `meta` 类型
+2. 手动填写 `services/registry.yaml`（每个服务的名称和本地路径）
+3. 运行 `/meta-populate` 自动扫描代码仓库填充依赖图和领域知识
+4. 运行 `/meta-sync` 将上下文分发到各服务仓库
+
+详细指南见生成的 `BEST-PRACTICES.md`。
+
+### 在服务仓库里改了 `docs/service-context.md` 怎么没生效？
+
+该文件由 `harness sync` 自动生成，每次同步会被覆盖。要修改内容，应在 meta 仓库的 `services/registry.yaml`、`services/dependency-graph.yaml` 或 `business/domains/` 中修改源文件，然后重新 `/meta-sync`。
