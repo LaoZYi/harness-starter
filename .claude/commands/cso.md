@@ -81,6 +81,25 @@ git log -p | grep -iE '(password|secret|api_key|token|private_key)\s*[:=]'
 - 模型输出是否被信任执行（代码执行、SQL 生成）
 - Token/费用滥用防护
 
+### 阶段 8.5：提示注入扫描（配置文件）
+
+扫描所有会被加载到 AI 上下文的配置文件，检测潜在的提示注入：
+
+**扫描范围**：
+- `AGENTS.md`、`CLAUDE.md`、`.cursorrules`
+- `docs/` 下所有 `.md` 文件
+- `.claude/rules/` 和 `.claude/commands/` 下的所有文件
+- 项目中任何名为 `HERMES.md`、`COPILOT.md` 的文件
+
+**检测模式**：
+- "ignore previous instructions"、"ignore all instructions" 等覆盖指令
+- 隐藏的 HTML/Unicode（不可见字符、零宽空格、RTL 覆盖）
+- 数据外泄模式（将内容编码到 URL 参数、base64 隐写）
+- 角色劫持（"you are now..."、"act as..."）
+- 工具滥用诱导（"run this command..."、"execute..."）
+
+**置信度**：只有在上下文中明显恶意的模式才标记（避免误报正常的 AI 指令文件）。合法的 AI 配置文件（如 AGENTS.md 中的"你应该..."）不算注入。
+
 ### 阶段 9：OWASP Top 10 逐项检查
 
 | # | 类别 | 检查要点 |

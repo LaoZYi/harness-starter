@@ -13,5 +13,6 @@
     "退出码正确：成功返回 0，错误返回非 0",
     "输出格式稳定可解析（如适用 JSON/CSV 输出）"
   ],
-  "workflow_skills_summary": "CLI 工具重点技能：`/tdd`（命令行为测试）、`/write-plan`（子命令规划）、`/verify`（跨平台验证）、`/git-commit`（结构化提交）"
+  "workflow_skills_summary": "CLI 工具重点技能：`/tdd`（命令行为测试）、`/write-plan`（子命令规划）、`/verify`（跨平台验证）、`/git-commit`（结构化提交）",
+  "exclude_rules": ["api.md", "database.md"]
 }

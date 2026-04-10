@@ -12,5 +12,6 @@
     "依赖关系图与实际调用链一致",
     "跨服务约定文档完整且无歧义"
   ],
-  "workflow_skills_summary": "Meta 仓库重点技能：`/write-plan`（跨服务协调规划）、`/multi-review`（多服务视角评审）、`/adr`（跨服务架构决策记录）、`/doc-release`（文档同步）、`/compound`（经验沉淀）"
+  "workflow_skills_summary": "Meta 仓库重点技能：`/write-plan`（跨服务协调规划）、`/multi-review`（多服务视角评审）、`/adr`（跨服务架构决策记录）、`/doc-release`（文档同步）、`/compound`（经验沉淀）",
+  "exclude_rules": ["api.md", "database.md"]
 }

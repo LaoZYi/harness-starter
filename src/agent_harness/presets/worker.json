@@ -13,5 +13,6 @@
     "失败场景有重试或明确的错误记录",
     "依赖的外部系统不可用时有合理的降级或报错"
   ],
-  "workflow_skills_summary": "Worker 重点技能：`/tdd`（任务幂等测试）、`/debug`（异步排障）、`/verify`（并发验证）、`/compound`（故障经验沉淀）"
+  "workflow_skills_summary": "Worker 重点技能：`/tdd`（任务幂等测试）、`/debug`（异步排障）、`/verify`（并发验证）、`/compound`（故障经验沉淀）",
+  "exclude_rules": []
 }

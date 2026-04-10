@@ -62,6 +62,17 @@ class UpgradePlanResult:
 
 
 @dataclass(slots=True)
+class ServiceContext:
+    name: str
+    owner: str = ""
+    summary: str = ""
+    repo: str = ""
+    provides: list[str] = field(default_factory=list)
+    upstreams: dict[str, list[str]] = field(default_factory=dict)
+    downstreams: dict[str, list[str]] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
 class UpgradeExecutionResult:
     target_root: str
     created_files: list[str] = field(default_factory=list)

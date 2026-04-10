@@ -5,7 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from ._shared import (
-    FRAMEWORK_VERSION, META_ROOT, PRESET_ROOT, SUPERPOWERS_ROOT, TEMPLATE_ROOT,
+    FRAMEWORK_VERSION, PKG_DIR, PRESET_ROOT, SUPERPOWERS_ROOT, TEMPLATE_ROOT,
     shell_escape_single, slugify,
 )
 from .assessment import assess_project
@@ -190,15 +190,19 @@ def initialize_project(
     if not dry_run:
         target_root.mkdir(parents=True, exist_ok=True)
     _, _, context = prepare_initialization(target_root, answers)
-    written, skipped = materialize_templates(TEMPLATE_ROOT, target_root, context, force=force, dry_run=dry_run)
+    project_type = str(answers.get("project_type") or "backend-service")
+    preset = _load_preset(project_type)
+    exclude = [f".claude/rules/{r}" for r in preset.get("exclude_rules", [])]
+    written, skipped = materialize_templates(TEMPLATE_ROOT, target_root, context, force=force, dry_run=dry_run, exclude=exclude)
     if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
         sw, ss = materialize_templates(SUPERPOWERS_ROOT, target_root, context, force=force, dry_run=dry_run)
         written.extend(sw)
         skipped.extend(ss)
-    if str(answers.get("project_type")) == "meta" and META_ROOT.is_dir():
-        mw, ms = materialize_templates(META_ROOT, target_root, context, force=force, dry_run=dry_run)
-        written.extend(mw)
-        skipped.extend(ms)
+    type_root = PKG_DIR / "templates" / project_type
+    if type_root.is_dir():
+        tw, ts = materialize_templates(type_root, target_root, context, force=force, dry_run=dry_run)
+        written.extend(tw)
+        skipped.extend(ts)
     plugin_root = target_root / ".harness-plugins"
     if plugin_root.is_dir():
         pw, ps = _materialize_plugins(plugin_root, target_root, context, force=force, dry_run=dry_run)

@@ -229,3 +229,12 @@
 ## 外部评审集成
 
 如果项目安装了 [codex-plugin-cc](https://github.com/openai/codex-plugin-cc)，可以在本评审完成后运行 `/codex:review` 获取 Codex AI 的独立评审视角，作为交叉验证。两个不同 AI 的评审结果互补，能更全面地发现问题。
+
+## 未来方向：多模型聚合评审（Mixture of Reviewers）
+
+当前 6 个审查员是同一个模型的不同 persona。未来如果支持多模型调用，可以升级为：
+- 每个审查员路由到不同的前沿模型（如正确性→Claude、安全→GPT、性能→Gemini）
+- 聚合阶段由一个独立模型综合各方发现，减少单模型盲区
+- 参考 [hermes-agent 的 Mixture of Agents 模式](https://github.com/nousresearch/hermes-agent)：并行生成 → 聚合综合
+
+这不改变当前评审流程，只是记录扩展方向。

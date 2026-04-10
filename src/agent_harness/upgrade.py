@@ -7,8 +7,8 @@ from difflib import unified_diff
 from pathlib import Path
 
 from ._merge3 import json_merge, merge3
-from ._shared import META_ROOT, PLACEHOLDER_RE, SUPERPOWERS_ROOT, TEMPLATE_ROOT
-from .initializer import prepare_initialization
+from ._shared import PKG_DIR, PLACEHOLDER_RE, SUPERPOWERS_ROOT, TEMPLATE_ROOT
+from .initializer import _load_preset, prepare_initialization
 from .models import UpgradeExecutionResult, UpgradePlanResult
 from .templating import render_templates
 
@@ -60,11 +60,15 @@ def _build_diff(rp: str, cur: str, exp: str) -> str:
 
 def _render_all(root: Path, answers: dict[str, object]) -> dict[str, str]:
     _, _, ctx = prepare_initialization(root, answers)
-    rendered = render_templates(TEMPLATE_ROOT, ctx)
+    project_type = str(answers.get("project_type") or "backend-service")
+    preset = _load_preset(project_type)
+    exclude = [f".claude/rules/{r}" for r in preset.get("exclude_rules", [])]
+    rendered = render_templates(TEMPLATE_ROOT, ctx, exclude=exclude)
     if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
         rendered.update(render_templates(SUPERPOWERS_ROOT, ctx))
-    if str(answers.get("project_type")) == "meta" and META_ROOT.is_dir():
-        rendered.update(render_templates(META_ROOT, ctx))
+    type_root = PKG_DIR / "templates" / project_type
+    if type_root.is_dir():
+        rendered.update(render_templates(type_root, ctx))
     return rendered
 
 
@@ -214,9 +218,7 @@ def execute_upgrade(
                 output_path.write_text(result_text, encoding="utf-8")
                 if conflict_list:
                     conflicts[rp] = conflict_list
-                    merged.append(rp)
-                else:
-                    merged.append(rp)
+                merged.append(rp)
         elif cat == "json_merge":
             result_text, warnings = json_merge(
                 base_content, current, new_content,
@@ -227,7 +229,6 @@ def execute_upgrade(
                 conflicts[rp] = warnings
             merged.append(rp)
 
-    # Collect skipped files
     for rp in rendered:
         if get_category(rp) == "skip" and (target_root / rp).exists() and rp not in plan.create_files:
             skipped.append(rp)

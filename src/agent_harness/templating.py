@@ -18,11 +18,19 @@ def render_template(template_text: str, context: dict[str, str]) -> str:
     return PLACEHOLDER_PATTERN.sub(replace, template_text)
 
 
-def render_templates(template_root: Path, context: dict[str, str]) -> dict[str, str]:
+def render_templates(
+    template_root: Path,
+    context: dict[str, str],
+    *,
+    exclude: list[str] | None = None,
+) -> dict[str, str]:
+    exclude_set = set(exclude or [])
     rendered: dict[str, str] = {}
     for template_path in sorted(template_root.rglob("*.tmpl")):
         relative_template = template_path.relative_to(template_root)
         output_relative = str(relative_template)[:-5]
+        if output_relative in exclude_set:
+            continue
         rendered[output_relative] = render_template(template_path.read_text(encoding="utf-8"), context)
     return rendered
 
@@ -34,11 +42,12 @@ def materialize_templates(
     *,
     force: bool = False,
     dry_run: bool = False,
+    exclude: list[str] | None = None,
 ) -> tuple[list[str], list[str]]:
     written: list[str] = []
     skipped: list[str] = []
 
-    for output_relative, content in render_templates(template_root, context).items():
+    for output_relative, content in render_templates(template_root, context, exclude=exclude).items():
         output_path = target_root / output_relative
 
         if not output_path.resolve().is_relative_to(target_root.resolve()):

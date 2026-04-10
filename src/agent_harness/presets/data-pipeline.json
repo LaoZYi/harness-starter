@@ -13,5 +13,6 @@
     "重复运行同一批数据结果幂等",
     "异常数据有跳过或记录，不会阻塞整条管道"
   ],
-  "workflow_skills_summary": "数据管道重点技能：`/tdd`（数据契约测试）、`/debug`（数据流排障）、`/cso`（数据安全审计）、`/verify`（端到端数据验证）、`/compound`（经验沉淀）"
+  "workflow_skills_summary": "数据管道重点技能：`/tdd`（数据契约测试）、`/debug`（数据流排障）、`/cso`（数据安全审计）、`/verify`（端到端数据验证）、`/compound`（经验沉淀）",
+  "exclude_rules": ["api.md"]
 }
