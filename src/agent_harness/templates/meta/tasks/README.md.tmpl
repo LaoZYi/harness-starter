@@ -1,6 +1,6 @@
 # 跨服务任务 — {{project_name}}
 
-存放由 `/create-task` 生成的跨服务任务文件。
+存放由 `/meta-create-task` 生成的跨服务任务文件。
 
 ## 任务生命周期
 
@@ -10,9 +10,9 @@ draft → ready → active → done
 
 | 状态 | 含义 | 触发方式 |
 |------|------|----------|
-| draft | 草稿，待确认 | `/create-task` 生成 |
+| draft | 草稿，待确认 | `/meta-create-task` 生成 |
 | ready | 已确认，可激活 | 用户确认后更新 |
-| active | 已激活，worktree 已创建 | `/activate-task TASK-NNN` |
+| active | 已激活，worktree 已创建 | `/meta-activate-task TASK-NNN` |
 | done | 所有服务已完成 | 手动更新 |
 
 ## 任务文件格式
@@ -43,5 +43,5 @@ repos:
 
 ## 命令
 
-- `/create-task` — 从会议纪要生成任务草稿（AI 生成 → 人工确认）
-- `/activate-task TASK-NNN` — 激活任务，创建 worktree 工作空间，注入 current-task.md
+- `/meta-create-task` — 从会议纪要生成任务草稿（AI 生成 → 人工确认）
+- `/meta-activate-task TASK-NNN` — 激活任务，创建 worktree 工作空间，注入 current-task.md

@@ -4,9 +4,9 @@
 
 ## 使用方式
 
-- `/populate-meta` — 处理所有已注册服务
-- `/populate-meta payment-service order-service` — 只处理指定服务
-- `/populate-meta --docs ~/shared-docs/` — 额外纳入散落文档
+- `/meta-populate` — 处理所有已注册服务
+- `/meta-populate payment-service order-service` — 只处理指定服务
+- `/meta-populate --docs ~/shared-docs/` — 额外纳入散落文档
 
 参数：$ARGUMENTS
 
@@ -284,7 +284,7 @@ payment-service:
 
 每个自动生成的文件顶部标注：
 ```markdown
-<!-- 由 /populate-meta 自动生成 (YYYY-MM-DD)，请人工校对 -->
+<!-- 由 /meta-populate 自动生成 (YYYY-MM-DD)，请人工校对 -->
 ```
 
 ## 后续建议
@@ -294,8 +294,8 @@ payment-service:
 1. 校对"需要人工确认"中的每一条
 2. 补充异步依赖（消息队列、事件总线 — 静态分析盲区）
 3. 补充 `business/domains/<domain>/flows.md`（业务流程图无法从代码自动提取）
-4. 运行 `/sync-meta` 分发到各服务仓库
-5. 后续代码变更后可重新运行 `/populate-meta` 增量更新
+4. 运行 `/meta-sync` 分发到各服务仓库
+5. 后续代码变更后可重新运行 `/meta-populate` 增量更新
 
 ## 局限性
 

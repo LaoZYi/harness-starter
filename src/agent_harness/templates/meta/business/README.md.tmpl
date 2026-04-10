@@ -33,11 +33,11 @@ payment-service:
 
 零散的非结构化文档（旧 PRD、会议纪要、设计文档等）**不需要放进 meta 仓库**。
 
-用 `/populate-meta --docs <路径>` 直接指向文档所在的位置即可：
+用 `/meta-populate --docs <路径>` 直接指向文档所在的位置即可：
 
 ```bash
-/populate-meta --docs ~/Desktop/旧文档/
-/populate-meta --docs /nas/shared-prds/
+/meta-populate --docs ~/Desktop/旧文档/
+/meta-populate --docs /nas/shared-prds/
 ```
 
 提取完成后，价值已经沉淀到 `domains/` 和 `products/` 中的结构化文件里。

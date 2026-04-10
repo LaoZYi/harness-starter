@@ -4,8 +4,8 @@
 
 ## 使用方式
 
-- `/create-task` — 交互模式，粘贴会议纪要
-- `/create-task <文本>` — 直接从参数创建
+- `/meta-create-task` — 交互模式，粘贴会议纪要
+- `/meta-create-task <文本>` — 直接从参数创建
 
 参数：$ARGUMENTS
 
@@ -101,7 +101,7 @@ repos:
 1. 写入 `tasks/TASK-NNN.yaml`，status 为 `draft`
 2. 询问：**"是否将状态改为 ready（可激活）？"**
 3. 如果是 → 更新 status 为 `ready`
-4. 输出下一步提示：`运行 /activate-task TASK-NNN 激活任务`
+4. 输出下一步提示：`运行 /meta-activate-task TASK-NNN 激活任务`
 
 ---
 
