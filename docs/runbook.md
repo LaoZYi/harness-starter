@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（134 个）。
+- `make test`：运行框架级回归测试（176 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -52,6 +52,66 @@ harness sync /path/to/service                               # 再次同步（met
 ## 配置自动发现
 
 如果目标仓库中有 `.harness.json`，所有命令会自动读取其中的配置作为默认值，无需每次传 `--config`。
+
+## Meta 项目类型
+
+Meta 项目是微服务系统的中央大脑，不含业务代码，管理服务注册、依赖关系和业务知识。
+
+### 初始化 meta 项目
+
+```bash
+harness init /path/to/meta-repo
+# 选择项目类型：meta（跳过敏感级别和生产环境问题）
+```
+
+初始化后生成的目录结构：
+
+```
+services/registry.yaml         # 服务注册表（名称、路径、领域、负责人）
+services/dependency-graph.yaml  # 依赖关系图（provides/consumes）
+business/domains/               # 按领域组织的业务知识
+business/products/              # 产品需求
+business/roadmap.md             # 版本规划
+shared-plugins/                 # 分发到各服务的共享规则和模板
+tasks/                          # 跨服务任务文件（YAML 格式）
+BEST-PRACTICES.md               # 最佳实践指南
+```
+
+### 同步服务上下文
+
+从 meta 仓库向各服务仓库同步上下文信息（服务间依赖、微服务规则、领域知识、共享插件）：
+
+```bash
+# 在 meta repo 内批量同步所有已注册服务
+harness sync --all
+
+# 同步单个服务（首次需指定 meta 路径）
+harness sync /path/to/service --meta /path/to/meta-repo
+
+# 再次同步同一服务（meta 路径已记住）
+harness sync /path/to/service
+```
+
+同步后各服务仓库会生成：
+- `docs/service-context.md` — 本服务的上下游关系和接口影响范围
+- `.claude/rules/microservice.md` — 微服务协作规则（接口变更需协调谁）
+
+### Meta 专属命令
+
+初始化后可在 meta 项目中使用以下技能命令：
+- `/meta-sync` — 等同于 `harness sync --all`
+- `/meta-populate` — 从已注册仓库扫描推理，自动填充 meta 空缺
+- `/meta-create-task` — 从会议纪要生成跨服务任务草稿
+- `/meta-activate-task` — 激活任务，创建 worktree 工作空间
+
+## 项目类型差异
+
+不同项目类型会影响：
+1. **生成的规则文件**：每种类型有专属规则（如 cli-tool 有退出码/管道规则，web-app 有无障碍/组件规则），不相关的通用规则会被排除（如 library 排除 api.md/database.md）
+2. **评估加分项**：assessment 根据类型检查特征文件（如 backend-service 检查 Dockerfile，monorepo 检查 workspace 配置）
+3. **init 流程**：meta 类型跳过敏感级别和生产环境问题
+
+9 种类型：backend-service、web-app、cli-tool、library、worker、mobile-app、monorepo、data-pipeline、meta。
 
 ## 常见问题
 

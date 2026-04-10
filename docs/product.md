@@ -18,7 +18,7 @@
 
 backend-service、web-app、cli-tool、library、worker、mobile-app、monorepo、data-pipeline、meta
 
-每种类型在 `presets/` 下有独立的 JSON 预设，定义行为变化判定、架构关注点、发布检查项和默认完成标准。
+每种类型在 `presets/` 下有独立的 JSON 预设，定义行为变化判定、架构关注点、发布检查项和默认完成标准。每种类型还有专属规则模板（`templates/<type>/.claude/rules/`），为 AI agent 提供类型相关的开发约束。评估（assessment）根据类型检查对应的项目结构信号并给出加分和建议。
 
 ### meta 项目类型
 

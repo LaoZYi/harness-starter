@@ -139,6 +139,76 @@ def _compute_confidence(profile: ProjectProfile) -> str:
     return "low"
 
 
+def _score_type_specific(root: Path, project_type: str) -> tuple[int, list[str], list[str]]:
+    """Score type-specific project structure signals. Returns (bonus, strengths, recommendations)."""
+    checkers: dict[str, tuple[list[tuple[str, ...]], list[str]]] = {
+        "backend-service": (
+            [("Dockerfile",), ("docker-compose.yml", "docker-compose.yaml")],
+            ["建议添加 Dockerfile 或 docker-compose 以明确部署方式。", "建议添加健康检查端点（/health），便于编排系统监控。"],
+        ),
+        "web-app": (
+            [("vite.config.ts", "vite.config.js", "next.config.js", "next.config.mjs", "webpack.config.js"), ("public",)],
+            ["建议添加前端构建配置（vite/next/webpack），明确构建流程。", "建议创建 public/ 目录存放静态资源。"],
+        ),
+        "cli-tool": (
+            [("**/cli.py", "**/cli.ts", "**/main.go", "**/cmd/")],
+            ["建议创建明确的 CLI 入口文件（cli.py/main.go/cmd/），便于定位命令逻辑。"],
+        ),
+        "library": (
+            [("VERSION", "pyproject.toml", "package.json", "Cargo.toml")],
+            ["建议在项目元数据中声明版本号，便于 SemVer 管理。"],
+        ),
+        "worker": (
+            [("worker.toml", "wrangler.toml", "celery.py", "celeryconfig.py", "**/tasks.py")],
+            ["建议添加 worker 配置文件（worker.toml/celery 配置），明确队列和并发设置。"],
+        ),
+        "mobile-app": (
+            [("ios",), ("android",), ("pubspec.yaml",)],
+            ["建议确认平台目录（ios/android）或 Flutter 配置（pubspec.yaml）完整。"],
+        ),
+        "monorepo": (
+            [("pnpm-workspace.yaml", "lerna.json", "nx.json", "turbo.json")],
+            ["建议添加工作区配置（pnpm-workspace/lerna/nx/turbo），明确包依赖关系。"],
+        ),
+        "data-pipeline": (
+            [("dags/", "pipelines/", "dbt_project.yml", "dagster.yaml")],
+            ["建议创建 DAG/pipeline 定义目录，明确数据流程结构。"],
+        ),
+        "meta": (
+            [("services/registry.yaml", "services/registry.yml"), ("services/dependency-graph.yaml", "services/dependency-graph.yml")],
+            ["建议创建 services/registry.yaml，注册所有服务信息。", "建议创建 services/dependency-graph.yaml，描述服务间依赖。"],
+        ),
+    }
+    signal_groups, recs = checkers.get(project_type, ([], []))
+    bonus = 0
+    strengths: list[str] = []
+    recommendations: list[str] = []
+    for i, candidates in enumerate(signal_groups):
+        found = _check_signal(root, candidates)
+        if found:
+            bonus += 3
+            strengths.append(f"已检测到{project_type}特征文件：{found}")
+        elif i < len(recs):
+            recommendations.append(recs[i])
+    return bonus, strengths, recommendations
+
+
+def _check_signal(root: Path, candidates: tuple[str, ...]) -> str:
+    """Check if any of the candidate files/dirs exist. Returns the found name or empty string."""
+    for c in candidates:
+        if "**/" in c:
+            if any(root.rglob(c.replace("**/", ""))):
+                return c.split("/")[-1]
+        elif c.endswith("/"):
+            if (root / c.rstrip("/")).is_dir():
+                return c.rstrip("/")
+        else:
+            if (root / c).exists():
+                return c
+    # For library, check if pyproject.toml has version field
+    return ""
+
+
 def assess_project(profile: ProjectProfile, root: Path | None = None) -> AssessmentResult:
     base_score, strengths, gaps, recommendations = _score_detection(profile)
     dimensions: dict[str, int] = {"detection": max(base_score, 0)}
@@ -162,6 +232,12 @@ def assess_project(profile: ProjectProfile, root: Path | None = None) -> Assessm
         strengths.extend(ds)
         recommendations.extend(dr)
         dimensions["documentation"] = db
+
+        tsb, tss, tsr = _score_type_specific(root, profile.project_type)
+        bonus += tsb
+        strengths.extend(tss)
+        recommendations.extend(tsr)
+        dimensions["type_specific"] = tsb
 
     final_score = min(max(base_score + bonus, 0), 100)
     confidence = _compute_confidence(profile)

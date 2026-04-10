@@ -157,3 +157,24 @@
   - [x] 134 测试通过，make check 全绿
   - [x] 文档全部一致
 
+## 2026-04-10 深度完善项目类型功能差异化
+
+- 需求：9 种项目类型只有 preset 文本差异，工具行为几乎无差异化，需要深入完善
+- 做了什么：
+  - 为 7 种类型创建专属规则模板（backend-service、web-app、cli-tool、worker、mobile-app、monorepo、data-pipeline），每种含 5-6 个可操作的开发约束
+  - assessment 新增 `_score_type_specific()` 函数，9 种类型各检测特征文件（Dockerfile、vite.config、cli.py、worker.toml、ios/android 等），检测到 +3 分/项，未检测到给出具体建议
+  - 新增 22 个测试（11 个规则存在性 + 11 个 assessment 类型感知），总数 154 → 176
+  - 另外修复了上次会话未提交的遗留问题：upgrade.py 行数超限（合并重复代码 -3 行）、dogfood 不同步、文档测试计数过时
+- 关键决策：
+  - 每种类型只需 1 个专属规则文件，不需要大量模板（参考 library-api.md 模式）
+  - assessment 用加分机制（每个特征信号 +3 分），不改变基础评分框架
+  - 不在 init 流程新增交互问题，避免增加用户摩擦
+- 改了：assessment.py, test_assessment.py, test_project_type_rules.py, upgrade.py, docs/product.md, docs/architecture.md, docs/release.md, CHANGELOG.md, AGENTS.md, + 7 个新建 templates/<type>/.claude/rules/<type>.md.tmpl
+- 完成标准：
+  - [x] 9 种类型都有专属规则模板
+  - [x] assessment 对 9 种类型都有类型感知评分
+  - [x] 176 测试全过
+  - [x] make check / make dogfood 全绿
+  - [x] 文档计数和结构同步
+
+

@@ -96,5 +96,116 @@ class AssessProjectTests(unittest.TestCase):
         self.assertGreater(result.dimensions["documentation"], 0)
 
 
+class TypeSpecificAssessmentTests(unittest.TestCase):
+    """Assessment should give bonus points for type-specific project structure signals."""
+
+    def test_backend_service_bonus_for_dockerfile(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "Dockerfile").write_text("FROM python:3.12\n", encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="backend-service")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_web_app_bonus_for_build_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "vite.config.ts").write_text("export default {}\n", encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="web-app")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_cli_tool_bonus_for_cli_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            src = root / "src" / "myapp"
+            src.mkdir(parents=True)
+            (src / "cli.py").write_text("import click\n", encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="cli-tool")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_library_bonus_for_version_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "pyproject.toml").write_text('[project]\nname = "mylib"\nversion = "1.0.0"\n', encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="library", language="python")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_monorepo_bonus_for_workspace_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "pnpm-workspace.yaml").write_text("packages:\n  - packages/*\n", encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="monorepo")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_data_pipeline_bonus_for_dags(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            dags = root / "dags"
+            dags.mkdir()
+            (dags / "daily.py").write_text("# dag\n", encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="data-pipeline")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_worker_bonus_for_worker_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "worker.toml").write_text("[worker]\n", encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="worker")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_mobile_app_bonus_for_platform_dirs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "ios").mkdir()
+            (root / "android").mkdir()
+            profile = _make_profile(root=str(root), project_type="mobile-app")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_meta_bonus_for_registry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            services = root / "services"
+            services.mkdir()
+            (services / "registry.yaml").write_text("services:\n  api: {}\n", encoding="utf-8")
+            profile = _make_profile(root=str(root), project_type="meta")
+            result = assess_project(profile, root=root)
+        self.assertIn("type_specific", result.dimensions)
+        self.assertGreater(result.dimensions["type_specific"], 0)
+
+    def test_no_bonus_when_signals_absent(self) -> None:
+        """Empty directory should get 0 type_specific bonus for any type."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            for ptype in ("backend-service", "web-app", "cli-tool"):
+                profile = _make_profile(root=str(root), project_type=ptype)
+                result = assess_project(profile, root=root)
+                self.assertEqual(result.dimensions.get("type_specific", 0), 0, f"{ptype} should have 0 bonus on empty dir")
+
+    def test_type_specific_recommendations(self) -> None:
+        """When type-specific signals are missing, assessment should recommend adding them."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            profile = _make_profile(root=str(root), project_type="backend-service")
+            result = assess_project(profile, root=root)
+        # Should have a recommendation about health check or deployment config
+        type_recs = [r for r in result.recommendations if "健康检查" in r or "Dockerfile" in r]
+        self.assertTrue(type_recs, "backend-service should have type-specific recommendations")
+
+
 if __name__ == "__main__":
     unittest.main()
