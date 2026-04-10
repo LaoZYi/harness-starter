@@ -105,6 +105,17 @@ payment-service:
 1. 改 `business/domains/<domain>/rules.md`
 2. `/sync-meta` — 相关服务会收到更新后的 `docs/domain/rules.md`
 
+### 跨服务任务（从需求到开发）
+
+1. 收到会议纪要或需求描述后，运行 `/create-task`
+2. AI 生成任务草稿（含每个服务的目标、步骤、完成标准和依赖关系）
+3. 审阅并确认后，状态变为 ready
+4. 运行 `/activate-task TASK-NNN` — 自动创建 worktree 工作空间并注入 current-task.md
+5. 按依赖顺序开发：
+   - **meta 调度模式**：在 meta 会话中 dispatch agents 到各 worktree
+   - **单仓库模式**：cd 进 worktree 开独立 Claude Code 会话（适合需要深入调试的仓库）
+6. 所有服务完成后，更新 `tasks/TASK-NNN.yaml` 的 status 为 done
+
 ---
 
 ## 写好领域知识的关键

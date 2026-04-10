@@ -1,0 +1,47 @@
+# 跨服务任务 — {{project_name}}
+
+存放由 `/create-task` 生成的跨服务任务文件。
+
+## 任务生命周期
+
+```
+draft → ready → active → done
+```
+
+| 状态 | 含义 | 触发方式 |
+|------|------|----------|
+| draft | 草稿，待确认 | `/create-task` 生成 |
+| ready | 已确认，可激活 | 用户确认后更新 |
+| active | 已激活，worktree 已创建 | `/activate-task TASK-NNN` |
+| done | 所有服务已完成 | 手动更新 |
+
+## 任务文件格式
+
+```yaml
+id: TASK-001
+title: 任务标题
+source: 来源描述（会议纪要、需求文档等）
+assignee: 负责人
+status: draft
+created: YYYY-MM-DD
+
+context: |
+  背景描述...
+
+repos:
+  service-name:
+    depends_on: []           # 依赖的服务（空 = 无依赖，可并行）
+    goal: 该服务的目标
+    steps:
+      - "步骤 1"
+      - "步骤 2"
+    tests:
+      - "测试场景 1"
+    done_criteria:
+      - "完成标准 1"
+```
+
+## 命令
+
+- `/create-task` — 从会议纪要生成任务草稿（AI 生成 → 人工确认）
+- `/activate-task TASK-NNN` — 激活任务，创建 worktree 工作空间，注入 current-task.md

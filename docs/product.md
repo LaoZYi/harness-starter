@@ -31,11 +31,14 @@ meta 项目是微服务系统的中央大脑，不含业务代码，管理三件
 - `business/products/` — 产品需求
 - `business/roadmap.md` — 版本规划
 - `shared-plugins/` — 分发到各服务的共享规则和模板
+- `tasks/` — 跨服务任务文件（YAML 格式，含每个服务的目标和依赖关系）
 - `BEST-PRACTICES.md` — 最佳实践指南
 
 meta 专属命令：
 - `/sync-meta` — 将 meta 信息同步到各服务仓库
 - `/populate-meta` — 从已注册的代码仓库扫描推理，填充 meta 空缺（三阶段流水线：确定性提取 → LLM 解读 → 交叉验证）
+- `/create-task` — 从会议纪要生成跨服务任务草稿（AI 生成 → 人工确认）
+- `/activate-task` — 激活任务，创建 worktree 工作空间并注入 current-task.md
 
 ## CLI 命令清单
 

@@ -1,0 +1,198 @@
+# 激活跨服务任务
+
+读取任务文件，为每个涉及的服务仓库创建 Git worktree，注入 current-task.md。
+
+## 使用方式
+
+- `/activate-task TASK-001` — 激活指定任务
+- `/activate-task 001` — 简写形式
+
+参数：$ARGUMENTS
+
+## 铁律
+
+- status 不是 ready 的任务不执行激活
+- 不跳过 .gitignore 验证
+- worktree 创建失败时停止，不继续后续服务
+
+---
+
+## 执行步骤
+
+### 第 1 步：解析参数并读取任务
+
+1. 从 `$ARGUMENTS` 提取任务 ID（接受 `TASK-001` 或 `001`）
+2. 读取 `tasks/TASK-NNN.yaml`
+3. 如果文件不存在 → 用 Glob 列出可用任务，提示用户选择
+4. 校验 status：
+   - `draft` → 提示用户先确认并改为 ready
+   - `active` → 报告已激活，展示工作空间位置
+   - `done` → 任务已完成，不能重新激活
+   - `ready` → 继续
+
+### 第 2 步：加载服务注册表
+
+读取 `services/registry.yaml`，对任务中每个 repo：
+
+1. 在 registry 中查找服务名
+2. 找不到 → 报错，列出可用服务
+3. 解析 repo 路径：
+   - 绝对路径 → 直接使用
+   - 相对路径 → 基于 meta 仓库目录解析
+   - `~` 路径 → 展开 home 目录
+4. 验证路径存在且是 git 仓库（检查 `.git` 目录或文件）
+5. 路径无效 → 报错并停止
+
+### 第 3 步：安全验证
+
+1. 运行 `git check-ignore -q workspaces/`
+2. 如果未被忽略 → 追加 `workspaces/` 到 `.gitignore`
+3. 创建 `workspaces/TASK-NNN/` 目录
+
+### 第 4 步：计算依赖顺序
+
+从任务 YAML 的 repos 中读取 `depends_on` 字段：
+
+1. 构建依赖图
+2. 拓扑排序，分层：
+   - 层级 0：无依赖，可并行
+   - 层级 1：依赖层级 0 的服务
+   - 层级 N：依赖层级 N-1 的服务
+3. 检测循环依赖 → 报错并停止
+
+展示依赖顺序。
+
+### 第 5 步：创建 Worktree
+
+对每个服务（按依赖层级顺序）：
+
+1. 切换到服务主仓库目录
+2. 检查分支 `task/TASK-NNN` 是否已存在：
+   - 已存在 → 询问用户：复用现有分支还是中止？
+3. 检查 worktree 目标路径是否已被占用：
+   - 运行 `git worktree list` 检查
+   - 已存在 → 询问用户：移除重建还是跳过？
+4. 创建 worktree：
+   ```bash
+   git worktree add <meta_root>/workspaces/TASK-NNN/<service-name> -b task/TASK-NNN
+   ```
+5. 验证 worktree 创建成功
+
+### 第 6 步：注入 current-task.md
+
+对每个 worktree，确保 `.agent-harness/` 目录存在，然后写入 `.agent-harness/current-task.md`：
+
+```markdown
+# Current Task
+
+> 跨服务任务 {task_id}: {task_title}
+> 工作空间: workspaces/{task_id}/
+
+## 任务目标
+
+{该服务的 goal}
+
+## 假设清单
+
+{根据跨服务上下文生成，格式为：}
+- 假设：{描述} | 依据：{来源}
+
+{生成规则：}
+- 如果该服务有 depends_on → "假设：{dep} 已完成对应改动 | 依据：任务依赖关系"
+- 如果有其他服务 depends_on 该服务 → "假设：本服务完成后 {svc} 会同步更新 | 依据：任务依赖关系"
+- 如果该服务在 dependency-graph 中有上游 → "假设：现有接口的调用方已知 | 依据：docs/service-context.md"
+
+## 计划步骤
+
+{该服务的 steps，转为 checkbox 格式}
+1. [ ] {step1}
+2. [ ] {step2}
+...
+
+## 背景
+
+{任务的 context 字段}
+
+### 跨服务上下文
+
+- **本服务角色**：{根据依赖层级描述}
+  - 层级 0："先行修改（无依赖，可首先开始）"
+  - 层级 N："依赖 {deps} 完成后开始"
+- **依赖本服务的**：{列出 depends_on 包含该服务的其他服务，无则"无"}
+- **关联接口变更**：{从 dependency-graph.yaml 推断，该服务的哪些接口可能受影响}
+
+## 完成标准
+
+{该服务的 done_criteria，转为 bullet list}
+- {criterion1}
+- {criterion2}
+
+## 当前进度
+
+尚未开始。
+
+## 已做的改动
+
+（尚无）
+```
+
+### 第 7 步：更新任务状态
+
+将 `tasks/TASK-NNN.yaml` 的 status 更新为 `active`。
+
+### 第 8 步：输出汇总
+
+```markdown
+## 任务激活完成
+
+**任务**: TASK-NNN — {title}
+**工作空间**: workspaces/TASK-NNN/
+
+### 创建的 Worktree
+
+| 服务 | 路径 | 分支 | 依赖层级 |
+|------|------|------|----------|
+| user-service | workspaces/TASK-NNN/user-service | task/TASK-NNN | 层级 0（无依赖） |
+| gateway-service | workspaces/TASK-NNN/gateway-service | task/TASK-NNN | 层级 1（依赖 user-service） |
+
+### 推荐执行方式
+
+**方式 A：在 meta 中调度（推荐）**
+
+按依赖顺序 dispatch agents 到各 worktree：
+- 层级 0 的服务可并行启动
+- 层级 N 的服务等前置完成后启动
+
+**方式 B：单独进入各仓库**
+
+按以下顺序进入各 worktree 启动 Claude Code 会话：
+
+1. **user-service**（层级 0，无依赖）
+   目标：{goal}
+   `cd workspaces/TASK-NNN/user-service && claude`
+
+2. **gateway-service**（层级 1，依赖 user-service）
+   目标：{goal}
+   `cd workspaces/TASK-NNN/gateway-service && claude`
+
+### 任务完成后
+
+所有服务验证通过后：
+1. 在各 worktree 中合并分支（可用 `/finish-branch`）
+2. 更新 `tasks/TASK-NNN.yaml` 的 status 为 `done`
+3. 清理工作空间：`rm -rf workspaces/TASK-NNN/`（可选）
+```
+
+---
+
+## 边界情况处理
+
+| 场景 | 处理 |
+|------|------|
+| 任务文件不存在 | Glob 列出可用任务 |
+| 服务不在 registry 中 | 报错，列出可用服务 |
+| 仓库路径无效 | 报错，提示检查 registry.yaml |
+| 分支已存在 | 询问用户：复用或中止 |
+| worktree 目标路径已存在 | 询问用户：移除重建或跳过 |
+| 循环依赖 | 报错，展示循环链 |
+| worktree 中无 .agent-harness/ 目录 | 创建目录后再写 current-task.md |
