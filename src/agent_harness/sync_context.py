@@ -162,12 +162,19 @@ def generate_microservice_rule(ctx: ServiceContext) -> str:
     )
 
 
+_MAX_COPY_SIZE = 50 * 1024 * 1024  # 50 MB
+
+
 def _copy_file(src: Path, dest: Path) -> None:
     """Copy a file, using text mode for text files and binary mode for others."""
+    size = src.stat().st_size
+    if size > _MAX_COPY_SIZE:
+        console.print(f"  [yellow]![/yellow] {src.name} 超过 {_MAX_COPY_SIZE // (1024*1024)}MB，跳过")
+        return
     try:
         content = src.read_text(encoding="utf-8")
         dest.write_text(content, encoding="utf-8")
-    except (UnicodeDecodeError, ValueError):
+    except UnicodeDecodeError:
         dest.write_bytes(src.read_bytes())
 
 
@@ -214,7 +221,16 @@ def _distribute_domain(meta_root: Path, target: Path, domain: str, *, dry_run: b
     return written
 
 
+def _is_git_repo(path: Path) -> bool:
+    """Return True if path is a git repo (works for normal repos and worktrees)."""
+    git_path = path / ".git"
+    return git_path.is_dir() or git_path.is_file()
+
+
 def _sync_one(target: Path, meta_root: Path, registry: dict, graph: dict, *, dry_run: bool) -> list[str]:
+    if not _is_git_repo(target):
+        console.print(f"  [yellow]![/yellow] {target.name} 不是 git 仓库，跳过")
+        return []
     service_name = find_service_name(target, registry)
     if not service_name:
         console.print(f"  [yellow]![/yellow] 无法匹配服务名 '{target.name}'，跳过")

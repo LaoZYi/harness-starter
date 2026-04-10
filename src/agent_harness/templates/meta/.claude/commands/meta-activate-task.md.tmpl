@@ -1,11 +1,11 @@
 # 激活跨服务任务
 
-读取任务文件，为每个涉及的服务仓库创建 Git worktree，注入 current-task.md。
+读取任务文件，为每个涉及的服务仓库创建 Git worktree，注入 current-task.md，并同步服务上下文。
 
 ## 使用方式
 
 - `/meta-activate-task TASK-001` — 激活指定任务
-- `/meta-activate-task 001` — 简写形式
+- `/meta-activate-task 001` — 简写形式（自动补全为 TASK-001）
 
 参数：$ARGUMENTS
 
@@ -13,74 +13,115 @@
 
 - status 不是 ready 的任务不执行激活
 - 不跳过 .gitignore 验证
-- worktree 创建失败时停止，不继续后续服务
+- 不跳过 ID 和分支名的格式校验
+- 任何步骤失败 → 回滚已创建的 worktree 或询问用户
+- 完成后必须为每个 worktree 同步服务上下文
 
 ---
 
 ## 执行步骤
 
-### 第 1 步：解析参数并读取任务
+### 第 1 步：解析并严格校验任务 ID
 
-1. 从 `$ARGUMENTS` 提取任务 ID（接受 `TASK-001` 或 `001`）
-2. 读取 `tasks/TASK-NNN.yaml`
-3. 如果文件不存在 → 用 Glob 列出可用任务，提示用户选择
-4. 校验 status：
-   - `draft` → 提示用户先确认并改为 ready
-   - `active` → 报告已激活，展示工作空间位置
-   - `done` → 任务已完成，不能重新激活
-   - `ready` → 继续
+1. 从 `$ARGUMENTS` 提取原始输入
+2. **规范化**：
+   - 如果已经以 `TASK-` 开头 → 保留
+   - 如果是纯数字 → 补零到 3 位并加前缀 `TASK-`
+3. **严格校验**：ID 必须匹配正则 `^TASK-\d{3,}$`
+   - 不匹配 → 报错并停止：`"任务 ID 格式非法：必须为 TASK-NNN（数字），实际 '{input}'"`
+   - 禁止包含 `/`、`\`、`..`、空格或其他特殊字符
+4. 读取 `tasks/{task_id}.yaml`
+5. 文件不存在 → 用 Glob 列出 `tasks/TASK-*.yaml`，建议最接近的 ID
 
-### 第 2 步：加载服务注册表
+### 第 2 步：验证任务 YAML 结构
 
-读取 `services/registry.yaml`，对任务中每个 repo：
+用 YAML 解析器读取任务文件。验证必要字段：
 
-1. 在 registry 中查找服务名
-2. 找不到 → 报错，列出可用服务
+1. 顶层字段：`id`、`title`、`status`、`repos` 必须存在
+2. `id` 与文件名匹配（不匹配 → 警告）
+3. `status` 必须是 `ready`：
+   - `draft` → 报错："请先在 tasks/{task_id}.yaml 确认草稿并将 status 改为 ready"
+   - `active` → 报告已激活的 workspace 位置，询问是否重新激活
+   - `done` → 报错："任务已完成，不能重新激活"
+4. `repos` 必须是非空字典：
+   - 为空 → 报错："任务没有包含任何服务，无法激活。请先编辑 tasks/{task_id}.yaml 添加 repos"
+5. 对每个 repo，验证必要字段存在：`goal`（字符串）、`steps`（列表）、`done_criteria`（列表）
+   - `depends_on` 缺失时默认为空列表 `[]`
+   - 其他字段缺失 → 报错列出缺失字段并停止
+
+### 第 3 步：验证 meta 仓库本身
+
+1. 验证当前目录是 git 仓库（`.git` 存在）
+2. 如果不是 → 报错："meta 仓库必须是 git 仓库才能创建 worktree"
+
+### 第 4 步：加载服务注册表
+
+读取 `services/registry.yaml`。对任务中每个 repo：
+
+1. **严格校验服务名**：服务名不得包含 `/`、`\`、`..`、空格，只允许字母、数字、`-`、`_`
+2. 在 registry 中查找服务名 → 找不到 → 报错列出可用服务
 3. 解析 repo 路径：
    - 绝对路径 → 直接使用
    - 相对路径 → 基于 meta 仓库目录解析
    - `~` 路径 → 展开 home 目录
-4. 验证路径存在且是 git 仓库（检查 `.git` 目录或文件）
-5. 路径无效 → 报错并停止
+4. 验证路径存在且是 git 仓库（`.git` 目录或文件）
+5. 任何路径无效 → 收集所有错误后一次性报告，**停止激活**
 
-### 第 3 步：安全验证
+### 第 5 步：安全验证 workspaces/
 
 1. 运行 `git check-ignore -q workspaces/`
-2. 如果未被忽略 → 追加 `workspaces/` 到 `.gitignore`
-3. 创建 `workspaces/TASK-NNN/` 目录
+2. 未被忽略 → 追加 `workspaces/` 到 `.gitignore` 并 commit 该改动（或提示用户手动 commit）
+3. 创建 `workspaces/{task_id}/` 目录
 
-### 第 4 步：计算依赖顺序
+### 第 6 步：计算依赖顺序（预检，不创建任何东西）
 
-从任务 YAML 的 repos 中读取 `depends_on` 字段：
+从任务 YAML 的 repos 中构建依赖图：
 
-1. 构建依赖图
-2. 拓扑排序，分层：
-   - 层级 0：无依赖，可并行
-   - 层级 1：依赖层级 0 的服务
-   - 层级 N：依赖层级 N-1 的服务
-3. 检测循环依赖 → 报错并停止
+1. 构建有向图：`depends_on` 指向被依赖的服务
+2. **循环依赖检测**（必须在创建任何 worktree 之前完成）：
+   - 拓扑排序失败 → 报错展示循环链并停止
+3. 分层：tier 0 = 无依赖，tier N = 依赖 tier < N 的服务
+4. 展示依赖顺序给用户
 
-展示依赖顺序。
+### 第 7 步：分支名校验
 
-### 第 5 步：创建 Worktree
+对每个服务，构造分支名 `task/{task_id}`：
+
+1. 运行 `git check-ref-format --branch task/{task_id}`
+2. 不合法 → 报错并停止（理论上第 1 步已经拦截了非法 ID，这是第二道防线）
+
+### 第 8 步：创建 Worktree（带回滚）
+
+**初始化**：准备一个空列表 `created_worktrees` 用于记录已成功创建的 worktree 路径。
 
 对每个服务（按依赖层级顺序）：
 
 1. 切换到服务主仓库目录
-2. 检查分支 `task/TASK-NNN` 是否已存在：
-   - 已存在 → 询问用户：复用现有分支还是中止？
+2. 检查分支 `task/{task_id}` 是否已存在：
+   - 运行 `git branch --list task/{task_id}`
+   - 已存在 → 询问用户：**[复用] [中止]**
 3. 检查 worktree 目标路径是否已被占用：
-   - 运行 `git worktree list` 检查
-   - 已存在 → 询问用户：移除重建还是跳过？
+   - 运行 `git worktree list` 并检查
+   - 已存在 → 询问用户：**[移除重建] [跳过该服务] [中止]**
 4. 创建 worktree：
    ```bash
-   git worktree add <meta_root>/workspaces/TASK-NNN/<service-name> -b task/TASK-NNN
+   git worktree add <meta_root>/workspaces/{task_id}/<service-name> -b task/{task_id}
    ```
-5. 验证 worktree 创建成功
+5. 创建成功 → 追加到 `created_worktrees`
+6. **创建失败** → 进入回滚流程：
+   - 报告失败的服务和原因
+   - 列出已创建的 worktree：`created_worktrees`
+   - 询问用户：**[全部回滚] [保留已创建的，稍后重试] [中止但保留]**
+   - 全部回滚：对 `created_worktrees` 中每个 worktree 运行 `git worktree remove --force <path>` 并删除分支
+   - 任务状态保持 `ready`，不更新为 `active`
+   - 停止后续步骤
 
-### 第 6 步：注入 current-task.md
+### 第 9 步：注入 current-task.md
 
-对每个 worktree，确保 `.agent-harness/` 目录存在，然后写入 `.agent-harness/current-task.md`：
+对每个成功创建的 worktree：
+
+1. 创建 `.agent-harness/` 目录（如不存在）
+2. 写入 `.agent-harness/current-task.md`，严格遵循 7 段结构（与项目 task-lifecycle 规则保持一致）：
 
 ```markdown
 # Current Task
@@ -94,20 +135,16 @@
 
 ## 假设清单
 
-{根据跨服务上下文生成，格式为：}
-- 假设：{描述} | 依据：{来源}
-
-{生成规则：}
+{根据跨服务上下文生成，每条格式：- 假设：... | 依据：...}
 - 如果该服务有 depends_on → "假设：{dep} 已完成对应改动 | 依据：任务依赖关系"
-- 如果有其他服务 depends_on 该服务 → "假设：本服务完成后 {svc} 会同步更新 | 依据：任务依赖关系"
-- 如果该服务在 dependency-graph 中有上游 → "假设：现有接口的调用方已知 | 依据：docs/service-context.md"
+- 如果有其他服务依赖本服务 → "假设：本服务完成后 {svc} 会同步更新 | 依据：任务依赖关系"
+- 如果该服务在 dependency-graph 中有上游调用方 → "假设：现有接口的调用方已知 | 依据：docs/service-context.md"
 
 ## 计划步骤
 
-{该服务的 steps，转为 checkbox 格式}
+{该服务的 steps 转为 checkbox}
 1. [ ] {step1}
 2. [ ] {step2}
-...
 
 ## 背景
 
@@ -118,14 +155,13 @@
 - **本服务角色**：{根据依赖层级描述}
   - 层级 0："先行修改（无依赖，可首先开始）"
   - 层级 N："依赖 {deps} 完成后开始"
-- **依赖本服务的**：{列出 depends_on 包含该服务的其他服务，无则"无"}
-- **关联接口变更**：{从 dependency-graph.yaml 推断，该服务的哪些接口可能受影响}
+- **依赖本服务的**：{列出，无则"无"}
+- **关联接口变更**：{从 dependency-graph.yaml 推断}
 
 ## 完成标准
 
-{该服务的 done_criteria，转为 bullet list}
+{该服务的 done_criteria 转为 bullet list}
 - {criterion1}
-- {criterion2}
 
 ## 当前进度
 
@@ -136,28 +172,45 @@
 （尚无）
 ```
 
-### 第 7 步：更新任务状态
+### 第 10 步：为每个 worktree 同步服务上下文
 
-将 `tasks/TASK-NNN.yaml` 的 status 更新为 `active`。
+对每个 worktree，运行：
 
-### 第 8 步：输出汇总
+```bash
+cd workspaces/{task_id}/<service-name> && harness sync --meta <meta_root>
+```
+
+这会为 worktree 生成：
+- `docs/service-context.md`（上下游关系）
+- `.claude/rules/microservice.md`（协作规则）
+- 分发共享规则和领域知识
+
+**失败处理**：sync 失败 → 报告警告但不中止激活（worktree 和 current-task.md 已就绪，服务上下文属于可选增强）。
+
+### 第 11 步：更新任务状态
+
+所有 worktree 都成功创建并注入后：
+1. 将 `tasks/{task_id}.yaml` 的 status 从 `ready` 改为 `active`
+2. 在 YAML 中追加 `activated_at: <ISO 日期>` 字段
+
+### 第 12 步：输出汇总
 
 ```markdown
 ## 任务激活完成
 
-**任务**: TASK-NNN — {title}
-**工作空间**: workspaces/TASK-NNN/
+**任务**: {task_id} — {title}
+**工作空间**: workspaces/{task_id}/
 
 ### 创建的 Worktree
 
-| 服务 | 路径 | 分支 | 依赖层级 |
-|------|------|------|----------|
-| user-service | workspaces/TASK-NNN/user-service | task/TASK-NNN | 层级 0（无依赖） |
-| gateway-service | workspaces/TASK-NNN/gateway-service | task/TASK-NNN | 层级 1（依赖 user-service） |
+| 服务 | 路径 | 分支 | 依赖层级 | sync 状态 |
+|------|------|------|----------|-----------|
+| user-service | workspaces/{task_id}/user-service | task/{task_id} | 层级 0 | ✓ |
+| gateway-service | workspaces/{task_id}/gateway-service | task/{task_id} | 层级 1 | ✓ |
 
 ### 推荐执行方式
 
-**方式 A：在 meta 中调度（推荐）**
+**方式 A：meta 中调度（推荐）**
 
 按依赖顺序 dispatch agents 到各 worktree：
 - 层级 0 的服务可并行启动
@@ -165,34 +218,38 @@
 
 **方式 B：单独进入各仓库**
 
-按以下顺序进入各 worktree 启动 Claude Code 会话：
-
 1. **user-service**（层级 0，无依赖）
-   目标：{goal}
-   `cd workspaces/TASK-NNN/user-service && claude`
+   `cd workspaces/{task_id}/user-service && claude`
 
 2. **gateway-service**（层级 1，依赖 user-service）
-   目标：{goal}
-   `cd workspaces/TASK-NNN/gateway-service && claude`
+   `cd workspaces/{task_id}/gateway-service && claude`
 
 ### 任务完成后
 
 所有服务验证通过后：
 1. 在各 worktree 中合并分支（可用 `/finish-branch`）
-2. 更新 `tasks/TASK-NNN.yaml` 的 status 为 `done`
-3. 清理工作空间：`rm -rf workspaces/TASK-NNN/`（可选）
+2. 更新 `tasks/{task_id}.yaml` 的 status 为 `done`
+3. 清理工作空间：`rm -rf workspaces/{task_id}/`（可选）
 ```
 
 ---
 
-## 边界情况处理
+## 边界情况汇总
 
 | 场景 | 处理 |
 |------|------|
+| 任务 ID 格式非法 | 第 1 步拦截，立即停止 |
 | 任务文件不存在 | Glob 列出可用任务 |
-| 服务不在 registry 中 | 报错，列出可用服务 |
-| 仓库路径无效 | 报错，提示检查 registry.yaml |
-| 分支已存在 | 询问用户：复用或中止 |
-| worktree 目标路径已存在 | 询问用户：移除重建或跳过 |
-| 循环依赖 | 报错，展示循环链 |
-| worktree 中无 .agent-harness/ 目录 | 创建目录后再写 current-task.md |
+| YAML 解析失败 | 报告行号，提示检查语法 |
+| 必要字段缺失 | 列出所有缺失字段，一次性报告 |
+| 零 repo 任务 | 报错："任务没有服务" |
+| meta 仓库非 git | 报错："meta 必须是 git 仓库" |
+| 服务名非法 | 拒绝激活 |
+| 服务不在 registry | 报错列出可用服务 |
+| 仓库路径无效 | 一次性收集所有错误报告 |
+| 循环依赖 | 第 6 步预检，创建前拦截 |
+| 分支已存在 | 询问：复用/中止 |
+| worktree 路径已占用 | 询问：移除重建/跳过/中止 |
+| 中途失败 | 询问：回滚/保留重试/中止保留 |
+| sync 失败 | 警告但不中止 |
+| .agent-harness 已有内容 | 覆盖 current-task.md，保留其他文件 |

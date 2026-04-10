@@ -8,12 +8,23 @@
 draft → ready → active → done
 ```
 
-| 状态 | 含义 | 触发方式 |
-|------|------|----------|
-| draft | 草稿，待确认 | `/meta-create-task` 生成 |
-| ready | 已确认，可激活 | 用户确认后更新 |
-| active | 已激活，worktree 已创建 | `/meta-activate-task TASK-NNN` |
-| done | 所有服务已完成 | 手动更新 |
+| 状态 | 含义 | 谁改 | 前置条件 |
+|------|------|------|----------|
+| draft | 草稿，待确认 | `/meta-create-task` 自动创建 | 无 |
+| ready | 已确认，可激活 | 用户在 create-task 最后一步确认 | 草稿已审阅 |
+| active | 已激活，worktree 已创建 | `/meta-activate-task` 成功后自动更新 | 所有 worktree 创建成功 |
+| done | 所有服务已完成 | 用户手动编辑 YAML | 所有 repo 验证通过、分支已合并 |
+
+## 失败处理
+
+**activate-task 部分失败**（某些 worktree 创建成功，其他失败）：
+- 状态保持 `ready`，**不**更新为 `active`
+- 命令会询问：回滚 / 保留重试 / 保留不回滚
+- 选择保留后，修复问题可重新运行 `/meta-activate-task`
+
+**任务需要重做**：
+- 只能删除 `tasks/TASK-NNN.yaml` 重建，不支持 `active → draft` 的回退
+- 建议保留原文件作为历史，创建新任务
 
 ## 任务文件格式
 

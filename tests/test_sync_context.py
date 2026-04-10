@@ -74,6 +74,13 @@ def _create_meta(tmpdir: Path, repo_payment: str = "/tmp/p", repo_order: str = "
     return meta
 
 
+def _make_git_repo(path: Path) -> Path:
+    """Create a directory that looks like a git repo (has a .git dir)."""
+    path.mkdir(parents=True, exist_ok=True)
+    (path / ".git").mkdir(exist_ok=True)
+    return path
+
+
 class LoadMetaTests(unittest.TestCase):
     def test_loads_registry_and_graph(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -206,8 +213,7 @@ class SyncEndToEndTests(unittest.TestCase):
             # Add a shared plugin
             (meta / "shared-plugins" / "rules").mkdir(parents=True)
             (meta / "shared-plugins" / "rules" / "team.md").write_text("# Team rule", encoding="utf-8")
-            service = root / "payment-service"
-            service.mkdir()
+            service = _make_git_repo(root / "payment-service")
             written = run_sync(service, meta)
             self.assertIn("docs/service-context.md", written)
             self.assertIn(".claude/rules/microservice.md", written)
@@ -218,8 +224,7 @@ class SyncEndToEndTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             meta = _create_meta(root)
-            service = root / "payment-service"
-            service.mkdir()
+            service = _make_git_repo(root / "payment-service")
             written = run_sync(service, meta, dry_run=True)
             self.assertTrue(len(written) >= 2)
             self.assertFalse((service / "docs" / "service-context.md").exists())
@@ -228,8 +233,7 @@ class SyncEndToEndTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             meta = _create_meta(root)
-            service = root / "payment-service"
-            service.mkdir()
+            service = _make_git_repo(root / "payment-service")
             (service / ".agent-harness").mkdir()
             (service / ".agent-harness" / "project.json").write_text('{"project_name": "payment-service"}', encoding="utf-8")
             run_sync(service, meta)
@@ -239,10 +243,8 @@ class SyncEndToEndTests(unittest.TestCase):
     def test_sync_all(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            payment = root / "payment-service"
-            payment.mkdir()
-            order = root / "order-service"
-            order.mkdir()
+            payment = _make_git_repo(root / "payment-service")
+            order = _make_git_repo(root / "order-service")
             meta = _create_meta(root, repo_payment=str(payment), repo_order=str(order))
             results = run_sync_all(meta)
             self.assertIn("payment-service", results)
@@ -302,10 +304,8 @@ class SyncRelativePathTests(unittest.TestCase):
     def test_sync_all_resolves_relative_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            payment = root / "payment-service"
-            payment.mkdir()
-            order = root / "order-service"
-            order.mkdir()
+            payment = _make_git_repo(root / "payment-service")
+            order = _make_git_repo(root / "order-service")
             meta = root / "meta"
             (meta / "services").mkdir(parents=True)
             reg = _REGISTRY_YAML.format(
@@ -324,8 +324,7 @@ class SyncDomainIntegrationTests(unittest.TestCase):
     def test_sync_distributes_domain_knowledge(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            service = root / "payment-service"
-            service.mkdir()
+            service = _make_git_repo(root / "payment-service")
             meta = root / "meta"
             (meta / "services").mkdir(parents=True)
             reg = (
@@ -352,8 +351,7 @@ class SyncDomainIntegrationTests(unittest.TestCase):
     def test_sync_skips_domain_when_not_set(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
-            service = root / "payment-service"
-            service.mkdir()
+            service = _make_git_repo(root / "payment-service")
             meta = root / "meta"
             (meta / "services").mkdir(parents=True)
             reg = (
@@ -368,6 +366,46 @@ class SyncDomainIntegrationTests(unittest.TestCase):
             )
             written = run_sync(service, meta)
             self.assertFalse(any("domain" in f for f in written))
+
+
+class GitRepoCheckTests(unittest.TestCase):
+    def test_sync_skips_non_git_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            meta = _create_meta(root)
+            service = root / "payment-service"
+            service.mkdir()  # intentionally no .git
+            written = run_sync(service, meta)
+            self.assertEqual(written, [])
+            self.assertFalse((service / "docs" / "service-context.md").exists())
+
+    def test_sync_accepts_worktree_with_git_file(self) -> None:
+        # In git worktrees, .git is a file pointing to the main repo's gitdir
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            meta = _create_meta(root)
+            service = root / "payment-service"
+            service.mkdir()
+            (service / ".git").write_text("gitdir: /fake/main/.git/worktrees/payment-service\n")
+            written = run_sync(service, meta)
+            self.assertIn("docs/service-context.md", written)
+
+
+class CopyFileTests(unittest.TestCase):
+    def test_skips_oversized_file(self) -> None:
+        from agent_harness.sync_context import _MAX_COPY_SIZE, _copy_file
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            src = root / "huge.bin"
+            # Write a file just over the limit using sparse allocation
+            with src.open("wb") as f:
+                f.seek(_MAX_COPY_SIZE + 1)
+                f.write(b"\x00")
+            dest = root / "dest" / "huge.bin"
+            dest.parent.mkdir()
+            _copy_file(src, dest)
+            # File should not have been copied
+            self.assertFalse(dest.exists())
 
 
 if __name__ == "__main__":

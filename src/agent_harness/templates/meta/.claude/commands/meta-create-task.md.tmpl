@@ -15,7 +15,8 @@
 
 ### 第 1 步：确认当前目录是 meta 仓库
 
-检查 `services/registry.yaml` 是否存在。不存在则报错并停止。
+1. 检查 `services/registry.yaml` 是否存在。不存在则报错并停止
+2. 检查 `.git` 存在（meta 仓库必须是 git 仓库，否则后续 /meta-activate-task 无法创建 worktree）
 
 ### 第 2 步：获取输入
 
@@ -98,10 +99,18 @@ repos:
 
 用户确认后：
 
-1. 写入 `tasks/TASK-NNN.yaml`，status 为 `draft`
-2. 询问：**"是否将状态改为 ready（可激活）？"**
-3. 如果是 → 更新 status 为 `ready`
-4. 输出下一步提示：`运行 /meta-activate-task TASK-NNN 激活任务`
+1. **生成 YAML 内容**：用户粘贴的会议纪要会被嵌入 `context` 字段，必须避免 YAML 注入：
+   - 用 block scalar `|` 写 context，所有行前加 2 空格缩进
+   - 字符串值用双引号包围并转义内部的 `"` 和 `\`
+   - 绝不直接拼接用户输入到 key 或 list item 位置
+2. **写入前自验证**：用 yaml.safe_load 尝试解析生成的内容
+   - 解析失败 → 报告错误，让用户修正内容（不要写入坏文件）
+   - 解析后再次检查必要字段齐全
+3. 写入 `tasks/TASK-NNN.yaml`，status 为 `draft`
+4. **写入后再读一遍**：确认写入的文件能被 yaml.safe_load 正确解析且内容匹配
+5. 询问：**"是否将状态改为 ready（可激活）？"**
+6. 如果是 → 更新 status 为 `ready`（注意：也要重新验证 YAML）
+7. 输出下一步提示：`运行 /meta-activate-task TASK-NNN 激活任务`
 
 ---
 
