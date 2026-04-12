@@ -87,7 +87,6 @@ def _merged_config(target: Path, args: argparse.Namespace) -> dict[str, object]:
 
 
 # ── command handlers ──
-
 def _cmd_init(args: argparse.Namespace) -> None:
     target = Path(args.target).resolve()
     if not args.assess_only:
@@ -265,10 +264,8 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_p.add_argument("target", nargs="?", default=".", help="项目根目录（默认当前目录）")
     rebuild_p.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
     rebuild_p.set_defaults(func=_cmd_memory_rebuild)
-
     from .squad.cli import register_subcommand as _register_squad
     _register_squad(subs)
-
     return root
 
 def main() -> None:

@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（206 个）。
+- `make test`：运行框架级回归测试（226 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -36,9 +36,62 @@ harness sync /path/to/service --meta /path/to/meta          # 同步单个服务
 harness sync /path/to/service                               # 再次同步（meta 路径已记住）
 harness memory rebuild .                                    # 从 lessons/task-log 重建 memory-index.md
 harness memory rebuild . --force                            # 覆盖已有索引
+harness squad create spec.yaml                              # 按 YAML 创建 tmux 多 agent squad
+harness squad status                                        # 列出活跃 squad 和 workers
+harness squad attach <worker>                               # 输出 tmux attach 命令
+harness squad stop <worker|task_id|all>                     # 停止 worker / 整个 squad
 ```
 
 未安装时也可通过 `PYTHONPATH=src python -m agent_harness` 替代 `harness`。
+
+## 多 agent 协作（/squad，阶段 1 MVP）
+
+### 前置依赖
+- `tmux` ≥ 3.0
+  - macOS：`brew install tmux`
+  - Debian/Ubuntu：`sudo apt install tmux`
+- `claude` CLI 已登录并在 PATH 中
+- Windows：用 WSL（阶段 1 不支持原生 Windows）
+
+### 典型用例
+
+```bash
+# 1) 编写 YAML spec
+cat > /tmp/auth.yaml <<EOF
+task_id: auth-rewrite
+base_branch: master
+workers:
+  - name: scout
+    capability: scout          # 只读探索
+    prompt: "探索 src/auth/"
+  - name: builder
+    capability: builder        # 读写实现
+    depends_on: [scout]
+    prompt: "等 scout 的 report.md 就绪后按 specs/auth.md 实现"
+  - name: reviewer
+    capability: reviewer       # 只读审查
+    depends_on: [builder]
+    prompt: "对 builder 的 worktree 做 /multi-review"
+EOF
+
+# 2) 创建 squad（自动起 tmux session + N 个 worktree）
+harness squad create /tmp/auth.yaml
+
+# 3) 观察
+harness squad status
+tmux attach -t squad-auth-rewrite   # 实时看每个 worker 的终端
+
+# 4) 停止（不删 worktree，留给 /finish-branch 合并）
+harness squad stop all
+```
+
+### 故障排查
+| 现象 | 排查点 |
+|---|---|
+| `未找到 tmux` | 按上面装 tmux |
+| worker 启动即退出 | `tmux attach` 看具体错误；检查 worktree 下 `.claude/settings.local.json` 是否渲染正确 |
+| capability 没有生效（worker 写了禁用的文件） | 检查 Claude Code 版本；`permissions.deny` 要求较新 CLI |
+| 多 worker 同时写 `.agent-harness/lessons.md` 冲突 | 硬规则：worker 只能写 `workers/<name>/lessons.pending.md`，coordinator 合并 |
 
 ## 初始化建议流程
 

@@ -62,12 +62,12 @@ Plan：`docs/superpowers/specs/2026-04-12-squad-mvp-plan.md`
   - [x] 步骤 1：TDD RED — 测试骨架（3 文件、20 用例、全部 ImportError 确认 RED）
   - [x] 步骤 2：squad 核心实现（spec/capability/tmux/state/cli 5 模块 + harness CLI 注册）
   - [x] 步骤 3：capability 渲染（合并进 capability.py，不再需要独立 JSON 模板文件 — plan 偏离记入附录）
-  - [ ] 步骤 4：squad.md 技能
-  - [ ] 步骤 5：决策树 + LFG 流水线更新
-  - [ ] 步骤 6：TDD GREEN
-  - [ ] 步骤 7：dogfood 同步
-  - [ ] 步骤 8：文档全量同步
-  - [ ] 步骤 9：make ci 验证
+  - [x] 步骤 4：squad.md 技能模板
+  - [x] 步骤 5：决策树 + workflow 规则 + LFG 流水线更新（+ evolve 比较表）
+  - [x] 步骤 6：TDD GREEN — 全部 226 测试通过
+  - [x] 步骤 7：dogfood 同步（.claude/ 4 个文件更新/新增）
+  - [x] 步骤 8：文档全量同步（product/architecture/runbook/AGENTS/CHANGELOG + 计数守卫修正 29→30、206→226）
+  - [x] 步骤 9：make ci 全量验证通过
   - [ ] 步骤 10：冒烟验证（可选）
   - [ ] 步骤 11：/multi-review
   - [ ] 步骤 12：完成报告 + 验收核验

@@ -11,3 +11,6 @@ build/
 .superpowers-upstream/
 .agent-harness/backups/
 .agent-harness/upgrade-changelog.md
+
+# /squad runtime state (not templates)
+.agent-harness/squad/

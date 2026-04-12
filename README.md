@@ -160,7 +160,7 @@ harness stats /path/to/repo
 - `AGENTS.md` / `CLAUDE.md` / `CLAUDE.local.md.example` / `CONTRIBUTING.md`
 - `docs/`：product、architecture、workflow、runbook、release
 - `.claude/rules/`：safety、database、api、testing、autonomy、superpowers-workflow
-- `.claude/commands/`：29 个结构化工作流技能命令（见下方）
+- `.claude/commands/`：30 个结构化工作流技能命令（见下方）
 - `.agent-harness/`：project.json、current-task、task-log、lessons、init-summary
 - `.github/`：PR 模板、Issue 模板
 - `docs/decisions/`：架构决策记录（ADR）存放目录
@@ -168,7 +168,7 @@ harness stats /path/to/repo
 
 ## 内置工作流技能（Superpowers）
 
-初始化时默认生成 29 个 Claude Code 命令，覆盖完整开发生命周期：
+初始化时默认生成 30 个 Claude Code 命令，覆盖完整开发生命周期：
 
 | 阶段 | 命令 | 用途 |
 |------|------|------|
