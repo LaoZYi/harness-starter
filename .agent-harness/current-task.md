@@ -60,8 +60,8 @@ Plan：`docs/superpowers/specs/2026-04-12-squad-mvp-plan.md`
 - [ ] 实施（plan 13 步，当前步骤 2 进行中）
   - [x] 步骤 0：source-verify + 依赖摸底（发现 --prompt-file 不存在，改用 --append-system-prompt + positional arg；tmux 3.6a / pyyaml>=6.0 OK；基线 206 测试）
   - [x] 步骤 1：TDD RED — 测试骨架（3 文件、20 用例、全部 ImportError 确认 RED）
-  - [ ] 步骤 2：squad.py 核心实现
-  - [ ] 步骤 3：capability 模板
+  - [x] 步骤 2：squad 核心实现（spec/capability/tmux/state/cli 5 模块 + harness CLI 注册）
+  - [x] 步骤 3：capability 渲染（合并进 capability.py，不再需要独立 JSON 模板文件 — plan 偏离记入附录）
   - [ ] 步骤 4：squad.md 技能
   - [ ] 步骤 5：决策树 + LFG 流水线更新
   - [ ] 步骤 6：TDD GREEN

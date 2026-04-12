@@ -266,6 +266,9 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_p.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
     rebuild_p.set_defaults(func=_cmd_memory_rebuild)
 
+    from .squad.cli import register_subcommand as _register_squad
+    _register_squad(subs)
+
     return root
 
 def main() -> None:
