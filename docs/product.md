@@ -13,6 +13,7 @@
 7. **运维**：doctor（健康检查）、export（画像导出）、stats（任务统计）。
 8. **扩展**：插件机制，用户可在 .harness-plugins/ 下放自定义规则和模板。
 9. **上游同步**：`make sync-superpowers` 从上游仓库拉取最新 skills 变更报告。
+10. **分层记忆加载**：`.agent-harness/memory-index.md` 作为 L1 热索引，`task-lifecycle` 规则默认只读它；`lessons.md` / `task-log.md` 为 L2/L3，通过 `/recall` 技能或 `harness memory rebuild` 按需展开。避免知识积累挤占 AI 上下文窗口。
 
 ## 支持的项目类型（9 种）
 
@@ -55,6 +56,7 @@ meta 专属命令（统一 `meta-` 前缀）：
 | `harness stats <target>` | 任务数据统计 |
 | `harness sync <target> --meta <meta-repo>` | 同步跨服务上下文和共享规则（meta 路径可省略） |
 | `harness sync --all` | 批量同步所有服务（在 meta repo 内运行） |
+| `harness memory rebuild <target>` | 从 lessons/task-log 重建 `memory-index.md`（`--force` 覆盖已有） |
 
 ## 什么算行为变化
 

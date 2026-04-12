@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（176 个）。
+- `make test`：运行框架级回归测试（192 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -34,6 +34,8 @@ harness stats /path/to/repo
 harness sync --all                                          # 在 meta repo 内同步所有服务
 harness sync /path/to/service --meta /path/to/meta          # 同步单个服务
 harness sync /path/to/service                               # 再次同步（meta 路径已记住）
+harness memory rebuild .                                    # 从 lessons/task-log 重建 memory-index.md
+harness memory rebuild . --force                            # 覆盖已有索引
 ```
 
 未安装时也可通过 `PYTHONPATH=src python -m agent_harness` 替代 `harness`。
@@ -112,6 +114,30 @@ harness sync /path/to/service
 3. **init 流程**：meta 类型跳过敏感级别和生产环境问题
 
 9 种类型：backend-service、web-app、cli-tool、library、worker、mobile-app、monorepo、data-pipeline、meta。
+
+## 分层记忆加载
+
+`.agent-harness/` 使用四层记忆策略，避免 lessons/task-log 随增长挤占上下文：
+
+| 层 | 文件 | 加载时机 |
+|---|------|---------|
+| L0 | `project.json` | Claude 读 AGENTS.md 时顺带 |
+| L1 | `current-task.md` + `memory-index.md` | `task-lifecycle` 规则在新任务开始时必读 |
+| L2 | `lessons.md` 全文 | 按需：`/recall <关键词>` 或 grep |
+| L3 | `task-log.md` 全文 | 显式：`/recall --history <关键词>` 或 grep |
+
+### 维护流程
+
+- `/compound` 技能写新教训时会自动同步 `memory-index.md`（"最近教训"段顶部插一行，超 10 条挤出最老；"最近任务"同理，上限 5 条）
+- 老项目首次启用或索引被污染时，运行 `harness memory rebuild .` 从现有 lessons/task-log 重建
+- 升级时 `memory-index.md` 按 `skip` 策略处理（不覆盖用户编辑）
+
+### 常见问题
+
+1. `memory-index.md` 和 lessons.md 不一致
+   → 运行 `harness memory rebuild . --force` 重建；今后 `/compound` 会保证原子更新
+2. 索引中没有某条教训
+   → 可能是在引入分层加载前写的。运行 rebuild 即可补齐
 
 ## 常见问题
 

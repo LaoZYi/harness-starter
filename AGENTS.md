@@ -44,6 +44,7 @@ harness export /path/to/repo
 harness stats /path/to/repo
 harness sync /path/to/service --meta /path/to/meta
 harness sync --all
+harness memory rebuild .
 ```
 
 ## 快速地图
@@ -56,11 +57,12 @@ harness sync --all
 - `src/agent_harness/sync_context.py`：跨服务上下文同步。
 - `src/agent_harness/sync_render.py`：服务上下文 Markdown 渲染。
 - `src/agent_harness/_shared.py`：共享常量、工具函数和守卫。
+- `src/agent_harness/memory.py`：分层记忆索引维护（`harness memory rebuild`）。
 - `src/agent_harness/discovery.py`：项目探测。
 - `src/agent_harness/assessment.py`：接入评估。
 - `src/agent_harness/upgrade.py`：升级规划和验证。
 - `src/agent_harness/initializer.py`：初始化主流程（含插件渲染）。
 - `src/agent_harness/templates/common/`：生成到目标项目的骨架文件（含 .claude/rules/）。
 - `src/agent_harness/presets/`：9 种项目类型预设。
-- `tests/`：框架回归测试（176 个，覆盖探测、评估、初始化、升级、CLI、技能、meta sync、类型差异化）。
+- `tests/`：框架回归测试（192 个，覆盖探测、评估、初始化、升级、CLI、技能、meta sync、类型差异化、分层记忆）。
 - `scripts/check_repo.py`：框架仓库守卫。

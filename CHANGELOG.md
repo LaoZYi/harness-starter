@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Added — 分层记忆加载（Issue #10, absorbed from MemPalace）
+
+- **L0-L3 分层记忆**：`.agent-harness/memory-index.md` 作为 L1 热索引；`task-lifecycle` 规则默认只读索引（~200 tokens 预算稳定），不再全量读 lessons.md / task-log.md
+- **新技能 `/recall`**：按关键词检索 lessons.md + task-log.md，支持 `--lessons` / `--history` / `--all` 参数
+- **新 CLI `harness memory rebuild`**：从现有 lessons/task-log 扫描重建 memory-index.md（老项目 bootstrap 或索引重置）
+- **`/compound` 增强**：写新教训时自动同步 memory-index.md（原子 commit 要求）
+- **升级策略**：memory-index.md 列为 skip，保留用户编辑
+- **测试**：176 → 192（新增 16 个覆盖 rebuild、升级 skip、技能文档、规则措辞）
+- **ADR 0001**：记录方案 C（Index + 按需展开）决策及替代方案
+
 ## [1.1.0] - 2026-04-09
 
 ### Added
