@@ -27,10 +27,11 @@
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
 - `src/agent_harness/_shared.py`：共享常量（TEMPLATE_ROOT、META_ROOT 等）、slugify、require_harness。
 - `src/agent_harness/memory.py`：分层记忆索引维护（`rebuild_index()` 从 lessons/task-log/references 重建 `memory-index.md`）。
+- `src/agent_harness/squad/`：多 agent 常驻协作（阶段 1 MVP）— `spec.py`（YAML 解析/循环检测）、`capability.py`（scout/builder/reviewer 权限渲染）、`tmux.py`（tmux 命令构造 + 可用性检查）、`state.py`（manifest + status.jsonl，fcntl 文件锁）、`cli.py`（`harness squad create|status|attach|stop` 子命令）。运行时状态写目标项目的 `.agent-harness/squad/<task_id>/`。
 
 ### 资源层
 - `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、3 个 common 命令（`/process-notes`、`/recall`、`/source-verify`）、文档、任务追踪、L2 参考清单目录（`.agent-harness/references/`）等。
-- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（29 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）和 2 个本地原创技能（lint-lessons、evolve）。
+- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（30 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）和 3 个本地原创技能（lint-lessons、evolve、squad）。
 - `src/agent_harness/templates/meta/`：meta 项目类型专属模板（services/registry、dependency-graph、conventions、shared-plugins、business 领域知识骨架、BEST-PRACTICES 指南、/sync-meta 和 /populate-meta 命令）。
 - `src/agent_harness/templates/<type>/`：各项目类型的专属规则模板（backend-service、web-app、cli-tool、worker、mobile-app、monorepo、data-pipeline、library 各有 1 个专属规则文件）。
 - `src/agent_harness/presets/`：9 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。
@@ -39,7 +40,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：206 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约。
+- `tests/`：234 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（28 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归）。
 
 ## 约束
 

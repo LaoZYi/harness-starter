@@ -31,7 +31,8 @@
 | `/debug` | 系统性排障（根因优先） |
 | `/execute-plan` | 按计划逐步执行 |
 | `/subagent-dev` | 子代理协作开发 |
-| `/dispatch-agents` | 并行分发独立任务 |
+| `/dispatch-agents` | 并行分发独立任务（短，一次性 map-reduce） |
+| `/squad` | 常驻多 agent 协作（tmux + worktree + capability 分权，长任务/需实时观察） |
 | `/request-review` | 请求代码评审 |
 | `/receive-review` | 处理评审反馈 |
 | `/use-worktrees` | Git worktree 隔离开发 |
@@ -65,7 +66,9 @@
 - 想全自动完成 → `/lfg`
 - 需要写新功能 → `/tdd`
 - 遇到 bug → `/debug`
-- 多个独立子任务 → `/dispatch-agents` 或 `/subagent-dev`
+- 多个独立子任务（短，一次性） → `/dispatch-agents`
+- 长任务需常驻多 agent + 角色分权 + 实时观察 → `/squad`
+- 子代理驱动开发（规划 + 执行分离） → `/subagent-dev`
 - 实现完成 → `/verify` → `/multi-review`
 - 需要提交代码 → `/git-commit`
 - 任务完成想沉淀经验 → `/compound`

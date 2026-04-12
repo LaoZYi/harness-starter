@@ -28,6 +28,8 @@
 - 初始化或探测命令变化必须更新 `docs/runbook.md`。
 - 新脚本要接入 `Makefile`，不要发明隐藏命令。
 - 新规则优先写成可执行校验，不要只写成口头提醒。
+- `/squad` worker **禁止递归**：worker 内不得再调用 `/squad create` 或 `/dispatch-agents`（防止无限派生）。
+- `/squad` worker **禁止写共享 lessons**：不得写 `.agent-harness/lessons.md`；有教训只能写到 `.agent-harness/squad/<task_id>/workers/<name>/lessons.pending.md`，由 coordinator 合并。
 
 ## 常用命令
 
@@ -45,6 +47,8 @@ harness stats /path/to/repo
 harness sync /path/to/service --meta /path/to/meta
 harness sync --all
 harness memory rebuild .
+harness squad create spec.yaml
+harness squad status
 ```
 
 ## 快速地图
@@ -64,5 +68,5 @@ harness memory rebuild .
 - `src/agent_harness/initializer.py`：初始化主流程（含插件渲染）。
 - `src/agent_harness/templates/common/`：生成到目标项目的骨架文件（含 .claude/rules/、3 个 common 命令、L2 参考清单 references/）。
 - `src/agent_harness/presets/`：9 种项目类型预设。
-- `tests/`：框架回归测试（206 个，覆盖探测、评估、初始化、升级、CLI、技能、meta sync、类型差异化、分层记忆、L2 参考清单、/source-verify、lessons 分类前缀）。
+- `tests/`：框架回归测试（234 个，覆盖探测、评估、初始化、升级、CLI、技能、meta sync、类型差异化、分层记忆、L2 参考清单、/source-verify、lessons 分类前缀）。
 - `scripts/check_repo.py`：框架仓库守卫。

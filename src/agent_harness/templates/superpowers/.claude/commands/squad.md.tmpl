@@ -1,0 +1,135 @@
+# 多 agent 常驻协作（/squad）
+
+在 tmux 里同时启动多个带独立 worktree 的 Claude Code worker，按 capability 强制权限分级（scout 只读 / builder 读写 / reviewer 只读审查），coordinator（主 session）通过共享状态文件观察进度。
+
+项目：`{{project_name}}`（{{project_type}}，{{language}}）
+
+## 适用场景
+
+- 长周期任务，需要**实时观察**每个 agent 在做什么
+- 任务可清晰拆分且需**角色分化**（探索 / 实现 / 审查）
+- 需要让 agent 之间有**隔离的工作区**（多 worktree 并行不冲突）
+- 对抗性校验：让 reviewer 独立审查 builder 的产物
+
+## 不适用场景
+
+- 单 agent 能独立完成（开销不值得）
+- 任务彼此耦合、需要频繁同步状态（阶段 1 无双向消息总线）
+- 没有 tmux 的环境（阶段 1 硬依赖，Windows 用 WSL）
+- 短独立子任务 → 用 **`/dispatch-agents`** 更合适（一次性派发，无需常驻）
+
+## `/squad` vs `/dispatch-agents`
+
+| 维度 | `/dispatch-agents` | `/squad` |
+|---|---|---|
+| 生命周期 | 一次性 map-reduce | 常驻，可持续观察 |
+| 隔离 | Claude Code 内置 Task | tmux + git worktree 双隔离 |
+| 权限 | 工具黑名单（文档约束） | `settings.local.json` **运行时强制** |
+| 可见性 | 等主 agent 汇总 | tmux 窗口实时可见 |
+| 适合 | 3+ 短独立子任务 | 长任务 / 需观察 / 需分权 |
+
+## 前置依赖
+
+- `tmux` ≥ 3.0（macOS: `brew install tmux` / Debian: `sudo apt install tmux`）
+- `claude` CLI 在 PATH 中
+
+## Spec 格式（YAML）
+
+```yaml
+task_id: auth-rewrite        # 英文小写+连字符，不超过 31 字符
+base_branch: master          # worktree 基于的分支
+workers:
+  - name: scout-auth         # 同样的命名规则；不允许 shell 元字符
+    capability: scout        # scout | builder | reviewer
+    prompt: "阅读 src/auth/ 所有文件，输出现状报告到 report.md"
+  - name: builder-auth
+    capability: builder
+    depends_on: [scout-auth] # 可选；coordinator 后续阶段实现依赖触发
+    prompt: "读 scout-auth 的 report.md，按 specs/auth-rewrite.md 实现"
+  - name: reviewer-auth
+    capability: reviewer
+    depends_on: [builder-auth]
+    prompt: "对 builder-auth 的 worktree 做 /multi-review，结果写 review.md"
+```
+
+## 子命令
+
+### `harness squad create <spec.yaml>`
+按 spec 创建 tmux session `squad-<task_id>`，为每个 worker 建独立 worktree、渲染 `.claude/settings.local.json`（按 capability 强制权限）、启动 Claude Code 进程。
+
+### `harness squad status`
+列出当前项目所有活跃 squad 和 workers 元信息（状态文件路径、worktree 路径）。
+
+### `harness squad attach <worker-name>`
+输出 `tmux attach -t <session> \; select-window -t <worker>` 命令，让你切到该 worker 的终端窗口观察/干预。
+
+### `harness squad stop <worker|task_id|all>`
+停止指定 worker（kill window）或整个 squad（kill session）。**不**自动删除 worktree — 留给 `/finish-branch` 处理合并。
+
+## Capability 权限（运行时强制）
+
+| Capability | 允许 | 禁止（`permissions.deny`） | 用途 |
+|---|---|---|---|
+| `scout` | Read / Glob / Grep | Write, Edit, Bash(git:*), Bash(curl:*), rm -rf | 只读探索、产出报告 |
+| `builder` | Read / Write / Edit / Bash(开发) | Bash(git push:*), Bash(rm -rf:*), git remote/reset --hard | 常规实现 |
+| `reviewer` | Read / Glob / Grep | Write, Edit, Bash(git:*), 写操作 | 审查并产出评审报告 |
+
+## 硬规则（worker 必须遵守）
+
+1. **禁止递归**：worker 内不得再调用 `/squad create` 或 `/dispatch-agents`
+2. **禁止写共享 lessons**：worker 不得写 `.agent-harness/lessons.md`；教训只能写到
+   `.agent-harness/squad/<task_id>/workers/<name>/lessons.pending.md`，由 coordinator 合并
+3. **按 capability 行事**：不得尝试绕过 `settings.local.json` 的权限限制
+4. **定期汇报**：完成关键步骤后向 `.agent-harness/squad/<task_id>/status.jsonl` append 一行 JSON
+
+## 典型用例
+
+### 探索 → 实现 → 审查 流水线
+
+```bash
+cat > /tmp/auth-squad.yaml <<EOF
+task_id: auth-rewrite
+base_branch: master
+workers:
+  - name: scout
+    capability: scout
+    prompt: "探索 src/auth/，输出 3 段现状报告到 report.md"
+  - name: builder
+    capability: builder
+    depends_on: [scout]
+    prompt: "等 scout 的 report.md 就绪后，按 specs/auth.md 实现"
+  - name: reviewer
+    capability: reviewer
+    depends_on: [builder]
+    prompt: "builder 完成后对其 worktree diff 跑 /multi-review，输出 review.md"
+EOF
+
+harness squad create /tmp/auth-squad.yaml
+harness squad status
+# tmux attach -t squad-auth-rewrite  # 实时观察
+```
+
+## 限制（阶段 1 MVP 已知）
+
+- **无真正双向通信**：worker 之间不能直接对话，只能通过共享文件
+- **依赖触发未实现**：`depends_on` 当前仅做循环校验，coordinator 不会等前置完成再启动后继（所有 worker 同时启动）
+- **无自动合并**：worker 完成后需人工对每个 worktree 跑 `/finish-branch`
+- **无 tmux 环境降级**：没有 tmux 则 `/squad create` 报错退出
+
+## 安全注意
+
+- YAML spec 从不可信源读取时需先人工审查（prompt 内容可能影响 agent 行为）
+- worker 名/task_id 被严格限制为 `^[a-z0-9][a-z0-9-]{0,30}$`，防 shell 注入
+- 进 worker 窗口后所有操作都属于**该 capability 的权限范围**，coordinator 不能通过 attach 越权
+- **Pattern 语法来源**：`permissions.deny` 使用 `Bash(<prefix>:*)` / `Bash(<cmd>:*)` 格式，该语法见于 `claude --help` 的 `--disallowedTools` 示例（`"Bash(git:*) Edit"`）。与 `settings.local.json` 的 `permissions.deny` 字段使用同一语法（Claude Code 实现一致）。首次在你项目启用 squad 时建议实测一次：起一个 scout worker，让它尝试 `git status`，若被拒绝则说明运行时生效
+
+## 调试 / 非 API 模式
+
+- `harness squad create <spec.yaml> --dry-run`：渲染所有产物（worktree 目录、`.claude/settings.local.json`、`squad-context.md`、`task-prompt.md`、`manifest.json`、`status.jsonl`）但**不启动 tmux、不建 git worktree、不调用 claude**。用于测试 pipeline、检查 capability 权限内容、验证 prompt 注入是否正确
+- 真启动后 worker 资源消耗大，建议先用 `--dry-run` 确认所有产物符合预期再真跑
+
+## 进阶：与其他技能配合
+
+- 执行前：用 `/spec` 明确每个 worker 的任务和验收标准
+- 启动后：用 `/recall` 查相关历史教训避免踩坑
+- 完成后：对每个 worker worktree 用 `/finish-branch` 合并，用 `/compound` 提炼经验

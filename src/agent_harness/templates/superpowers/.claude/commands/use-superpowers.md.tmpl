@@ -130,7 +130,9 @@
   |
   +-- 分支工作结束？ ------------> /finish-branch
   |
-  +-- 多个独立子任务？ ----------> /dispatch-agents
+  +-- 多个独立子任务（短，一次性）？ -> /dispatch-agents
+  |
+  +-- 长任务需常驻多 agent + 分权观察？-> /squad
   |
   +-- 需要多代理串行开发？ -------> /subagent-dev
   |

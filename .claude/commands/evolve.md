@@ -200,6 +200,7 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/write-skill` — 编写新技能 | ? |
 | `/use-superpowers` — 技能选择引导 | ? |
 | `/evolve` — 自我进化 | ? |
+| `/squad` — 多 agent 常驻协作（tmux + worktree + capability 分权） | ? |
 
 **关键问题**：这个项目提供了什么我们**没有**的独特能力？
 

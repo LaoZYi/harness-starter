@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added — /squad 多 agent 常驻协作 MVP（Issue #18，阶段 1）
+
+- **`harness squad create|status|attach|stop` CLI**：按 YAML spec 在 tmux 中启动 N 个带独立 worktree 的 Claude Code worker
+- **Capability 分权**：scout（只读探索）/ builder（读写实现）/ reviewer（只读审查），通过 `.claude/settings.local.json` 的 `permissions.deny` 运行时强制
+- **双隔离**：tmux session（每 worker 一 window）+ git worktree（每 worker 一 worktree），互不污染
+- **共享状态**：`.agent-harness/squad/<task_id>/{manifest.json, status.jsonl, workers/<name>/}`，fcntl 文件锁保证并发写安全
+- **Worker 启动方式**：`claude --append-system-prompt "$(cat squad-context.md)" "$(cat task-prompt.md)"` — system prompt 装 squad 约束（含 5 条硬规则），positional arg 装任务
+- **安全约束**：worker 名 / task_id 强制 `^[a-z0-9][a-z0-9-]{0,30}$` 防 shell 注入；禁止嵌套 squad；禁止写共享 lessons.md
+- **与 `/dispatch-agents` 并存**：dispatch 适合 3+ 短独立子任务（一次性 map-reduce）；squad 适合长任务、需实时观察、需角色分权
+- **技能文档 + 决策树**：`/squad` 进入 use-superpowers 决策树、superpowers-workflow 技能表、lfg 实施阶段选项
+- **阶段 1 限制**：tmux 硬依赖（Windows 用 WSL）；无依赖触发（`depends_on` 仅做循环校验，所有 worker 同时启动）；无自动合并（走 `/finish-branch`）；SQLite mailbox/FIFO 合并队列等留给阶段 2/3
+- **测试**：206 → 226（+20）覆盖 YAML 解析 / 依赖环检测 / 名称注入防护 / 3 种 capability 权限渲染 / JSON 可序列化 / tmux 命令构造 / shell 元字符防护 / tmux 可用性探测
+- **源验证纠偏**：`/source-verify` 发现 Claude Code CLI **没有** `--prompt-file` flag，改用 `--append-system-prompt` + positional argument（plan 原假设已纠正，附录记录）
+
 ### Changed — lessons.md 分类分区（Issue #11, inspired by MemPalace）
 
 - **lessons.md 顶部分类索引**：6 类（测试 / 模板 / 流程 / 工具脚本 / 架构设计 / 集成API），每类列 anchor 链接
@@ -50,11 +64,11 @@
 
 ### Highlights
 
-框架从项目脚手架工具升级为**完整的 AI 工程方法论平台**。集成 29 个工作流技能，实现知识驱动的自我进化闭环。
+框架从项目脚手架工具升级为**完整的 AI 工程方法论平台**。集成 30 个工作流技能，实现知识驱动的自我进化闭环。
 
 ### Added
 
-- **29 个工作流技能命令**，融合 3 个开源项目 + 2 个吸收项目 + 2 个本地原创：
+- **30 个工作流技能命令**，融合 3 个开源项目 + 2 个吸收项目 + 2 个本地原创：
   - 来自 [obra/superpowers](https://github.com/obra/superpowers)（14 个）：brainstorm, write-plan, tdd, debug, execute-plan, subagent-dev, dispatch-agents, request-review, receive-review, use-worktrees, finish-branch, write-skill, verify, use-superpowers
   - 来自 [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)（6 个）：ideate, compound, multi-review, lfg, git-commit, todo
   - 来自 [garrytan/gstack](https://github.com/garrytan/gstack)（5 个）：cso, health, retro, doc-release, careful
@@ -81,7 +95,7 @@
 
 ### Infrastructure
 
-- 206 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约）
+- 234 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

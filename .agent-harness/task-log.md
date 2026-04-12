@@ -282,3 +282,43 @@
   - [x] `make ci` 通过；code-reviewer 评审无 P0/P1
   - [x] 用户验证通过
 
+
+## 2026-04-12 — Issue #18：/squad 多 agent 常驻协作 MVP（阶段 1）
+
+- 需求：给框架加 tmux + git worktree 的多 agent 常驻协作能力，按 capability（scout/builder/reviewer）用 `settings.local.json` 的 `permissions.deny` 运行时强制权限
+- 做了什么：
+  - `src/agent_harness/squad/` 新模块 5 文件（spec/capability/tmux/state/cli）
+  - `harness squad create|status|attach|stop` CLI 子命令 + `--dry-run` flag
+  - 渲染产物：`.agent-harness/squad/<task_id>/{manifest.json, status.jsonl, workers/}` + 每个 worker 的 `.claude/{settings.local.json, squad-context.md}` + `task-prompt.md`
+  - worker 启动方式：`claude --append-system-prompt "$(cat ctx)" "$(cat task)"` 经 shlex.quote 处理路径
+  - 28 个 squad 测试（spec 解析 7 + capability 渲染 7 + tmux mock 8 + integration dry-run 6）
+  - `/squad` 进入 use-superpowers 决策树、superpowers-workflow 技能表、lfg 实施阶段、evolve 比较表、usage-guide
+  - 全量文档同步：product/architecture/runbook/AGENTS/CHANGELOG/README/usage-guide/release/workflow/CONTRIBUTING/project.json
+- 关键决策：
+  - 自研 MVP（不包 claude-squad）；JSONL + fcntl（不引入 SQLite）
+  - 主 session 即 coordinator（不做常驻守护进程，阶段 1）
+  - 改用 `--append-system-prompt` + positional arg（`--prompt-file` 不存在，step 0 source-verify 纠偏）
+  - 独立 code-reviewer 发 PASS WITH CONDITIONS；一轮修复 P0x3 + P1x1（shell 注入、flock 顺序、fcntl 软导入、部分失败清理）
+  - depends_on 触发 + 自动合并划为阶段 2/3，单独 Issue 追踪
+- 改了哪些文件：38 个文件 / +2027 insertions / -41 deletions
+  - src/agent_harness/squad/ (6) + src/agent_harness/cli.py
+  - src/agent_harness/templates/superpowers/.claude/commands/{squad,lfg,use-superpowers,evolve}.md.tmpl
+  - src/agent_harness/templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl
+  - tests/test_squad_{spec_parse,capability,tmux_mock,integration}.py
+  - dogfood: .claude/commands/{squad,lfg,use-superpowers,evolve}.md + .claude/rules/superpowers-workflow.md
+  - docs/ (6) + AGENTS.md + CHANGELOG.md + README.md + CONTRIBUTING.md + .agent-harness/project.json
+  - docs/superpowers/specs/2026-04-12-squad-mvp-{spec,plan}.md
+  - .agent-harness/lessons.md (+4 条) + memory-index.md
+  - .gitignore (.agent-harness/squad/)
+- 完成标准（10/10）：
+  - [x] tmux 未安装时友好报错（测试 + 代码）
+  - [x] 循环依赖被拒绝（DFS 着色法）
+  - [x] scout/builder/reviewer 权限字段测试覆盖
+  - [x] squad status 无活跃 squad 时友好提示
+  - [x] worker worktree 完整独立（double isolation: tmux + worktree）
+  - [x] 测试数 ≥ 210，实际 206 → 234（+28）
+  - [x] docs/product + architecture + runbook + AGENTS + CHANGELOG 同步
+  - [x] dogfood 无漂移（make check 的 drift 检测通过）
+  - [x] /squad 出现在 use-superpowers 决策树 + lfg 流水线
+  - [x] /dispatch-agents vs /squad 选择标准清晰（多处对比表）
+- 用户验证通过

@@ -7,7 +7,7 @@
 1. **探测**：扫描目标项目，产出结构化画像（语言、包管理器、命令、目录结构）。
 2. **评估**：根据画像产出接入评分、缺口和建议。
 3. **初始化**：根据项目类型和探测结果生成文档/配置文件。支持 `--scaffold` 从现有技术框架创建。交互式问答支持返回上一步和确认修改。
-4. **工作流技能**：默认生成 29 个结构化开发技能命令（融合 superpowers + compound-engineering + gstack），覆盖构思、设计、计划、执行、评审、安全、沉淀、自我进化全生命周期。可通过 `--no-superpowers` 关闭。外加 3 个 common 层命令（`/process-notes`、`/recall`、`/source-verify`）不受 `--no-superpowers` 影响。
+4. **工作流技能**：默认生成 30 个结构化开发技能命令（融合 superpowers + compound-engineering + gstack），覆盖构思、设计、计划、执行、评审、安全、沉淀、自我进化全生命周期。可通过 `--no-superpowers` 关闭。外加 3 个 common 层命令（`/process-notes`、`/recall`、`/source-verify`）不受 `--no-superpowers` 影响。
 5. **首次分析**：初始化后 current-task.md 预填分析任务，AI 打开项目自动补全文档。
 6. **升级**：对已接入的项目做增量升级，支持三方合并（保留用户内容）、diff 预览、选择性升级和自动备份。冲突时插入标记并醒目提示。
 7. **运维**：doctor（健康检查）、export（画像导出）、stats（任务统计）。
@@ -16,6 +16,7 @@
 10. **分层记忆加载**：`.agent-harness/memory-index.md` 作为 L1 热索引，`task-lifecycle` 规则默认只读它；`lessons.md` / `task-log.md` / `references/` 为 L2/L3，通过 `/recall` 技能或 `harness memory rebuild` 按需展开。避免知识积累挤占 AI 上下文窗口。
 11. **专业参考清单**：`.agent-harness/references/` 提供 4 个 checklist（accessibility / performance / security / testing-patterns），按需通过 `/recall --refs` 加载，给专业维度补覆盖盲区。
 12. **lessons 分类索引**：`.agent-harness/lessons.md` 顶部维护"按分类索引"（测试 / 模板 / 流程 / 工具脚本 / 架构设计 / 集成API 共 6 类），条目标题统一为 `## YYYY-MM-DD [分类] 标题`。`/compound` 技能自动归类并维护索引一致性。memory-index 中的"最近教训"自然带分类前缀，一眼可见归属。
+13. **多 agent 常驻协作（/squad，阶段 1 MVP）**：通过 `harness squad create <spec.yaml>` 在 tmux 中同时启动多个带独立 worktree 的 Claude Code worker，按 capability（scout / builder / reviewer）用 `settings.local.json` 的 `permissions.deny` 运行时强制工具权限。共享状态写 `.agent-harness/squad/<task_id>/`（manifest + status.jsonl）。与 `/dispatch-agents`（一次性短任务）并存：`/squad` 适合长任务、需实时观察、需角色分权的场景。阶段 1 硬依赖 tmux，不支持 Windows 原生（用 WSL）。
 
 ## 支持的项目类型（9 种）
 
