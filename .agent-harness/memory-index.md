@@ -27,7 +27,7 @@
 - 2026-04-10 深度完善项目类型功能差异化
 - 2026-04-09 深度审计 + meta 项目类型 + harness sync 命令
 - 2026-04-09 进化集成：spencermarx/open-code-review（Issue #9）
-- 2026-04-09 升级三方合并策略 — 让 harness upgrade 保留用户内容
+- 2026-04-12 agent-skills 增量吸收（Issue #16，续 Issue #6）
 
 ## 参考资料（.agent-harness/references/）
 

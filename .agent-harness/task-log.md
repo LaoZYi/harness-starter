@@ -115,6 +115,45 @@
 
 > 注：此记录为补录。原任务在"待验证"状态时被 /lfg #9 覆盖，收尾步骤遗漏。
 
+## 2026-04-12 agent-skills 增量吸收（Issue #16，续 Issue #6）
+
+- 需求：对已吸收项目 addyosmani/agent-skills 做增量分析，吸收新价值点
+- 做了什么：
+  - 新技能 `/source-verify`（193 行）—— `DETECT → FETCH → IMPLEMENT → CITE` 四阶段，防止 AI 凭记忆编框架 API
+  - `.agent-harness/references/` 四个 L2 checklist（a11y / perf / security / testing-patterns），688 行，序言汉化 + 术语保留英文
+  - `task-lifecycle.md` 顶部新增"上下文分层原则"理论章节（5 级 Context Hierarchy + L0-L4 映射）
+  - `/recall` 扩展 `--refs` flag，默认搜索范围扩到 `lessons + task-log + references`
+  - `memory.py` 加 `_scan_references()`，`rebuild_index` 输出新"## 参考资料"段
+  - backend-service / web-app 类型规则分别追加 security+perf / a11y+perf 清单引用
+  - upgrade 分类：`references/*` → `three_way`（允许用户定制 + 保留上游更新）
+  - 决策树 + superpowers-workflow 登记 /source-verify 和 /recall
+  - 新增 11 测试：192 → 203
+  - check_repo.py 守卫 5 个新文件
+- 关键决策：
+  - `/source-verify` 独立技能（非融入 /tdd）— 语义独立，融入会让 /tdd 臃肿
+  - references 放 `.agent-harness/`（非 `.claude/`）— 与 lessons/task-log 同层，L2 定位
+  - checklist 序言汉化、术语保留英文（LCP/TTFB/WCAG/OWASP） — 兼顾可读性和精准
+  - 默认 /recall 范围扩到 references，新增 --refs flag 做收窄（非破坏性）
+  - context-engineering 做理论章节不做技能 — 它是元规则不是操作步骤
+  - Issue 标签 evolution-update + absorbed 双标签，区分首次吸收（evolution）
+  - 不吸收 3 个 subagent、hook 增强、code-simplification 等（已有覆盖或延后）
+- 改了（commit 范围 327873c..55a6ea7，共 12 commit）：
+  - 新建：source-verify.md.tmpl、4 个 references/*.md.tmpl、test_references.py、spec、plan
+  - 修改：upgrade.py、cli.py 无改动但 memory.py +60 行、recall.md.tmpl、compound.md.tmpl（已在 #10 改）、task-lifecycle.md.tmpl、use-superpowers.md.tmpl、superpowers-workflow.md.tmpl、backend-service.md.tmpl、web-app.md.tmpl、check_repo.py、test_memory.py、test_superpowers.py、memory-index.md.tmpl
+  - 文档：product.md、architecture.md、runbook.md、AGENTS.md、CHANGELOG.md、workflow.md、release.md、CONTRIBUTING.md、lessons.md
+- 完成标准：
+  - [x] /source-verify 技能存在，反合理化表 6 条
+  - [x] references/ 4 文件，init 时自动生成
+  - [x] task-lifecycle 含 Context Hierarchy 章节
+  - [x] /recall --refs 生效
+  - [x] 类型规则引用 references
+  - [x] 203 测试全过
+  - [x] make ci 全绿
+  - [x] dogfood 同步
+  - [x] 文档全量同步
+  - [x] 用户验证通过
+
+
 ## 2026-04-09 进化集成：spencermarx/open-code-review（Issue #9）
 
 - 需求：从 open-code-review 吸收评审辩论（Discourse）方法论到 /multi-review 技能
