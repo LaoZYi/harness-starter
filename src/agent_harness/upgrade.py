@@ -34,6 +34,7 @@ FILE_CATEGORIES: dict[str, str] = {
     ".agent-harness/current-task.md": "skip",
     ".agent-harness/task-log.md": "skip",
     ".agent-harness/lessons.md": "skip",
+    ".agent-harness/memory-index.md": "skip",
     ".agent-harness/init-summary.md": "skip",
     ".agent-harness/project.json": "json_merge",
 }
