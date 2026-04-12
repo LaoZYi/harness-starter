@@ -73,6 +73,8 @@ REQUIRED_FILES = [
     PKG / "templates" / "common" / ".agent-harness" / "task-log.md.tmpl",
     PKG / "templates" / "common" / ".agent-harness" / "init-summary.md.tmpl",
     PKG / "templates" / "common" / ".agent-harness" / "project.json.tmpl",
+    PKG / "templates" / "common" / ".agent-harness" / "memory-index.md.tmpl",
+    PKG / "templates" / "common" / ".claude" / "commands" / "recall.md.tmpl",
     PKG / "templates" / "superpowers" / ".claude" / "commands" / "adr.md.tmpl",
     PKG / "templates" / "superpowers" / "docs" / "decisions" / ".gitkeep.tmpl",
     PKG / "presets" / "backend-service.json",
@@ -138,6 +140,7 @@ def check_module_sizes() -> None:
         "src/agent_harness/upgrade.py",
         "src/agent_harness/initializer.py",
         "src/agent_harness/templating.py",
+        "src/agent_harness/memory.py",
     ]:
         path = ROOT / relative_path
         line_count = len(path.read_text(encoding="utf-8").splitlines())
