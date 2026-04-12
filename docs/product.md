@@ -15,6 +15,7 @@
 9. **上游同步**：`make sync-superpowers` 从上游仓库拉取最新 skills 变更报告。
 10. **分层记忆加载**：`.agent-harness/memory-index.md` 作为 L1 热索引，`task-lifecycle` 规则默认只读它；`lessons.md` / `task-log.md` / `references/` 为 L2/L3，通过 `/recall` 技能或 `harness memory rebuild` 按需展开。避免知识积累挤占 AI 上下文窗口。
 11. **专业参考清单**：`.agent-harness/references/` 提供 4 个 checklist（accessibility / performance / security / testing-patterns），按需通过 `/recall --refs` 加载，给专业维度补覆盖盲区。
+12. **lessons 分类索引**：`.agent-harness/lessons.md` 顶部维护"按分类索引"（测试 / 模板 / 流程 / 工具脚本 / 架构设计 / 集成API 共 6 类），条目标题统一为 `## YYYY-MM-DD [分类] 标题`。`/compound` 技能自动归类并维护索引一致性。memory-index 中的"最近教训"自然带分类前缀，一眼可见归属。
 
 ## 支持的项目类型（9 种）
 
