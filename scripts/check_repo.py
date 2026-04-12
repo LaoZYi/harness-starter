@@ -136,18 +136,21 @@ def check_command_surface() -> None:
 
 
 def check_module_sizes() -> None:
-    for relative_path in [
-        "src/agent_harness/cli.py",
-        "src/agent_harness/cli_utils.py",
-        "src/agent_harness/lang_detect.py",
-        "src/agent_harness/discovery.py",
-        "src/agent_harness/assessment.py",
-        "src/agent_harness/upgrade.py",
-        "src/agent_harness/initializer.py",
-        "src/agent_harness/templating.py",
-        "src/agent_harness/memory.py",
-    ]:
-        path = ROOT / relative_path
+    """Enforce the 280-line hard limit on every source file under src/agent_harness/.
+
+    Auto-discovery (not a hardcoded whitelist): any new .py added under the
+    package — including sub-packages like squad/ — is checked automatically.
+    Excludes __init__.py and templates/ (template files are data, not code).
+    """
+    for path in sorted(PKG.rglob("*.py")):
+        if path.name == "__init__.py":
+            continue
+        try:
+            path.relative_to(PKG / "templates")
+            continue
+        except ValueError:
+            pass
+        relative_path = path.relative_to(ROOT).as_posix()
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         assert_true(line_count <= 280, f"{relative_path} 过长: {line_count} 行")
 

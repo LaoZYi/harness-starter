@@ -9,7 +9,7 @@ test:
 
 check:
 	$(PYTHON) scripts/check_repo.py
-	$(PYTHON) -m py_compile $(PACKAGE)/*.py tests/*.py scripts/*.py
+	$(PYTHON) -m compileall -q $(PACKAGE) tests scripts
 
 ci: check test
 
