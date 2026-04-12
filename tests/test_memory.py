@@ -147,6 +147,68 @@ class RebuildIndexBoundaryTests(unittest.TestCase):
             h.cleanup()
 
 
+class RebuildIndexCategoryPrefixTests(unittest.TestCase):
+    """Issue #11: lessons.md 分类前缀格式对 rebuild 透明。
+
+    契约：heading 形如 `## YYYY-MM-DD [分类] 标题` 时，memory.py
+    不做任何解析或剥离，整行 `##` 后内容原样进入 memory-index，
+    使索引中一眼可见归属分类。此测试锁死契约，防止未来 memory.py
+    重构意外破坏。
+    """
+
+    def test_category_prefix_preserved_in_index(self) -> None:
+        lessons = (
+            "# Lessons\n\n"
+            "## 2026-04-12 [架构设计] 脚手架项目吸收外部思想要选最小实现\n\n"
+            "- 规则：先问痛点是否一致\n"
+        )
+        h = _HarnessDir(lessons=lessons, task_log="")
+        try:
+            result = rebuild_index(h.root)
+            self.assertEqual(result.lessons_count, 1)
+            body = h.read_index()
+            self.assertIn(
+                "[架构设计] 脚手架项目吸收外部思想要选最小实现", body
+            )
+        finally:
+            h.cleanup()
+
+    def test_multiple_categories_all_preserved(self) -> None:
+        lessons = (
+            "# Lessons\n\n"
+            "## 2026-04-08 [工具脚本] dogfood 命令展平\n\n- detail\n\n"
+            "## 2026-04-09 [模板] 占位符被吞掉\n\n- detail\n\n"
+            "## 2026-04-12 [流程] 增量吸收用 evolution-update\n\n- detail\n"
+        )
+        h = _HarnessDir(lessons=lessons, task_log="")
+        try:
+            rebuild_index(h.root)
+            body = h.read_index()
+            self.assertIn("[工具脚本]", body)
+            self.assertIn("[模板]", body)
+            self.assertIn("[流程]", body)
+        finally:
+            h.cleanup()
+
+    def test_malformed_category_prefix_does_not_crash(self) -> None:
+        # Missing closing bracket or empty brackets should pass through,
+        # not crash — memory.py must stay transparent to body content.
+        lessons = (
+            "# Lessons\n\n"
+            "## 2026-04-12 [未闭合 缺括号标题\n\n- x\n\n"
+            "## 2026-04-12 [] 空分类\n\n- y\n"
+        )
+        h = _HarnessDir(lessons=lessons, task_log="")
+        try:
+            result = rebuild_index(h.root)
+            self.assertEqual(result.lessons_count, 2)
+            body = h.read_index()
+            self.assertIn("缺括号标题", body)
+            self.assertIn("空分类", body)
+        finally:
+            h.cleanup()
+
+
 class RebuildIndexReferencesTests(unittest.TestCase):
     """references/ scanning behavior."""
 
