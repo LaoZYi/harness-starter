@@ -77,7 +77,9 @@ def ensure_tmux_available() -> str:
             "未找到 tmux。请先安装（macOS: `brew install tmux` / Debian/Ubuntu: "
             "`sudo apt install tmux`），然后重试。"
         )
-    result = subprocess.run(["tmux", "-V"], capture_output=True, text=True)
+    # Use the resolved path (not bare "tmux") so later subprocess calls are
+    # consistent with the availability probe under any PATH mutation.
+    result = subprocess.run([path, "-V"], capture_output=True, text=True)
     if result.returncode != 0:
         raise TmuxError(f"tmux -V 执行失败：{result.stderr or result.stdout}")
     return result.stdout.strip()
