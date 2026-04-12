@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed — 代码健康审计（2026-04-13）
+
+- **squad/cli.py 模块拆分**：303 → 220 行，辅助函数（`_SQUAD_CONTEXT_TEMPLATE`、worktree provision、settings/prompt 渲染、通用 `run_check`）抽到新模块 `squad/worker_files.py`。修复 AGENTS.md 280 行硬规则违反
+- **check_repo.py 守卫根因修复**：`check_module_sizes` 从白名单改为 `PKG.rglob("*.py")` 自动发现，覆盖 `src/agent_harness/` 下所有 `.py`（含 `squad/` 及未来新增子包）。白名单曾漏掉 `squad/` 整个包，导致 303 行违规悄悄通过
+- **Makefile check 递归化**：`py_compile $(PACKAGE)/*.py` 改为 `compileall -q $(PACKAGE)`，修复 glob 漏扫 `squad/` 子目录
+- **tmux.py 一致性修复**：`ensure_tmux_available` 从 `shutil.which` 拿到的 `path` 实际用于 `subprocess.run`，不再与探测结果脱节
+- **新增 tests/test_check_repo.py**（4 测试）锁死：新模块自动进入 280 检查 / squad/ 子包被覆盖 / `__init__.py` 与 `templates/` 被豁免 / check_repo.py 端到端干净通过
+
 ### Added — /squad 多 agent 常驻协作 MVP（Issue #18，阶段 1）
 
 - **`harness squad create|status|attach|stop` CLI**：按 YAML spec 在 tmux 中启动 N 个带独立 worktree 的 Claude Code worker
@@ -95,7 +103,7 @@
 
 ### Infrastructure
 
-- 234 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约）
+- 238 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

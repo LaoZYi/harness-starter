@@ -322,3 +322,34 @@
   - [x] /squad 出现在 use-superpowers 决策树 + lfg 流水线
   - [x] /dispatch-agents vs /squad 选择标准清晰（多处对比表）
 - 用户验证通过
+
+
+## 2026-04-13 — 代码健康审计：280 行硬规则违反修复 + 守卫自动化
+
+- 需求："深入分析代码发现潜在问题并修复，完后更新文档到最新"（全自动 LFG，用户免询问）
+- 做了什么：
+  - **P0** `squad/cli.py` 303 → 220 行：`_SQUAD_CONTEXT_TEMPLATE`、worktree provision、settings/prompt 渲染、通用 `run_check` 拆到新模块 `squad/worker_files.py`（95 行）
+  - **P1（根因）** `scripts/check_repo.py:check_module_sizes` 从 9 项硬编码白名单改为 `PKG.rglob("*.py")` 自动发现；豁免 `__init__.py` 和 `templates/`
+  - **P1** `Makefile` check target 从 `py_compile $(PACKAGE)/*.py`（glob 漏 squad/）改为 `compileall -q $(PACKAGE)` 递归
+  - **P2** `squad/tmux.py:ensure_tmux_available` 使用 `shutil.which` 返回的 `path` 调 `tmux -V`
+  - 新增 `tests/test_check_repo.py`（4 测试）锁死：新模块自动入检 / squad/ 子包覆盖 / `__init__.py` + `templates/` 豁免 / 端到端 check_repo.py 通过
+  - 全量文档同步 234 → 238：AGENTS / CONTRIBUTING / CHANGELOG / docs/{runbook,release,workflow,architecture}.md
+  - lessons.md + memory-index.md 同步（新增 1 条工具脚本类教训）
+- 关键决策：
+  - **自动发现替代白名单**：根源不是"忘记把 squad 加进白名单"，而是白名单本身就是反模式——新增子包永远沉默通过。契约测试锁死防回归
+  - **Makefile check 也递归化**：同类问题（glob `*.py` 只在顶层），用 `compileall` 一次解决
+  - **拆分粒度**：worker_files.py 承载"worker 材料渲染"职责，cli.py 只做 CLI 调度 + subprocess cleanup，边界清晰
+  - 未引入任何新依赖（遵循最小实现原则）
+- 改了哪些文件：
+  - 新建：`src/agent_harness/squad/worker_files.py`、`tests/test_check_repo.py`
+  - 修改：`src/agent_harness/squad/cli.py`、`src/agent_harness/squad/tmux.py`、`scripts/check_repo.py`、`Makefile`
+  - 文档：`AGENTS.md`、`CONTRIBUTING.md`、`CHANGELOG.md`、`docs/{architecture,runbook,release,workflow}.md`
+  - 知识：`.agent-harness/lessons.md`、`memory-index.md`
+- 完成标准（6/6）：
+  - [x] squad/cli.py ≤ 280 行（220）
+  - [x] check_repo.py 自动覆盖所有 .py（含 squad/）
+  - [x] 新增 4 个契约测试锁死行为
+  - [x] tmux.py 使用 shutil.which 返回路径
+  - [x] make ci 通过（234 → 238）
+  - [x] 文档全量同步
+- 用户要求全自动修复，免询问
