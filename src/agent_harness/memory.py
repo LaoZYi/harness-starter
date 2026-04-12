@@ -21,6 +21,7 @@ MAX_LESSONS = 10
 MAX_TASKS = 5
 
 _HEADING_RE = re.compile(r"^##\s+(?P<title>.+?)\s*$")
+_H1_RE = re.compile(r"^#\s+(?P<title>.+?)\s*$")
 
 
 @dataclass
@@ -55,10 +56,38 @@ def _extract_headings(source: Path, limit: int) -> list[str]:
     return headings[-limit:]
 
 
-def _render_index(lessons: list[str], tasks: list[str]) -> str:
+def _scan_references(refs_dir: Path) -> list[str]:
+    """Return `- filename — title` entries for each references/*.md file.
+
+    Missing directory yields an empty list (old projects or projects
+    that removed references/ intentionally). Files without an H1 fall
+    back to their filename.
+    """
+    if not refs_dir.is_dir():
+        return []
+    entries: list[str] = []
+    for path in sorted(refs_dir.glob("*.md")):
+        title = path.stem
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            text = ""
+        for line in text.splitlines():
+            m = _H1_RE.match(line)
+            if m:
+                title = m.group("title").strip()
+                break
+        entries.append(f"`{path.name}` — {title}")
+    return entries
+
+
+def _render_index(
+    lessons: list[str], tasks: list[str], references: list[str]
+) -> str:
     """Render memory-index.md content from recent lesson/task titles.
 
-    Lists are rendered newest-first for readability.
+    Lists are rendered newest-first for readability. The references
+    section is only emitted when the references/ directory exists.
     """
     lessons_block = (
         "\n".join(f"- {title}" for title in reversed(lessons))
@@ -71,10 +100,19 @@ def _render_index(lessons: list[str], tasks: list[str]) -> str:
         else "（暂无。归档第一个任务后会自动填充。）"
     )
 
+    refs_section = ""
+    if references:
+        refs_lines = "\n".join(f"- {entry}" for entry in references)
+        refs_section = (
+            "## 参考资料（.agent-harness/references/）\n\n"
+            "<!-- L2 温知识层。按需通过 `/recall --refs 关键词` 加载。-->\n\n"
+            f"{refs_lines}\n\n"
+        )
+
     return (
         "# Memory Index\n\n"
-        "> 热知识精华索引。详情见 `.agent-harness/lessons.md` 和 "
-        "`.agent-harness/task-log.md`。\n"
+        "> 热知识精华索引。详情见 `.agent-harness/lessons.md`、"
+        "`.agent-harness/task-log.md` 和 `.agent-harness/references/`。\n"
         ">\n"
         "> **默认只读本文件**。需要深入某话题时，使用 `/recall <关键词>` "
         "技能或直接 `grep` 完整文件。\n\n"
@@ -84,6 +122,7 @@ def _render_index(lessons: list[str], tasks: list[str]) -> str:
         f"## 最近任务（保留最多 {MAX_TASKS} 条）\n\n"
         "<!-- 任务归档时顶部插入；超过上限时挤出最老。-->\n\n"
         f"{tasks_block}\n\n"
+        f"{refs_section}"
         "## 主题索引（可选，按关键词定位历史）\n\n"
         "<!-- 人工或 AI 周期性整理。格式：`- 关键词 → lessons.md \"条目标题\"` -->\n\n"
         "（尚未建立。当 lessons.md 条目较多时可整理此段方便定位。）\n\n"
@@ -92,8 +131,10 @@ def _render_index(lessons: list[str], tasks: list[str]) -> str:
         "- **task-lifecycle 规则**指示 AI 在开始新任务时默认读取本文件（而非 "
         "lessons.md / task-log.md 全量），避免上下文膨胀。\n"
         "- 索引命中某话题 → 用 `/recall <关键词>` 技能或 `grep` 读取对应节。\n"
+        "- references/ 为 L2 温知识（a11y / perf / security / testing）"
+        "— 用 `/recall --refs` 按需查询。\n"
         "- 索引由 `/compound` 技能维护；也可运行 "
-        "`harness memory rebuild .` 从现有 lessons/task-log 重建一次。\n"
+        "`harness memory rebuild .` 从现有 lessons/task-log/references 重建一次。\n"
     )
 
 
@@ -133,7 +174,8 @@ def rebuild_index(
 
     lessons = _extract_headings(lessons_path, MAX_LESSONS)
     tasks = _extract_headings(tasks_path, MAX_TASKS)
-    content = _render_index(lessons, tasks)
+    references = _scan_references(harness_dir / "references")
+    content = _render_index(lessons, tasks, references)
 
     harness_dir.mkdir(parents=True, exist_ok=True)
     index_path.write_text(content, encoding="utf-8")
