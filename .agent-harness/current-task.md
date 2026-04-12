@@ -57,7 +57,7 @@ Plan：`docs/superpowers/specs/2026-04-12-squad-mvp-plan.md`
 - [ ] 环境准备 — 基线测试 + source-verify
 - [x] 规格定义 — `2026-04-12-squad-mvp-spec.md`（已 commit 60d4a07）
 - [x] 计划 — `2026-04-12-squad-mvp-plan.md`（已 commit 60d4a07）
-- [ ] 实施（plan 13 步，当前步骤 2 进行中）
+- [ ] 实施（plan 13 步）— 修复轮 1 完成（评审 PASS WITH CONDITIONS → 修复 P0x3 + P1x1 → 再测通过）
   - [x] 步骤 0：source-verify + 依赖摸底（发现 --prompt-file 不存在，改用 --append-system-prompt + positional arg；tmux 3.6a / pyyaml>=6.0 OK；基线 206 测试）
   - [x] 步骤 1：TDD RED — 测试骨架（3 文件、20 用例、全部 ImportError 确认 RED）
   - [x] 步骤 2：squad 核心实现（spec/capability/tmux/state/cli 5 模块 + harness CLI 注册）
@@ -68,8 +68,9 @@ Plan：`docs/superpowers/specs/2026-04-12-squad-mvp-plan.md`
   - [x] 步骤 7：dogfood 同步（.claude/ 4 个文件更新/新增）
   - [x] 步骤 8：文档全量同步（product/architecture/runbook/AGENTS/CHANGELOG + 计数守卫修正 29→30、206→226）
   - [x] 步骤 9：make ci 全量验证通过
-  - [ ] 步骤 10：冒烟验证（可选）
-  - [ ] 步骤 11：/multi-review
+  - [-] 步骤 10：冒烟验证（跳过 — 避免消耗 API 配额，阶段 1 MVP 以测试为主要信心来源）
+  - [x] 步骤 11：/multi-review（独立 code-reviewer agent，结论 PASS WITH CONDITIONS）
+  - [x] 修复轮 1：P0-1 路径 shell 注入（shlex.quote）、P0-2 truncate-before-lock 竞态、P0-3 fcntl Windows 导入崩溃、P1-2 cmd_create 部分失败清理；新增 2 个测试（228 测试全过）
   - [ ] 步骤 12：完成报告 + 验收核验
   - [ ] 步骤 13：归档与收尾
 - [ ] 自检

@@ -52,6 +52,36 @@ class TmuxCommandConstructionTests(unittest.TestCase):
                 task_prompt_file="/tmp/b.md",
             )
 
+    def test_path_with_spaces_is_quoted(self) -> None:
+        """P0-1: cwd / prompt file paths containing spaces must not break the subshell."""
+        cmd = build_new_window_cmd(
+            session="squad-ok",
+            window="w1",
+            cwd="/Users/alice/my projects/repo",
+            system_prompt_file="/Users/alice/my projects/repo/.claude/ctx.md",
+            task_prompt_file="/Users/alice/my projects/repo/task.md",
+        )
+        shell_cmd = cmd[-1]
+        # shlex.quote wraps paths-with-spaces in single quotes.
+        self.assertIn("'/Users/alice/my projects/repo'", shell_cmd)
+        self.assertIn("'/Users/alice/my projects/repo/.claude/ctx.md'", shell_cmd)
+
+    def test_path_with_backtick_cannot_inject(self) -> None:
+        """P0-1: backtick in path must not be interpreted by the shell."""
+        cmd = build_new_window_cmd(
+            session="squad-ok",
+            window="w1",
+            cwd="/tmp/good",
+            system_prompt_file="/tmp/evil`rm -rf /`.md",
+            task_prompt_file="/tmp/t.md",
+        )
+        shell_cmd = cmd[-1]
+        # shlex.quote escapes backticks inside single quotes (single quotes are
+        # split and re-joined), so the raw `rm -rf /` sequence must appear wrapped.
+        self.assertNotIn("$(rm", shell_cmd)
+        # It should appear inside quoted form
+        self.assertIn("rm -rf", shell_cmd)
+
 
 class TmuxAvailabilityTests(unittest.TestCase):
     @patch("agent_harness.squad.tmux.shutil.which")

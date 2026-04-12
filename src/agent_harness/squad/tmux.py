@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 import shutil
 import subprocess
 
@@ -43,13 +44,17 @@ def build_new_window_cmd(
     _validate_name("session", session)
     _validate_name("window", window)
 
-    # Shell metacharacters in file paths would be caller error — we only
-    # sanitize caller-provided identifiers. Paths are produced by squad itself.
+    # shlex.quote all path arguments so spaces / metacharacters in project
+    # roots (e.g. "/Users/alice/my projects/...") don't break the subshell or
+    # enable command injection.
+    q_cwd = shlex.quote(cwd)
+    q_sys = shlex.quote(system_prompt_file)
+    q_task = shlex.quote(task_prompt_file)
     shell_cmd = (
-        f'cd "{cwd}" && '
+        f"cd {q_cwd} && "
         f"claude "
-        f'--append-system-prompt "$(cat {system_prompt_file})" '
-        f'"$(cat {task_prompt_file})"'
+        f"--append-system-prompt \"$(cat {q_sys})\" "
+        f"\"$(cat {q_task})\""
     )
 
     return [

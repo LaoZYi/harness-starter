@@ -2,13 +2,27 @@
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import json
 import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
+
+try:
+    import fcntl as _fcntl
+    _HAS_FCNTL = True
+except ImportError:  # Windows native (non-WSL)
+    _fcntl = None  # type: ignore[assignment]
+    _HAS_FCNTL = False
+
+
+def _require_fcntl() -> None:
+    if not _HAS_FCNTL:
+        raise OSError(
+            "squad 需要 fcntl（Unix / macOS / WSL）。"
+            "Windows 原生环境不支持文件锁，请在 WSL 下运行。"
+        )
 
 
 @dataclass
@@ -95,34 +109,41 @@ def read_status_tail(root: Path, task_id: str, limit: int = 50) -> list[dict[str
 
 @contextlib.contextmanager
 def _locked_write(path: Path) -> Iterator[Any]:
+    """Exclusive lock first, truncate second — avoids empty-file race if a
+    concurrent writer sees the file mid-operation.
+    """
+    _require_fcntl()
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Write + fsync + rename would be stronger; this is MVP-grade.
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT, 0o644)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
+        _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
+        # Safe to truncate: exclusive lock held.
+        os.ftruncate(fd, 0)
+        os.lseek(fd, 0, os.SEEK_SET)
         with os.fdopen(fd, "w", encoding="utf-8", closefd=False) as f:
             yield f
             f.flush()
             os.fsync(fd)
     finally:
         try:
-            fcntl.flock(fd, fcntl.LOCK_UN)
+            _fcntl.flock(fd, _fcntl.LOCK_UN)  # type: ignore[union-attr]
         finally:
             os.close(fd)
 
 
 @contextlib.contextmanager
 def _locked_append(path: Path) -> Iterator[Any]:
+    _require_fcntl()
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
+        _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
         with os.fdopen(fd, "a", encoding="utf-8", closefd=False) as f:
             yield f
             f.flush()
             os.fsync(fd)
     finally:
         try:
-            fcntl.flock(fd, fcntl.LOCK_UN)
+            _fcntl.flock(fd, _fcntl.LOCK_UN)  # type: ignore[union-attr]
         finally:
             os.close(fd)

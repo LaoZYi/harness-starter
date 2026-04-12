@@ -70,33 +70,43 @@ def cmd_create(args) -> int:
     # 1. start tmux session (detached)
     _run_check(build_new_session_cmd(session_name), f"启动 tmux session {session_name}")
 
-    # 2. provision each worker
+    # 2. provision each worker — on failure, tear down session + worktrees
     worker_records: list[WorkerRecord] = []
-    for w in spec.workers:
-        wt_path = _provision_worker_worktree(root, spec, w)
-        _write_worker_files(root, spec, w, wt_path)
-        _run_check(
-            build_new_window_cmd(
-                session=session_name,
-                window=w.name,
-                cwd=str(wt_path),
-                system_prompt_file=str(wt_path / ".claude" / "squad-context.md"),
-                task_prompt_file=str(wt_path / "task-prompt.md"),
-            ),
-            f"启动 worker 窗口 {w.name}",
-        )
-        worker_records.append(
-            WorkerRecord(
-                name=w.name,
-                capability=w.capability,
-                worktree=str(wt_path),
-                depends_on=list(w.depends_on),
+    try:
+        for w in spec.workers:
+            wt_path = _provision_worker_worktree(root, spec, w)
+            _write_worker_files(root, spec, w, wt_path)
+            _run_check(
+                build_new_window_cmd(
+                    session=session_name,
+                    window=w.name,
+                    cwd=str(wt_path),
+                    system_prompt_file=str(wt_path / ".claude" / "squad-context.md"),
+                    task_prompt_file=str(wt_path / "task-prompt.md"),
+                ),
+                f"启动 worker 窗口 {w.name}",
             )
-        )
-        append_status(
-            root, spec.task_id,
-            {"worker": w.name, "event": "spawned", "message": f"worktree={wt_path}"},
-        )
+            worker_records.append(
+                WorkerRecord(
+                    name=w.name,
+                    capability=w.capability,
+                    worktree=str(wt_path),
+                    depends_on=list(w.depends_on),
+                )
+            )
+            append_status(
+                root, spec.task_id,
+                {"worker": w.name, "event": "spawned", "message": f"worktree={wt_path}"},
+            )
+    except RuntimeError as exc:
+        print(f"[squad] 创建失败，清理中：{exc}")
+        subprocess.run(["tmux", "kill-session", "-t", session_name], check=False)
+        for wr in worker_records:
+            subprocess.run(
+                ["git", "-C", str(root), "worktree", "remove", "--force", wr.worktree],
+                check=False,
+            )
+        return 2
 
     # 3. write manifest
     manifest = Manifest(
