@@ -11,6 +11,7 @@ deterministic rebuild path for bootstrap and recovery scenarios.
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -148,3 +149,14 @@ def rebuild_index(
         ),
         path=index_path,
     )
+
+
+def run_rebuild_cli(target: Path, *, force: bool) -> None:
+    """CLI entrypoint wrapper: rebuild index and print a colored status line."""
+    from .cli_utils import console
+
+    result = rebuild_index(target, force=force)
+    color = "yellow" if result.status == "refused" else "green"
+    console.print(f"  [{color}]{result.message}[/{color}]")
+    if result.status == "refused":
+        sys.exit(1)
