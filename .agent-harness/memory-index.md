@@ -22,11 +22,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-12 分层记忆加载（Issue #10，吸收自 MemPalace）
 - 2026-04-10 深度完善项目类型功能差异化
 - 2026-04-09 深度审计 + meta 项目类型 + harness sync 命令
 - 2026-04-09 进化集成：spencermarx/open-code-review（Issue #9）
 - 2026-04-09 升级三方合并策略 — 让 harness upgrade 保留用户内容
-- 2026-04-08 进化集成：joelparkerhenderson/architecture-decision-record（Issue #7）
 
 ## 主题索引（可选，按关键词定位历史）
 

@@ -177,4 +177,37 @@
   - [x] make check / make dogfood 全绿
   - [x] 文档计数和结构同步
 
+## 2026-04-12 分层记忆加载（Issue #10，吸收自 MemPalace）
+
+- 需求：引入分层记忆加载（L0-L3），解决 `.agent-harness/` 下 lessons/task-log 随增长挤占 AI 上下文窗口的问题
+- 做了什么：
+  - **方案 C：Index + 按需展开**——新增 `memory-index.md` 作为 L1 热索引，task-lifecycle 默认只读它；`lessons.md` / `task-log.md` 为 L2/L3 按需展开
+  - 新建 `/recall <关键词>` 技能，支持 `--lessons` / `--history` / `--all` 参数
+  - 新建 `memory.py` 模块（162 行）和 `harness memory rebuild` CLI（老项目 bootstrap + 索引重置）
+  - `upgrade.py` 将 memory-index.md 列为 skip 策略
+  - `/compound` 技能新增 Step 5：写新教训时原子同步 memory-index.md
+  - 16 个新测试覆盖 rebuild、升级 skip、技能文档、规则措辞、CJK 标题
+  - 穷举 E2E 17/17：正常/边界/错误/升级四类路径
+  - ADR 0001 记录选 C 而非 B/D 的决策
+  - 文档全量同步：product/architecture/runbook/AGENTS/CHANGELOG/lessons/workflow/release/CONTRIBUTING
+- 关键决策：
+  - 选方案 C 而非目录分层（B）或 Python 抽象层（D）：脚手架是生成器不是运行时，痛点是"约束 AI 读什么"，不是"运行时 rotate"
+  - memory-index 容量 10 教训 + 5 任务（用户敲定）
+  - `/recall` 放 common 模板而非 superpowers（基础能力，--no-superpowers 不应关闭）
+  - 原子性约束写入 /compound 规则：lessons 新条目 + index 必须同一 commit，打破双写漂移
+- 改了：
+  - 新建：`memory.py`、`memory-index.md.tmpl`、`recall.md.tmpl`、`test_memory.py`、`docs/decisions/0001-layered-memory-loading.md`
+  - 修改：`upgrade.py`、`cli.py`、`check_repo.py`、`compound.md.tmpl`、`task-lifecycle.md.tmpl`、`test_superpowers.py`、`test_apply_upgrade.py`、`product.md`、`architecture.md`、`runbook.md`、`AGENTS.md`、`CHANGELOG.md`、`CONTRIBUTING.md`、`workflow.md`、`release.md`、`lessons.md`
+  - 规划：`docs/superpowers/specs/2026-04-12-layered-memory-spec.md`、`2026-04-12-layered-memory-plan.md`
+  - 14 个原子 commit（49a1054..5db4833），每步打 tag `lfg/step-N`
+- 完成标准：
+  - [x] 分层结构存在，task-lifecycle 默认只读索引
+  - [x] /recall 技能 + harness memory rebuild CLI 可用
+  - [x] upgrade 保留用户编辑
+  - [x] 9 种项目类型自动适配
+  - [x] 176 → 192 测试全过
+  - [x] 穷举 E2E 17/17 通过
+  - [x] 文档全量同步
+  - [x] ADR 0001 已落地
+  - [x] 用户验证通过
 
