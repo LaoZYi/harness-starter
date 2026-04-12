@@ -1,0 +1,86 @@
+# 按需检索历史知识
+
+在 `.agent-harness/lessons.md` 和 `.agent-harness/task-log.md` 中按关键词检索，取回与当前任务相关的历史教训或完成记录。
+
+当前项目：`{{project_name}}`（{{project_type}}）
+
+## 背景
+
+为避免上下文窗口膨胀，`task-lifecycle` 规则默认只让 AI 读 `.agent-harness/memory-index.md`（精华索引）。当 index 提示某话题可能相关（或你凭经验判断需要深入），用本技能做定向检索，而不是读取全量历史文件。
+
+## 适用场景
+
+- 开始任务时 memory-index 命中某关键词，需要读对应 lessons 条目的完整内容
+- 实施过程中怀疑以前踩过类似坑，想验证是否有历史教训
+- 评审或验证时需要引用历史决策作为依据
+- 归档任务前想确认没遗漏相关的过往经验
+
+## 参数
+
+- `<关键词>`：必填。在 lessons.md + task-log.md 中做不区分大小写的子串匹配
+- `--history`：可选。只搜索 task-log.md（跳过 lessons.md）
+- `--lessons`：可选。只搜索 lessons.md（跳过 task-log.md）
+- `--all`：可选。返回所有匹配节的完整内容；不加时默认只返回匹配到的二级标题列表
+
+## 执行步骤
+
+### 第 1 步：定位候选文件
+
+根据参数决定要搜的文件：
+
+| 参数 | 搜索范围 |
+|------|---------|
+| （默认） | `.agent-harness/lessons.md` + `.agent-harness/task-log.md` |
+| `--lessons` | 仅 `.agent-harness/lessons.md` |
+| `--history` | 仅 `.agent-harness/task-log.md` |
+
+文件不存在时告知用户并继续搜其它文件。
+
+### 第 2 步：Grep 匹配
+
+对每个候选文件使用 Grep 工具（`output_mode: "content"`, `-i: true`, `-n: true`）搜索关键词。
+
+### 第 3 步：定位匹配所在节
+
+每个匹配行所属的二级标题（`## YYYY-MM-DD ...`）即为"匹配节"。合并同一节的多条命中。
+
+### 第 4 步：返回结果
+
+**默认模式**（未传 `--all`）：列出所有匹配节的标题和一句话摘要，格式：
+
+```
+来自 lessons.md:
+  - 2026-04-09 **命令重命名后模板也要全量扫描** — 避免文档/模板不同步
+  - 2026-04-08 dogfood 命令展平 — project.json 嵌套 commands 字典需展平
+
+来自 task-log.md:
+  - 2026-04-10 深度完善项目类型功能差异化
+```
+
+**全文模式**（`--all`）：在上述列表基础上，追加每个匹配节的完整 Markdown 内容。
+
+### 第 5 步：建议后续动作
+
+若返回结果为空：告知用户"无历史记录涉及此关键词"。
+
+若返回结果很多（> 5 节）：建议用户细化关键词或加上 `--lessons`/`--history` 缩小范围。
+
+## 使用示例
+
+```
+/recall 升级                # 搜 lessons + task-log 中所有"升级"相关条目
+/recall 合并 --all          # 完整展开所有"合并"相关条目
+/recall memory --history    # 只搜 task-log
+/recall 三方合并 --lessons  # 只搜 lessons
+```
+
+## 反合理化
+
+| 你想说的 | 为什么不行 |
+|---------|-----------|
+| "我直接读整个 lessons.md 更快" | 正是本技能要解决的上下文膨胀问题；用本技能定向检索 |
+| "memory-index 没命中就肯定没有" | index 可能未及时更新；`/recall` 是对 index 的兜底 |
+| "Grep 一下就行不用走技能" | Grep 得到的是匹配行不是匹配节；本技能负责节定位和摘要 |
+| "搜不到就说明一定没犯过" | 历史 < 现在；你可能遇到新场景。用技能确认后仍无记录 → 考虑做完用 /compound 首次记录 |
+| "随便取前 3 个就行" | 可能漏掉关键节；默认列全部标题让用户/AI 判断相关性 |
+| "中文关键词 Grep 不好用" | Grep 底层是 ripgrep，UTF-8 原生支持；直接用中文关键词即可 |

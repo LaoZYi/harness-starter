@@ -26,6 +26,7 @@
 - `src/agent_harness/lang_detect.py`：语言/框架/ORM 检测。
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
 - `src/agent_harness/_shared.py`：共享常量（TEMPLATE_ROOT、META_ROOT 等）、slugify、require_harness。
+- `src/agent_harness/memory.py`：分层记忆索引维护（`rebuild_index()` 从 lessons/task-log 重建 `memory-index.md`）。
 
 ### 资源层
 - `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、命令、文档、任务追踪等。
@@ -38,7 +39,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：176 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除和类型专属规则生成。
+- `tests/`：192 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index 模板）。
 
 ## 约束
 

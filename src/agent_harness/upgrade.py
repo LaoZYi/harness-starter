@@ -14,12 +14,8 @@ from .templating import render_templates
 
 BASE_DIR = ".agent-harness/.base"
 
-# --- File category manifest ---
-# overwrite: pure template output, safe to replace
-# skip: user data, never overwrite after init
-# json_merge: structured merge by key
-# (default): three_way line-based merge
-
+# File category manifest. overwrite=pure template, skip=user data,
+# json_merge=structured merge, default=three_way line-based merge.
 FILE_CATEGORIES: dict[str, str] = {
     ".claude/commands/*": "overwrite",
     ".claude/rules/*": "overwrite",
@@ -34,6 +30,7 @@ FILE_CATEGORIES: dict[str, str] = {
     ".agent-harness/current-task.md": "skip",
     ".agent-harness/task-log.md": "skip",
     ".agent-harness/lessons.md": "skip",
+    ".agent-harness/memory-index.md": "skip",
     ".agent-harness/init-summary.md": "skip",
     ".agent-harness/project.json": "json_merge",
 }

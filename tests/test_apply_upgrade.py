@@ -88,6 +88,19 @@ class SkipUserDataTests(unittest.TestCase):
             self.assertTrue(lessons.exists())
             self.assertIn(".agent-harness/lessons.md", result.created_files)
 
+    def test_memory_index_preserved_on_upgrade(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            index = root / ".agent-harness" / "memory-index.md"
+            index.write_text("# Memory Index\n\n## 最近教训\n\n- user curated entry\n", encoding="utf-8")
+
+            result = execute_upgrade(root, {**_BASE_ANSWERS})
+            after = index.read_text(encoding="utf-8")
+
+        self.assertIn("user curated entry", after)
+        self.assertIn(".agent-harness/memory-index.md", result.skipped_files)
+
 
 class ThreeWayMergeUpgradeTests(unittest.TestCase):
     def test_user_content_preserved_in_three_way(self) -> None:

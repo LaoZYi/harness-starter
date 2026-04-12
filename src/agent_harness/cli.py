@@ -191,6 +191,10 @@ def _cmd_sync(args: argparse.Namespace) -> None:
     else:
         run_sync(target, meta, dry_run=args.dry_run)
 
+def _cmd_memory_rebuild(args: argparse.Namespace) -> None:
+    from .memory import run_rebuild_cli
+    run_rebuild_cli(Path(args.target).resolve(), force=args.force)
+
 
 # ── parser ──
 
@@ -255,6 +259,12 @@ def build_parser() -> argparse.ArgumentParser:
     sync_p.add_argument("--all", action="store_true", help="同步 registry 中所有服务")
     sync_p.add_argument("--dry-run", action="store_true", help="预演不写文件")
     sync_p.set_defaults(func=_cmd_sync)
+
+    mem_p = subs.add_parser("memory", help="分层记忆管理（memory-index.md 维护）")
+    rebuild_p = mem_p.add_subparsers(dest="memory_command").add_parser("rebuild", help="从 lessons/task-log 重建 memory-index.md")
+    rebuild_p.add_argument("target", nargs="?", default=".", help="项目根目录（默认当前目录）")
+    rebuild_p.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
+    rebuild_p.set_defaults(func=_cmd_memory_rebuild)
 
     return root
 

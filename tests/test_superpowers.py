@@ -311,6 +311,50 @@ class ArchitectureDecisionRecordTests(unittest.TestCase):
             self.assertEqual(unfilled, [], f"Unfilled placeholders in adr.md: {unfilled}")
 
 
+class LayeredMemoryTests(unittest.TestCase):
+    """Verify layered-memory templates + rule + skill wiring."""
+
+    def test_recall_skill_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            recall = root / ".claude" / "commands" / "recall.md"
+            self.assertTrue(recall.exists(), "recall.md skill should be generated")
+            body = recall.read_text(encoding="utf-8")
+            self.assertIn("lessons.md", body)
+            self.assertIn("task-log.md", body)
+            self.assertIn("反合理化", body)
+
+    def test_memory_index_generated_on_init(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            index = root / ".agent-harness" / "memory-index.md"
+            self.assertTrue(index.exists(), "memory-index.md should be generated at init")
+            body = index.read_text(encoding="utf-8")
+            self.assertIn("Memory Index", body)
+            self.assertIn("最近教训", body)
+            self.assertIn("最近任务", body)
+
+    def test_task_lifecycle_references_memory_index(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            rule = root / ".claude" / "rules" / "task-lifecycle.md"
+            body = rule.read_text(encoding="utf-8")
+            self.assertIn("memory-index.md", body)
+            self.assertIn("/recall", body)
+
+    def test_compound_maintains_memory_index(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            compound = root / ".claude" / "commands" / "compound.md"
+            body = compound.read_text(encoding="utf-8")
+            self.assertIn("memory-index.md", body)
+            self.assertIn("最多 10 条", body)
+
+
 class DecisionTreeCompletenessTests(unittest.TestCase):
     def test_use_superpowers_references_all_commands(self) -> None:
         """Every command (except use-superpowers itself) should appear in the decision tree."""

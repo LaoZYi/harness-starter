@@ -18,8 +18,9 @@ description: 任务生命周期管理 — 确保 current-task.md 被使用
 | `docs/product.md` | 已有功能列表，避免重复建设 |
 | `docs/architecture.md` | 模块边界和文件结构，知道改哪里 |
 | `AGENTS.md` | 硬规则约束，不可违反 |
-| `.agent-harness/lessons.md` | 历史教训，避免重蹈覆辙 |
-| `.agent-harness/task-log.md`（最近 5 条） | 最近做过什么，避免冲突或重复 |
+| `.agent-harness/memory-index.md` | 热知识精华索引（最近教训 + 最近任务 + 主题索引） |
+
+> **注意**：**默认不读 `.agent-harness/lessons.md` 或 `task-log.md` 全量**。当 memory-index 命中相关话题，或你从任务描述判断可能涉及历史踩坑，使用 `/recall <关键词>` 技能做定向检索（或在 lessons.md / task-log.md 上 grep 特定节）。这是分层记忆加载的 L1→L2/L3 上行路径，避免上下文窗口被历史积累挤占。
 
 ### 第 1 步：写 current-task.md
 
