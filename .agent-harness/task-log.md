@@ -250,3 +250,35 @@
   - [x] ADR 0001 已落地
   - [x] 用户验证通过
 
+## 2026-04-12 lessons.md 结构化分区（Issue #11，灵感自 MemPalace）
+
+- 需求：给 `.agent-harness/lessons.md` 加领域分区，提升 AI 按话题检索教训的效率；灵感来自 MemPalace 的 Wing/Hall/Room 结构化过滤
+- 做了什么：
+  - **方案 A：单文件内分区 + `[分类]` 前缀 + 顶部索引**（从 4 个候选方案中选最轻）
+  - 条目 heading 统一格式：`## YYYY-MM-DD [分类] 一句话标题`
+  - `lessons.md` 顶部新增"按分类索引"段，6 类（测试/模板/流程/工具脚本/架构设计/集成API）
+  - 迁移现有 10 条教训到新格式，按分类聚类（流程 4 / 工具脚本 2 / 模板 2 / 架构设计 1 / 集成API 1 / 测试 0）
+  - `compound.md.tmpl`：第 4 步条目格式改新规范；可用分类表替换为 6 类并说明"可扩展"；新增第 4.5 步"维护顶部索引"，锁死 lessons+index+memory-index 三处一致性
+  - `lessons.md.tmpl`：加顶部索引占位 + 条目格式说明
+  - dogfood 同步 `.claude/commands/compound.md`
+  - `harness memory rebuild . --force` 验证兼容：memory-index 最近教训自然带 `[分类]` 前缀
+  - 新增 3 个测试 `RebuildIndexCategoryPrefixTests` 锁死 memory.py 对分类前缀的透明契约（正常/边界/不规范三类）
+  - 全量同步文档计数 203→206：AGENTS / CONTRIBUTING / CHANGELOG / docs/{product,architecture,runbook,release,workflow}.md
+- 关键决策：
+  - **最小实现原则**：拒绝多文件拆分（方案 B）和 Python 抽象层（方案 D）——脚手架痛点是"约束 AI 读什么"，不是运行时 rotate
+  - **不改 memory.py**：新格式 `## YYYY-MM-DD [分类] 标题` 对 `^##` 正则透明，新增 3 测试锁死契约防未来回归
+  - **分类前缀放日期后**：保证 memory-index 按时间排序 + 索引一眼见归属
+  - **不加 `/recall --category`**：grep `[测试]` 已够用，遵循最小实现
+  - 评审由 code-reviewer 子代理独立做（单次），非 6 人格 multi-review——纯 markdown 改动无业务逻辑
+- 改了：
+  - 修改：`compound.md.tmpl`、`lessons.md.tmpl`、`.claude/commands/compound.md`、`.agent-harness/lessons.md`、`.agent-harness/memory-index.md`、`tests/test_memory.py`、`docs/product.md`、`CHANGELOG.md`、`AGENTS.md`、`CONTRIBUTING.md`、`docs/runbook.md`、`docs/release.md`、`docs/workflow.md`、`docs/architecture.md`
+  - 新建：`docs/superpowers/specs/2026-04-12-lessons-partition-plan.md`
+- 完成标准：
+  - [x] lessons.md 10 条全部带 `[分类]` 前缀 + 顶部 6 类索引完整
+  - [x] 模板（lessons.md.tmpl + compound.md.tmpl）同步更新；dogfood 同步
+  - [x] `harness memory rebuild` 成功，memory-index 含分类前缀
+  - [x] 203 → 206 测试全过；新增 3 个契约锁定测试
+  - [x] `docs/product.md` 第 12 条 + `CHANGELOG.md` + 8 处计数同步
+  - [x] `make ci` 通过；code-reviewer 评审无 P0/P1
+  - [x] 用户验证通过
+

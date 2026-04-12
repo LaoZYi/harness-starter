@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Changed — lessons.md 分类分区（Issue #11, inspired by MemPalace）
+
+- **lessons.md 顶部分类索引**：6 类（测试 / 模板 / 流程 / 工具脚本 / 架构设计 / 集成API），每类列 anchor 链接
+- **条目 heading 统一格式**：`## YYYY-MM-DD [分类] 一句话标题`。分类前缀不破坏 `memory.py` 扫描（对正则透明），memory-index "最近教训" 自然带分类
+- **`/compound` 更新**：第 4 步条目格式改为新规范；可用分类表替换为 6 类；新增第 4.5 步"维护分类索引"，建立 lessons + index + memory-index 三处一致性铁律
+- **现有 10 条教训迁移**：全部加上分类前缀，顶部索引填充完毕
+- **测试**：203 → 206（+3）覆盖分类前缀保留、多分类混合、不规范格式不崩溃（锁死 memory.py 对 body 内容的透明契约）
+- **最小实现原则**：不拆多文件、不改 memory.py、不加 `/recall --category`（grep 已够用）。遵循 2026-04-12 "脚手架项目吸收外部思想要选最小实现" 教训
+
 ### Added — agent-skills 增量吸收（Issue #16，续 Issue #6）
 
 - **`/source-verify` 新技能**：`DETECT → FETCH → IMPLEMENT → CITE` 四阶段流程。防止 AI 凭训练数据编框架 API，要求代码附上官方文档 URL。含 6 条反合理化表
@@ -72,7 +81,7 @@
 
 ### Infrastructure
 
-- 203 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆）
+- 206 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索
