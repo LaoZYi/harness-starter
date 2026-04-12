@@ -50,12 +50,14 @@ _SQUAD_CONTEXT_TEMPLATE = """\
 def cmd_create(args) -> int:
     spec_path = Path(args.spec).resolve()
     root = Path(args.project or ".").resolve()
+    dry_run = bool(getattr(args, "dry_run", False))
 
-    try:
-        ensure_tmux_available()
-    except Exception as exc:
-        print(f"[squad] 环境检查失败：{exc}")
-        return 2
+    if not dry_run:
+        try:
+            ensure_tmux_available()
+        except Exception as exc:
+            print(f"[squad] 环境检查失败：{exc}")
+            return 2
 
     try:
         spec = parse_spec(spec_path)
@@ -67,25 +69,27 @@ def cmd_create(args) -> int:
     sdir = squad_dir(root, spec.task_id)
     sdir.mkdir(parents=True, exist_ok=True)
 
-    # 1. start tmux session (detached)
-    _run_check(build_new_session_cmd(session_name), f"启动 tmux session {session_name}")
+    # 1. start tmux session (detached) — skipped in dry-run
+    if not dry_run:
+        _run_check(build_new_session_cmd(session_name), f"启动 tmux session {session_name}")
 
     # 2. provision each worker — on failure, tear down session + worktrees
     worker_records: list[WorkerRecord] = []
     try:
         for w in spec.workers:
-            wt_path = _provision_worker_worktree(root, spec, w)
+            wt_path = _provision_worker_worktree(root, spec, w, dry_run=dry_run)
             _write_worker_files(root, spec, w, wt_path)
-            _run_check(
-                build_new_window_cmd(
-                    session=session_name,
-                    window=w.name,
-                    cwd=str(wt_path),
-                    system_prompt_file=str(wt_path / ".claude" / "squad-context.md"),
-                    task_prompt_file=str(wt_path / "task-prompt.md"),
-                ),
-                f"启动 worker 窗口 {w.name}",
-            )
+            if not dry_run:
+                _run_check(
+                    build_new_window_cmd(
+                        session=session_name,
+                        window=w.name,
+                        cwd=str(wt_path),
+                        system_prompt_file=str(wt_path / ".claude" / "squad-context.md"),
+                        task_prompt_file=str(wt_path / "task-prompt.md"),
+                    ),
+                    f"启动 worker 窗口 {w.name}",
+                )
             worker_records.append(
                 WorkerRecord(
                     name=w.name,
@@ -96,16 +100,18 @@ def cmd_create(args) -> int:
             )
             append_status(
                 root, spec.task_id,
-                {"worker": w.name, "event": "spawned", "message": f"worktree={wt_path}"},
+                {"worker": w.name, "event": "spawned" if not dry_run else "dry-run-rendered",
+                 "message": f"worktree={wt_path}"},
             )
     except RuntimeError as exc:
         print(f"[squad] 创建失败，清理中：{exc}")
-        subprocess.run(["tmux", "kill-session", "-t", session_name], check=False)
-        for wr in worker_records:
-            subprocess.run(
-                ["git", "-C", str(root), "worktree", "remove", "--force", wr.worktree],
-                check=False,
-            )
+        if not dry_run:
+            subprocess.run(["tmux", "kill-session", "-t", session_name], check=False)
+            for wr in worker_records:
+                subprocess.run(
+                    ["git", "-C", str(root), "worktree", "remove", "--force", wr.worktree],
+                    check=False,
+                )
         return 2
 
     # 3. write manifest
@@ -118,9 +124,13 @@ def cmd_create(args) -> int:
     )
     write_manifest(root, manifest)
 
-    print(f"[squad] 已创建 squad '{spec.task_id}'，{len(worker_records)} 个 worker")
-    print(f"[squad] 观察：tmux attach -t {session_name}")
-    print(f"[squad] 状态：harness squad status")
+    if dry_run:
+        print(f"[squad] dry-run 完成：{len(worker_records)} 个 worker 的产物已渲染（未启动 tmux/worker）")
+        print(f"[squad] 检查：ls {sdir} / cat {worker_records[0].worktree}/.claude/settings.local.json")
+    else:
+        print(f"[squad] 已创建 squad '{spec.task_id}'，{len(worker_records)} 个 worker")
+        print(f"[squad] 观察：tmux attach -t {session_name}")
+        print(f"[squad] 状态：harness squad status")
     return 0
 
 
@@ -212,11 +222,18 @@ def _run_check(cmd: list[str], desc: str) -> None:
         )
 
 
-def _provision_worker_worktree(root: Path, spec: Spec, w: Worker) -> Path:
-    """Create git worktree for this worker. MVP: uses `.worktrees/wt/squad-<task>-<worker>`."""
+def _provision_worker_worktree(root: Path, spec: Spec, w: Worker, dry_run: bool = False) -> Path:
+    """Create git worktree for this worker. MVP: uses `.worktrees/wt/squad-<task>-<worker>`.
+
+    In dry_run mode, just create a plain directory (no git worktree) so the rest of
+    the pipeline can write settings/prompts and we can assert on them in tests.
+    """
     wt_dir = root / ".worktrees" / "wt" / f"squad-{spec.task_id}-{w.name}"
     branch = f"wt/squad-{spec.task_id}-{w.name}"
     if wt_dir.exists():
+        return wt_dir
+    if dry_run:
+        wt_dir.mkdir(parents=True, exist_ok=True)
         return wt_dir
     _run_check(
         ["git", "-C", str(root), "worktree", "add", str(wt_dir), "-b", branch, spec.base_branch],
@@ -264,6 +281,11 @@ def register_subcommand(subs) -> None:
     c = sq_subs.add_parser("create", help="按 YAML spec 创建 squad 并启动 workers")
     c.add_argument("spec", help="YAML spec 文件路径")
     c.add_argument("--project", help="项目根目录（默认当前目录）")
+    c.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="只渲染产物（settings/prompt/manifest），不启动 tmux 或建 worktree。用于测试和端到端验证",
+    )
     c.set_defaults(func=cmd_create)
 
     s = sq_subs.add_parser("status", help="列出活跃 squad 和 workers")

@@ -1,5 +1,7 @@
 # Current Task
 
+## 状态：待验证
+
 ## LFG 进度
 
 ### Goal（目标）
@@ -68,7 +70,7 @@ Plan：`docs/superpowers/specs/2026-04-12-squad-mvp-plan.md`
   - [x] 步骤 7：dogfood 同步（.claude/ 4 个文件更新/新增）
   - [x] 步骤 8：文档全量同步（product/architecture/runbook/AGENTS/CHANGELOG + 计数守卫修正 29→30、206→226）
   - [x] 步骤 9：make ci 全量验证通过
-  - [-] 步骤 10：冒烟验证（跳过 — 避免消耗 API 配额，阶段 1 MVP 以测试为主要信心来源）
+  - [x] 步骤 10：冒烟验证（新增 `--dry-run` flag 跳过 tmux/git 实际调用；跑 CLI 真命令端到端验证 manifest/settings/status 全部符合预期；意外 validated P1-2 的失败清理逻辑 — 无 git repo 时清理正确打印）
   - [x] 步骤 11：/multi-review（独立 code-reviewer agent，结论 PASS WITH CONDITIONS）
   - [x] 修复轮 1：P0-1 路径 shell 注入（shlex.quote）、P0-2 truncate-before-lock 竞态、P0-3 fcntl Windows 导入崩溃、P1-2 cmd_create 部分失败清理；新增 2 个测试（228 测试全过）
   - [ ] 步骤 12：完成报告 + 验收核验

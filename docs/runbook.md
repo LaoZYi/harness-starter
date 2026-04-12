@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（228 个）。
+- `make test`：运行框架级回归测试（234 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。

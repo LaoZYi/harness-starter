@@ -95,7 +95,7 @@
 
 ### Infrastructure
 
-- 228 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约）
+- 234 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

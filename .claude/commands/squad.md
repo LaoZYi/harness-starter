@@ -121,6 +121,12 @@ harness squad status
 - YAML spec 从不可信源读取时需先人工审查（prompt 内容可能影响 agent 行为）
 - worker 名/task_id 被严格限制为 `^[a-z0-9][a-z0-9-]{0,30}$`，防 shell 注入
 - 进 worker 窗口后所有操作都属于**该 capability 的权限范围**，coordinator 不能通过 attach 越权
+- **Pattern 语法来源**：`permissions.deny` 使用 `Bash(<prefix>:*)` / `Bash(<cmd>:*)` 格式，该语法见于 `claude --help` 的 `--disallowedTools` 示例（`"Bash(git:*) Edit"`）。与 `settings.local.json` 的 `permissions.deny` 字段使用同一语法（Claude Code 实现一致）。首次在你项目启用 squad 时建议实测一次：起一个 scout worker，让它尝试 `git status`，若被拒绝则说明运行时生效
+
+## 调试 / 非 API 模式
+
+- `harness squad create <spec.yaml> --dry-run`：渲染所有产物（worktree 目录、`.claude/settings.local.json`、`squad-context.md`、`task-prompt.md`、`manifest.json`、`status.jsonl`）但**不启动 tmux、不建 git worktree、不调用 claude**。用于测试 pipeline、检查 capability 权限内容、验证 prompt 注入是否正确
+- 真启动后 worker 资源消耗大，建议先用 `--dry-run` 确认所有产物符合预期再真跑
 
 ## 进阶：与其他技能配合
 
