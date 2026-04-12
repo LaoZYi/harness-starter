@@ -17,10 +17,13 @@
 
 ## 参数
 
-- `<关键词>`：必填。在 lessons.md + task-log.md 中做不区分大小写的子串匹配
-- `--history`：可选。只搜索 task-log.md（跳过 lessons.md）
-- `--lessons`：可选。只搜索 lessons.md（跳过 task-log.md）
+- `<关键词>`：必填。在目标文件中做不区分大小写的子串匹配
+- `--history`：可选。只搜索 task-log.md（跳过 lessons.md 和 references/）
+- `--lessons`：可选。只搜索 lessons.md（跳过 task-log.md 和 references/）
+- `--refs`：可选。只搜索 `.agent-harness/references/*.md`（四个 checklist + 用户添加的自定义参考文档）
 - `--all`：可选。返回所有匹配节的完整内容；不加时默认只返回匹配到的二级标题列表
+
+**默认搜索范围**：lessons.md + task-log.md + references/*.md（即"三合一"）。加 `--lessons` / `--history` / `--refs` 任一后，仅搜索该范围。
 
 ## 执行步骤
 
@@ -30,9 +33,10 @@
 
 | 参数 | 搜索范围 |
 |------|---------|
-| （默认） | `.agent-harness/lessons.md` + `.agent-harness/task-log.md` |
+| （默认） | `.agent-harness/lessons.md` + `.agent-harness/task-log.md` + `.agent-harness/references/*.md` |
 | `--lessons` | 仅 `.agent-harness/lessons.md` |
 | `--history` | 仅 `.agent-harness/task-log.md` |
+| `--refs` | 仅 `.agent-harness/references/*.md`（a11y / perf / security / testing 等 checklist） |
 
 文件不存在时告知用户并继续搜其它文件。
 
@@ -68,10 +72,12 @@
 ## 使用示例
 
 ```
-/recall 升级                # 搜 lessons + task-log 中所有"升级"相关条目
+/recall 升级                # 搜 lessons + task-log + references（默认三合一）
 /recall 合并 --all          # 完整展开所有"合并"相关条目
 /recall memory --history    # 只搜 task-log
 /recall 三方合并 --lessons  # 只搜 lessons
+/recall CORS --refs         # 只搜 references（找 security-checklist 的 CORS 节）
+/recall LCP --refs          # 只搜 references（找 performance-checklist 的 LCP 节）
 ```
 
 ## 反合理化
