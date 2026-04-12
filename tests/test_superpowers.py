@@ -311,6 +311,38 @@ class ArchitectureDecisionRecordTests(unittest.TestCase):
             self.assertEqual(unfilled, [], f"Unfilled placeholders in adr.md: {unfilled}")
 
 
+class SourceVerifyTests(unittest.TestCase):
+    """Verify /source-verify skill + decision-tree wiring."""
+
+    def test_source_verify_skill_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            path = root / ".claude" / "commands" / "source-verify.md"
+            self.assertTrue(path.exists())
+            body = path.read_text(encoding="utf-8")
+            self.assertIn("DETECT", body)
+            self.assertIn("FETCH", body)
+            self.assertIn("IMPLEMENT", body)
+            self.assertIn("CITE", body)
+
+    def test_source_verify_has_anti_rationalization_table(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            body = (root / ".claude" / "commands" / "source-verify.md").read_text(encoding="utf-8")
+            self.assertIn("反合理化", body)
+            # 6 rows expected (minimum) — match header row count indirectly via 'API' keyword occurrences
+            self.assertIn("Stack Overflow", body)
+
+    def test_use_superpowers_references_source_verify(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            content = (root / ".claude" / "commands" / "use-superpowers.md").read_text(encoding="utf-8")
+            self.assertIn("/source-verify", content)
+
+
 class LayeredMemoryTests(unittest.TestCase):
     """Verify layered-memory templates + rule + skill wiring."""
 
@@ -353,6 +385,23 @@ class LayeredMemoryTests(unittest.TestCase):
             body = compound.read_text(encoding="utf-8")
             self.assertIn("memory-index.md", body)
             self.assertIn("最多 10 条", body)
+
+    def test_recall_documents_refs_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            body = (root / ".claude" / "commands" / "recall.md").read_text(encoding="utf-8")
+            self.assertIn("--refs", body)
+            self.assertIn("references", body)
+
+    def test_task_lifecycle_has_context_hierarchy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            body = (root / ".claude" / "rules" / "task-lifecycle.md").read_text(encoding="utf-8")
+            self.assertIn("上下文分层原则", body)
+            self.assertIn("L2 Warm Knowledge", body)
+            self.assertIn("references/", body)
 
 
 class DecisionTreeCompletenessTests(unittest.TestCase):

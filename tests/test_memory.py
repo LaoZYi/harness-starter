@@ -147,6 +147,37 @@ class RebuildIndexBoundaryTests(unittest.TestCase):
             h.cleanup()
 
 
+class RebuildIndexReferencesTests(unittest.TestCase):
+    """references/ scanning behavior."""
+
+    def test_rebuild_includes_references_section_when_dir_exists(self) -> None:
+        h = _HarnessDir(lessons="", task_log="")
+        refs = h.root / ".agent-harness" / "references"
+        refs.mkdir()
+        (refs / "security-checklist.md").write_text("# 安全检查清单\n\n## CORS\n", encoding="utf-8")
+        (refs / "custom.md").write_text("# 自定义参考\n\n- note\n", encoding="utf-8")
+        try:
+            rebuild_index(h.root)
+            body = h.read_index()
+            self.assertIn("参考资料", body)
+            self.assertIn("security-checklist.md", body)
+            self.assertIn("安全检查清单", body)
+            self.assertIn("custom.md", body)
+            self.assertIn("自定义参考", body)
+        finally:
+            h.cleanup()
+
+    def test_rebuild_skips_references_section_when_absent(self) -> None:
+        h = _HarnessDir(lessons="", task_log="")
+        # no references/ dir
+        try:
+            rebuild_index(h.root)
+            body = h.read_index()
+            self.assertNotIn("参考资料（", body)  # no section
+        finally:
+            h.cleanup()
+
+
 class RebuildIndexErrorPathTests(unittest.TestCase):
     """Error/refusal paths."""
 
