@@ -4,6 +4,30 @@ description: 任务生命周期管理 — 确保 current-task.md 被使用
 
 # 任务生命周期
 
+## 上下文分层原则
+
+上下文是 AI 输出质量的最大杠杆。**太少** → 幻觉 API、违反约定、重复造轮子；**太多** → 失焦、混乱、成本飙升。本规则告诉你"哪些必读、哪些按需、哪些只在显式查询时才看"。
+
+### 五层上下文层级（按持久度从高到低）
+
+| 层 | 承载 | 加载时机 | 在本项目的映射 |
+|---|------|---------|---------------|
+| **L0 Rules** | 不变的硬规则、项目身份 | 每次会话都加载 | `AGENTS.md`、`CLAUDE.md`、`.claude/rules/` |
+| **L1 Specs & Hot Knowledge** | 当前任务 + 最近教训精华 | 任务开始时必读 | `current-task.md` + `memory-index.md` |
+| **L2 Warm Knowledge** | 可能相关的历史细节、专业参考 | 按需检索 | `lessons.md` 全文、`references/*.md`（a11y / perf / security / testing） |
+| **L3 Cold Archive** | 完整历史、不常查 | 显式查询 | `task-log.md` 全文 |
+| **L4 Conversation** | 当前对话已有内容 | 天然积累 | 当前 session 的消息 |
+
+### 操作准则
+
+- **L0、L1 默认读取**——没有这两层的上下文等于闭眼工作
+- **L2、L3 按需检索**——用 `/recall <关键词>` 或针对性 grep，禁止默认全量读
+- **Rules Files 是高杠杆**：一次写 AGENTS.md 或 `.claude/rules/X.md`，受益所有后续会话；写 memory-index 单条次之；写 `current-task` 只影响本任务
+- **冲突消歧优先级**：用户显式指示 > L0 硬规则 > L1 约定 > L2 参考 > L3 历史。高层覆盖低层
+- **上下文退化信号**：AI 输出开始违反已知约定、重复建议已实现的功能、幻觉依赖 API —— 说明 L0/L1 没覆盖到，或 AI 没读。立刻补加载
+
+这一分层是 L0-L3 分层记忆架构（见 `docs/decisions/0001-layered-memory-loading.md`）的外部投影。所有下面的"读取表"都遵循它。
+
 ## 收到新任务时（最高优先级）
 
 收到用户的新开发任务时，按以下顺序执行：

@@ -37,3 +37,9 @@ paths:
 
 - 关键操作（用户认��、数据变更、外部调用）必须记录结构化日志，包含请求 ID 和时间戳。
 - 禁止在日志中输出密码、token、信用卡号等敏感字段。使用脱敏函数或字段黑名单。
+
+## 检查清单（按需参考）
+
+- 处理认证/授权/输入校验类工作前，查阅 `.agent-harness/references/security-checklist.md`（OWASP Top 10、CORS、Security Headers）
+- 排查 N+1、慢查询、接口超时时，查阅 `.agent-harness/references/performance-checklist.md` 的 Backend 段
+- 可用 `/recall <关键词> --refs` 定向检索，避免全文读入上下文

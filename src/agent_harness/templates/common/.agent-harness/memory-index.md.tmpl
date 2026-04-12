@@ -1,6 +1,6 @@
 # Memory Index
 
-> 热知识精华索引。详情见 `.agent-harness/lessons.md` 和 `.agent-harness/task-log.md`。
+> 热知识精华索引。详情见 `.agent-harness/lessons.md`、`.agent-harness/task-log.md` 和 `.agent-harness/references/`。
 >
 > **默认只读本文件**。需要深入某话题时，使用 `/recall <关键词>` 技能或直接 `grep` 完整文件。
 
@@ -16,6 +16,15 @@
 
 （暂无，首个任务完成后会自动填充。）
 
+## 参考资料（.agent-harness/references/）
+
+<!-- L2 温知识层。按需通过 `/recall --refs 关键词` 加载。-->
+
+- `accessibility-checklist.md` — 无障碍检查清单（WCAG 2.1 AA）
+- `performance-checklist.md` — 性能检查清单（Core Web Vitals）
+- `security-checklist.md` — 安全检查清单（OWASP Top 10）
+- `testing-patterns.md` — 测试模式参考（AAA、mocking、E2E）
+
 ## 主题索引（可选，按关键词定位历史）
 
 <!-- 人工或 AI 周期性整理，为常见关键词建立指向 lessons.md 条目标题的索引。
@@ -29,4 +38,5 @@
 
 - **task-lifecycle 规则**指示 AI 在开始新任务时默认读取本文件（而非 lessons.md / task-log.md 全量），避免上下文膨胀。
 - 发现索引命中某话题 → 用 `/recall <关键词>` 技能或 `grep` 读取 lessons.md 对应节。
-- 索引由 `/compound` 技能维护；也可运行 `harness memory rebuild .`（在项目根目录）从现有 lessons/task-log 重建一次。
+- references/ 为 L2 温知识（a11y / perf / security / testing）— 用 `/recall --refs` 按需查询。
+- 索引由 `/compound` 技能维护；也可运行 `harness memory rebuild .`（在项目根目录）从现有 lessons/task-log/references 重建一次。

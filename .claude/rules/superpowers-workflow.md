@@ -52,6 +52,8 @@ CLI 工具重点技能：`/tdd`（命令行为测试）、`/write-plan`（子命
 | `/careful` | 危险命令安全拦截 |
 | `/lint-lessons` | 知识库健康检查（去重/矛盾/过时） |
 | `/evolve` | 自我进化（搜索新项目 → 评估 → 创建 Issue 提案） |
+| `/recall` | 按需检索 lessons / task-log / references/ 历史 |
+| `/source-verify` | 从官方文档验证框架 API，防止凭记忆编 |
 
 ## 何时使用哪个技能
 
@@ -74,6 +76,8 @@ CLI 工具重点技能：`/tdd`（命令行为测试）、`/write-plan`（子命
 - 知识库需要体检 → `/lint-lessons`
 - 想搜索新的可吸收项目 → `/evolve`
 - 分支工作完成 → `/finish-branch`
+- 需要检索历史教训 / 任务记录 / 参考清单 → `/recall`
+- 写框架/库特定代码前想防止 API 幻觉 → `/source-verify`
 
 ## 核心原则
 

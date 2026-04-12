@@ -40,3 +40,9 @@ paths:
 
 - CSS 和 JS 的目标浏览器范围在构建配置中显式声明（browserslist / target）。禁止假设"现代浏览器都支持"。
 - 使用新 API 前检查 Can I Use，必要时加 polyfill 或降级方案。
+
+## 检查清单（按需参考）
+
+- 新增 UI 组件或交互前，查阅 `.agent-harness/references/accessibility-checklist.md`（键盘导航、屏幕阅读、ARIA、WCAG 2.1 AA）
+- 部署前或调优性能时，查阅 `.agent-harness/references/performance-checklist.md`（LCP/INP/CLS、图像、JS bundle）
+- 可用 `/recall <关键词> --refs` 定向检索，避免全文读入上下文
