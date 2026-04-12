@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（192 个）。
+- `make test`：运行框架级回归测试（203 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -123,14 +123,15 @@ harness sync /path/to/service
 |---|------|---------|
 | L0 | `project.json` | Claude 读 AGENTS.md 时顺带 |
 | L1 | `current-task.md` + `memory-index.md` | `task-lifecycle` 规则在新任务开始时必读 |
-| L2 | `lessons.md` 全文 | 按需：`/recall <关键词>` 或 grep |
+| L2 | `lessons.md` + `references/*.md`（a11y/perf/security/testing checklist） | 按需：`/recall <关键词>` 或 grep |
 | L3 | `task-log.md` 全文 | 显式：`/recall --history <关键词>` 或 grep |
 
 ### 维护流程
 
 - `/compound` 技能写新教训时会自动同步 `memory-index.md`（"最近教训"段顶部插一行，超 10 条挤出最老；"最近任务"同理，上限 5 条）
-- 老项目首次启用或索引被污染时，运行 `harness memory rebuild .` 从现有 lessons/task-log 重建
-- 升级时 `memory-index.md` 按 `skip` 策略处理（不覆盖用户编辑）
+- 老项目首次启用或索引被污染时，运行 `harness memory rebuild .` 从现有 lessons/task-log/references 重建
+- 升级时 `memory-index.md` 按 `skip` 策略、`references/*` 按 `three_way` 策略处理（均保留用户编辑）
+- `references/*.md` 用 `/recall --refs <关键词>` 定向检索（避免全文读入）
 
 ### 常见问题
 

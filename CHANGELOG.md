@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added — agent-skills 增量吸收（Issue #16，续 Issue #6）
+
+- **`/source-verify` 新技能**：`DETECT → FETCH → IMPLEMENT → CITE` 四阶段流程。防止 AI 凭训练数据编框架 API，要求代码附上官方文档 URL。含 6 条反合理化表
+- **`.agent-harness/references/` L2 参考清单**：4 个 checklist（accessibility / performance / security / testing-patterns）。序言汉化，行业术语（LCP/TTFB/WCAG/OWASP 等）保留英文。通过 `/recall --refs <关键词>` 定向检索
+- **Context Hierarchy 理论章节**：`task-lifecycle.md` 顶部新增 5 级上下文层级（Rules / Specs+Hot / Warm / Cold / Conversation），对应本项目 L0-L4 映射和操作准则
+- **/recall 扩展**：默认范围扩到 `lessons + task-log + references`；新增 `--refs` flag 只搜参考清单
+- **memory-index 升级**：自动扫描 references/ 输出"## 参考资料"段
+- **类型规则引用清单**：backend-service → security + performance（Backend 段）；web-app → accessibility + performance
+- **upgrade 策略**：references/* 列为 `three_way`（允许用户定制 + 保留上游更新）
+- **决策树/workflow 更新**：`/source-verify` 和 `/recall` 进入 use-superpowers 决策树和 superpowers-workflow 技能表
+- **测试**：192 → 203（+11）覆盖 references 生成/升级保留/英文术语、/source-verify 存在性+反合理化表、memory rebuild 扫描 references、Context Hierarchy 章节、/recall --refs 文档
+
+## [1.1.1] - 2026-04-12
+
 ### Added — 分层记忆加载（Issue #10, absorbed from MemPalace）
 
 - **L0-L3 分层记忆**：`.agent-harness/memory-index.md` 作为 L1 热索引；`task-lifecycle` 规则默认只读索引（~200 tokens 预算稳定），不再全量读 lessons.md / task-log.md
@@ -58,7 +72,7 @@
 
 ### Infrastructure
 
-- 192 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆）
+- 203 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索
