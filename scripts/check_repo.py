@@ -41,6 +41,8 @@ REQUIRED_FILES = [
     ROOT / "src" / "agent_harness" / "templating.py",
     ROOT / "src" / "agent_harness" / "initializer.py",
     ROOT / "src" / "agent_harness" / "sync_render.py",
+    ROOT / "src" / "agent_harness" / "audit.py",
+    ROOT / "src" / "agent_harness" / "audit_cli.py",
     ROOT / "tests" / "test_discovery.py",
     ROOT / "tests" / "test_assessment.py",
     ROOT / "tests" / "test_apply_upgrade.py",

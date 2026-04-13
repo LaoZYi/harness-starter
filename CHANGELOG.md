@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added — 关键文件变更审计（WAL，Issue #12，吸收自 MemPalace）
+
+- **新模块 `src/agent_harness/audit.py`**（277 行）：`append_audit / read_all / tail / stats / truncate_before`，fcntl LOCK_EX + O_APPEND 保证并发安全；agent 身份从 `HARNESS_AGENT` env 读取，默认 `unknown`；op 四选一（create / update / append / delete）；只追踪 `current-task.md` / `task-log.md` / `lessons.md`
+- **新 CLI `harness audit`**（audit_cli.py，95 行）：`append / tail / stats / truncate` 四个子命令，JSON 输出选项，中文 + emoji summary 不转义
+- **task-lifecycle 规则新增"关键文件变更审计（WAL）"段**：告知 AI 修改三个关键文件后追加审计记录
+- **upgrade 策略**：`.agent-harness/audit.jsonl` 列为 `skip`，保留用户日志
+- **init 模板**：`.agent-harness/audit.jsonl.tmpl`（空文件）作为初始化占位
+- **新测试 tests/test_audit.py**（20 个）：append/tail/stats/truncate 全路径、UTF-8 + emoji、agent 来源三态、反面校验（非法 file/op）、并发 10×20 无丢失、malformed 行容错、CLI 端到端、upgrade skip 契约
+- **最小实现原则**：沿用 `/squad/state.py` 的 fcntl 锁模式，复用 2026-04-12 "文件锁顺序必须先锁再 truncate" 教训；不做自动 rotation（手动 `truncate --before`），不 hook 强制（agent 自觉调用，降低绑定）
+
 ### Changed — /lfg 技能覆盖完整化（2026-04-13）
 
 - **/lfg 流水线串起全部 33 条命令**（30 superpowers + 3 common）：补接入 `/recall`（阶段 0.2 分层加载）、`/use-worktrees` + `/careful`（阶段 1 + 回滚点）、`/source-verify` + `/todo`（阶段 3 API 验证 + 任务拆分）、`/subagent-dev`（阶段 4 选型）、`/request-review` + `/receive-review`（阶段 5/6 结构化评审循环）、`/verify`（阶段 7 验证）、`/finish-branch`（阶段 10 收尾）
@@ -112,7 +122,7 @@
 
 ### Infrastructure
 
-- 243 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
+- 263 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

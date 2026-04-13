@@ -389,3 +389,41 @@
   - [x] make ci 通过（238 → 243）
   - [x] 文档全量同步 + lessons 沉淀
 - 用户要求全自动修复，免询问
+
+
+## 2026-04-13 — Issue #12：关键文件变更审计（WAL，吸收自 MemPalace）
+
+- 需求：给 .agent-harness/ 下 current-task.md / task-log.md / lessons.md 加 WAL 审计日志，每次写操作记录 ts/file/op/agent/summary 到 audit.jsonl
+- 做了什么：
+  - `src/agent_harness/audit.py` 新模块（277 行）：append_audit / read_all / tail / stats / truncate_before / init_audit，fcntl LOCK_EX + O_APPEND 并发安全
+  - `src/agent_harness/audit_cli.py`（95 行）：`harness audit append/tail/stats/truncate` 四子命令
+  - cli.py 瘦身：_register_squad + _register_audit 从 builder 体内挪到顶部 import，通过压缩空行+分号保持 ≤ 280 行硬规则
+  - task-lifecycle 规则新增"关键文件变更审计（WAL）"段（告知 AI 写三个关键文件后 append audit）
+  - upgrade.py 将 `.agent-harness/audit.jsonl` 列入 skip（保留用户日志）
+  - 模板占位：`templates/common/.agent-harness/audit.jsonl.tmpl`（空文件）
+  - check_repo.py REQUIRED_FILES 加入 audit.py / audit_cli.py
+  - `tests/test_audit.py`（20 测试）：append/tail/stats/truncate 全路径 + UTF-8+emoji + agent 三态 + 反面校验 + 并发 10×20 无丢失 + malformed 容错 + CLI 端到端 + upgrade skip 契约
+  - make dogfood 同步 .claude/rules/task-lifecycle.md
+  - 全量文档计数 243 → 263：AGENTS/CONTRIBUTING/CHANGELOG/docs/{product,architecture,runbook,release,workflow}.md
+- 关键决策：
+  - **最小实现**（复用 2026-04-12 教训）：拒绝 WAL 事务系统；采用库函数 + CLI + 规则提示三层，不引入 hook 强制
+  - **复用 fcntl 模式**：沿用 squad/state.py 的 LOCK_EX 方案；append-only 比 squad 的 truncate 更简单，不触发"先锁再 truncate"陷阱
+  - **agent 身份从 env 读**：`HARNESS_AGENT` 环境变量 + `--agent` 覆盖；不做身份体系，框架是脚手架不是运行时
+  - **只监控 3 个文件**：current-task / task-log / lessons，严格按 Issue 原始范围。扩大到 docs/ 或代码是 YAGNI
+  - **无自动 rotation**：`truncate --before YYYY-MM-DD` 手动裁剪，审计日志周期由用户决定
+  - **malformed 容错**：read_all 跳过坏行不抛异常；审计是追溯用的旁路，不能因一条脏数据失去全部历史
+- 改了哪些文件：
+  - 新建：src/agent_harness/audit.py、audit_cli.py、templates/common/.agent-harness/audit.jsonl.tmpl、tests/test_audit.py
+  - 修改：src/agent_harness/cli.py、upgrade.py、templates/common/.claude/rules/task-lifecycle.md.tmpl、scripts/check_repo.py
+  - dogfood：.claude/rules/task-lifecycle.md
+  - 文档：AGENTS.md、CONTRIBUTING.md、CHANGELOG.md、docs/{product,architecture,runbook,release,workflow}.md
+  - 知识：.agent-harness/memory-index.md
+- 完成标准（8/8）：
+  - [x] harness audit append 成功写入 JSONL
+  - [x] harness audit tail 返回最近 N 条
+  - [x] harness audit stats 按 file/agent 聚合
+  - [x] harness audit truncate --before DATE 裁剪生效
+  - [x] 并发 200 次 append 无丢失（fcntl 锁）
+  - [x] upgrade 保留用户已有 audit.jsonl（skip 契约测试锁死）
+  - [x] make ci 通过（243 → 263）
+  - [x] 文档全量同步

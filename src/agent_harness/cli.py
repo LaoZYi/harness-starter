@@ -21,6 +21,8 @@ from .init_flow import (
 from .initializer import initialize_project
 from .models import ProjectProfile
 from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade, verify_upgrade as _verify
+from .audit_cli import register_subcommand as _reg_audit
+from .squad.cli import register_subcommand as _reg_squad
 
 PROJECT_FIELDS = (
     "project_name", "project_slug", "summary", "project_type",
@@ -84,7 +86,6 @@ def _resolve_answers(args: argparse.Namespace, profile: ProjectProfile, config: 
 def _merged_config(target: Path, args: argparse.Namespace) -> dict[str, object]:
     explicit = _load_config(Path(args.config).resolve()) if args.config else {}
     return {**_auto_discover_config(target), **explicit}
-
 
 # ── command handlers ──
 def _cmd_init(args: argparse.Namespace) -> None:
@@ -264,16 +265,15 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_p.add_argument("target", nargs="?", default=".", help="项目根目录（默认当前目录）")
     rebuild_p.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
     rebuild_p.set_defaults(func=_cmd_memory_rebuild)
-    from .squad.cli import register_subcommand as _register_squad
-    _register_squad(subs)
+    _reg_squad(subs)
+    _reg_audit(subs)
     return root
 
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     if not hasattr(args, "func"):
-        parser.print_help()
-        sys.exit(1)
+        parser.print_help(); sys.exit(1)
     args.func(args)
 
 if __name__ == "__main__":
