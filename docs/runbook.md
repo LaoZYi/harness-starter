@@ -58,7 +58,7 @@ harness squad attach <worker>                               # 输出 tmux attach
 harness squad stop <worker|task_id|all>                     # 停止 worker / 整个 squad
 harness squad done <worker>                                 # 标记 worker 完成（供 advance 识别，Issue #19a）
 harness squad advance                                       # 启动依赖已满足的 pending worker（幂等）
-harness squad watch [--interval 3]                          # 常驻进程：轮询 mailbox 自动 advance（Issue #21，Ctrl+C 退出）
+harness squad watch [--interval 3]                          # 常驻进程：轮询 mailbox 自动 advance + Tier 0 watchdog（Issue #21/#22，Ctrl+C / 全部 done / session 死亡退出）
 harness squad dump                                          # 导出 mailbox 事件为 JSONL（调试用，Issue #21）
 ```
 
@@ -112,6 +112,10 @@ harness squad stop all
 | worker 启动即退出 | `tmux attach` 看具体错误；检查 worktree 下 `.claude/settings.local.json` 是否渲染正确 |
 | capability 没有生效（worker 写了禁用的文件） | 检查 Claude Code 版本；`permissions.deny` 要求较新 CLI |
 | 多 worker 同时写 `.agent-harness/lessons.md` 冲突 | 硬规则：worker 只能写 `workers/<name>/lessons.pending.md`，coordinator 合并 |
+| `harness squad watch` 立即退出，提示"tmux session 'X' not found" | tmux session 已被外部 kill 或从未启动；先 `harness squad status` 看 manifest，再 `tmux ls` 确认；必要时重新 `harness squad create` |
+| watch 日志频繁打印 "worker 失联：X" | tmux 窗口被 kill / claude 进程崩溃；`harness squad dump` 看 worker_crashed 时间点；本期不自动重启，需手工处理（删 worker 后重 create 或人工 attach 调试） |
+| 想暂时关闭 watchdog（比如手动调试 worker） | `touch .agent-harness/.watchdog-skip`；watch 主循环仍跑 advance，仅静默失联检测；删除 sentinel 即可恢复 |
+| watch 报 "watchdog 内部异常（已隔离，watch 继续）" | 通常是 mailbox SQLite I/O 故障（磁盘满、权限、db 损坏）或 tmux 卡住；watch 主调度不受影响；查 `mailbox.db`、`mailbox.db-wal`、磁盘空间和 `tmux ls` 响应 |
 
 ## 初始化建议流程
 

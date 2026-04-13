@@ -10,8 +10,16 @@
 - **纯函数 + 依赖注入**：`session_exists_fn` / `list_windows_fn` 参数化便于测试，默认走 tmux 实模块
 - **不持久化"已上报"状态**：从 mailbox 反查，少一份状态文件就少一份漂移
 - **session_lost 优先于 worker_crashed**：session 都没了不再单独报 worker（避免噪音）
-- **本期不实现 pid 检查、不实现自动重启**：worker 当前不写 pid；自动重启涉及 capability 切换和
-  worktree 状态判断，复杂度过高，留给后续 Issue
+- **退出判定独立于事件去重**（评审修复）：`watch_tick_with_report` 决定 cmd_watch
+  是否退出时，不看 detect 返回的事件列表，而是直接探测 session_exists——否则
+  session_lost 幂等记录会让重启 watch 时误以为 session 还在，空转死循环
+- **异常隔离边界**（评审修复）：`watch_tick_with_report` 整体 try/except 兜底，
+  watchdog 内部异常（mailbox SQL 故障 / tmux 卡住）打印警告 + 返回 False，**不传播
+  到 cmd_watch 主调度**——辅助监控不应让主进程死
+- **sentinel 与 watch 解耦**：`.agent-harness/.watchdog-skip` 仅关闭失联检测和上报，
+  cmd_watch 主循环（advance）继续。用户主动关 watchdog ≠ 关 watch
+- **本期不实现 pid 检查、不实现自动重启**：worker 当前不写 pid；自动重启涉及 capability
+  切换和 worktree 状态判断，复杂度过高，留给后续 Issue
 """
 from __future__ import annotations
 

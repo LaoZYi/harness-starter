@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### Added — squad Tier 0 Watchdog（Issue #22，#19 拆分阶段 2 收官）
+
+- **新模块 `src/agent_harness/squad/watchdog.py`**（199 行）：纯函数 + 依赖注入设计
+  - `detect_failures` / `run_watchdog_tick` / `watch_tick_with_report` / `is_skipped`
+  - 失联状态从 mailbox 事件流反查（沿用"三源对账推导状态"原则），不引入外挂状态文件
+  - 依赖注入（`session_exists_fn` / `list_windows_fn`）便于测试替换 + 真实 tmux 调用解耦
+- **`tmux.session_exists` + `build_has_session_cmd`**：基于 `tmux has-session -t <X>` 的存活探测
+- **mailbox `KNOWN_TYPES` 扩展**：`session_lost` / `worker_crashed` / `watch_exited`
+- **`coordinator.cmd_watch` 集成**：每 tick 末尾跑 watchdog；done 检查优先于 watchdog 退出（避免任务完成时 kill session 被误判）
+- **sentinel 关闭机制**：`touch .agent-harness/.watchdog-skip` 完全静默 watchdog（沿用 context-monitor 模式）；watch 主循环不受影响
+- **本期范围声明**：不实现 pid 检查（worker 当前不写 pid）、不实现自动重启（capability 切换+worktree 状态判断复杂度过高）；留给后续 Issue
+- **新测试 `tests/test_squad_watchdog.py`**（19 条）：sentinel skip / session_lost 一次性 / worker_crashed 幂等 / done & 未 spawned 不误报 / 多 worker 同 tick crash / KNOWN_TYPES 注册 / 重启场景退出独立 / 异常隔离
+
+### Fixed — squad watchdog 深度评审两处潜在 bug
+
+- **session_lost 幂等去重导致重启 watch 死循环**：旧实现把"是否写新事件"和"是否退出 watch"耦合在 `detect_failures` 的返回值上。session 暂死 → 报 session_lost → watch 退出 → 用户重启 cmd_watch → 旧记录让 `_session_lost_already_reported=True` → detect 返回空 → cmd_watch 误以为 session 还在 → 空转死循环。修复：`watch_tick_with_report` 退出判定独立于事件去重，每次直接探测 `session_exists`
+- **watchdog 内部异常会让 cmd_watch 整个崩溃**：`mb.append_event` / subprocess 抛异常会冒泡到主调度循环。修复：`watch_tick_with_report` 整体 try/except 兜底，故障打印警告 + 保守返回 False，不传播
+- **新增 5 条契约测试**保护回归：`test_exits_when_session_dead_even_if_already_reported`、`test_no_exit_when_session_alive_and_no_failures`、`test_sentinel_skip_does_not_force_exit`、`test_exception_in_session_probe_is_swallowed`、`test_exception_in_list_windows_is_swallowed`
+- **新沉淀 2 条教训到 `lessons.md`**：`[架构设计] 幂等去重和退出判定不能共用同一个返回值`、`[流程] 辅助监控模块必须有异常隔离边界`
+
 ### Added — 多 agent 日志隔离（Issue #14，吸收自 MemPalace）
 
 - **新模块 `src/agent_harness/agent.py`**（233 行）：`init_agent / diary_append / status_set / status_read / list_agents / aggregate`，fcntl LOCK_EX + O_APPEND 并发 append 安全；status 用 LOCK_EX + truncate 原子覆盖；agent id 规范 `^[a-z0-9][a-z0-9-]{0,30}$`（与 /squad 一致）
@@ -144,7 +164,7 @@
 
 ### Infrastructure
 
-- 401 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 14 条契约）
+- 401 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索
