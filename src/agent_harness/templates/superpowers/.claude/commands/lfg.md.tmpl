@@ -60,7 +60,7 @@
    | 检查项目健康度 / 看统计 | `harness doctor / export / stats <target>` | 诊断类，非任务流 |
    | 同步 meta 仓库上下文到服务 | `harness sync --all` / `harness sync <target>` | 运维类 |
    | 重建分层记忆索引 | `.agent-harness/bin/memory rebuild . --force`（项目自带）或 `harness memory rebuild <target>`（维护者） | 工具类 |
-   | 并行派遣多个常驻 agent | `harness squad create <spec.yaml>` 或 /squad | 不是单任务流 |
+   | 并行派遣多个常驻 agent | `.agent-harness/bin/squad create <spec.json>` 或 /squad | 不是单任务流 |
    | 周期性代码体检 / 工程回顾 / 知识库 lint | `/health` / `/retro` / `/lint-lessons` | 元技能，lfg 阶段 9.3 有快速版 |
    | 自我进化搜索 | `/evolve` | 元技能，会反向触发 lfg |
 

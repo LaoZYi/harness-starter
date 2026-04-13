@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import io
 import tempfile
-import textwrap
 import time
 import unittest
 from contextlib import redirect_stdout
@@ -55,49 +54,37 @@ def _make_coord_args(
 
 def _write_linear_spec(tmp: Path) -> Path:
     """scout → builder → reviewer linear chain."""
-    spec = tmp / "spec.yaml"
-    spec.write_text(textwrap.dedent("""
-        task_id: linear
-        base_branch: master
-        workers:
-          - name: scout
-            capability: scout
-            prompt: "探索"
-          - name: builder
-            capability: builder
-            depends_on: [scout]
-            prompt: "实现"
-          - name: reviewer
-            capability: reviewer
-            depends_on: [builder]
-            prompt: "评审"
-    """), encoding="utf-8")
+    import json
+    spec = tmp / "spec.json"
+    spec.write_text(json.dumps({
+        "task_id": "linear", "base_branch": "master",
+        "workers": [
+            {"name": "scout", "capability": "scout", "prompt": "探索"},
+            {"name": "builder", "capability": "builder",
+             "depends_on": ["scout"], "prompt": "实现"},
+            {"name": "reviewer", "capability": "reviewer",
+             "depends_on": ["builder"], "prompt": "评审"},
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
     return spec
 
 
 def _write_diamond_spec(tmp: Path) -> Path:
     """scout → {builder, linter} → reviewer (diamond)."""
-    spec = tmp / "spec.yaml"
-    spec.write_text(textwrap.dedent("""
-        task_id: diamond
-        base_branch: master
-        workers:
-          - name: scout
-            capability: scout
-            prompt: "探索"
-          - name: builder
-            capability: builder
-            depends_on: [scout]
-            prompt: "实现"
-          - name: linter
-            capability: builder
-            depends_on: [scout]
-            prompt: "代码检查"
-          - name: reviewer
-            capability: reviewer
-            depends_on: [builder, linter]
-            prompt: "评审"
-    """), encoding="utf-8")
+    import json
+    spec = tmp / "spec.json"
+    spec.write_text(json.dumps({
+        "task_id": "diamond", "base_branch": "master",
+        "workers": [
+            {"name": "scout", "capability": "scout", "prompt": "探索"},
+            {"name": "builder", "capability": "builder",
+             "depends_on": ["scout"], "prompt": "实现"},
+            {"name": "linter", "capability": "builder",
+             "depends_on": ["scout"], "prompt": "代码检查"},
+            {"name": "reviewer", "capability": "reviewer",
+             "depends_on": ["builder", "linter"], "prompt": "评审"},
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
     return spec
 
 

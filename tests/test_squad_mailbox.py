@@ -43,19 +43,15 @@ def _init_git(path: Path) -> None:
 
 
 def _make_linear_spec(tmp: Path) -> Path:
-    spec = tmp / "spec.yaml"
-    spec.write_text(textwrap.dedent("""
-        task_id: mtest
-        base_branch: master
-        workers:
-          - name: scout
-            capability: scout
-            prompt: "x"
-          - name: builder
-            capability: builder
-            depends_on: [scout]
-            prompt: "y"
-    """), encoding="utf-8")
+    spec = tmp / "spec.json"
+    spec.write_text(json.dumps({
+        "task_id": "mtest", "base_branch": "master",
+        "workers": [
+            {"name": "scout", "capability": "scout", "prompt": "x"},
+            {"name": "builder", "capability": "builder",
+             "depends_on": ["scout"], "prompt": "y"},
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
     return spec
 
 

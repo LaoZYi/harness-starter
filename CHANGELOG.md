@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added — squad 项目内嵌 + 破坏性变更 spec.yaml → spec.json（Issue #25，#23 子任务 2）
+
+- **去 PyYAML 依赖**：`src/agent_harness/squad/spec.py` 从 yaml.safe_load 迁到 json.loads；spec 文件必须是 `.json` 后缀，`.yaml` / `.yml` 会拒绝并给出精确迁移命令
+- **扩展 `runtime_install.py`**：复制 squad 整包（10 个 .py）+ security.py 到 `.agent-harness/bin/_runtime/`；自动把 squad.spec 里的 `from ..security import` 改写成 `from _runtime.security import`（_runtime 作为顶级 package）
+- **新 entry 脚本 `bin/squad`**：Python shebang，加 bin/ 到 sys.path，调用 `_runtime.squad.cli.main`
+- **squad/cli.py 新增 `main(argv=None)`**：抽 `_add_squad_subcommands` 共享给 `register_subcommand`（harness CLI 路径）和 `main`（bin 路径）
+- **模板替换**：3 个 .tmpl（lfg / squad / task-lifecycle）+ AGENTS.md + docs/runbook + docs/product 里 `harness squad create <spec.yaml>` 全部改 `.agent-harness/bin/squad create <spec.json>`
+- **新测试 `tests/test_runtime_bin_squad.py`**（6 条端到端契约）：
+  - init 创建完整 bin/squad + _runtime/squad/ 结构；spec.py 的 security import 改写为绝对路径
+  - 纯 stdlib AST 守卫扩展到 squad 所有文件 + security.py
+  - bin/squad create / status 在无 harness + 无 PyYAML 环境跑通
+  - bin/squad 对 .yaml spec 给精确迁移提示（破坏性变更的回归保护）
+- **现有 squad 测试全部迁 yaml→json**（test_squad_spec_parse / dependency / integration / mailbox）
+
 ### Added — 项目内嵌运行时：audit / memory 脱离 harness CLI 依赖（Issue #24，#23 子任务 1）
 
 - **新模块 `src/agent_harness/runtime_install.py`**：`install_runtime(target_root)` 把
@@ -188,7 +202,7 @@
 
 ### Infrastructure
 
-- 411 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
+- 418 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

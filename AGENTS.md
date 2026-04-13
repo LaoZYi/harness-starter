@@ -47,7 +47,7 @@ harness stats /path/to/repo
 harness sync /path/to/service --meta /path/to/meta
 harness sync --all
 harness memory rebuild .
-harness squad create spec.yaml
+harness squad create spec.json  # 或项目自带：.agent-harness/bin/squad create spec.json
 harness squad status
 harness audit append --file lessons.md --op append --summary "..."
 harness audit tail

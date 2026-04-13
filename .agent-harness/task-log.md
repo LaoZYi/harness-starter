@@ -675,3 +675,39 @@
   7. ✅ docs/runbook + architecture + CHANGELOG 同步；dogfood 自身；本仓库 bin 可跑 audit tail
 
 - Issue #23 进度：子任务 1/3 完成；下一步 Issue #25（squad 项目内嵌）
+
+## 2026-04-13 Issue #25 — squad 项目内嵌 + spec.yaml → spec.json（破坏性变更）
+
+- 需求：把 squad 运行时也项目内嵌，让使用者无需装 harness CLI + 无需装 PyYAML 就能跑 multi-agent。Issue #23 拆分的子任务 2，前置 #24 已完成
+- 做了什么：
+  - `squad/spec.py` 从 PyYAML 迁到 stdlib json；`.yaml`/`.yml` spec 被拒绝并给出精确迁移命令
+  - `runtime_install.py` 扩展：复制 squad 整包（10 .py）+ security.py；自动重写 `from ..security` → `from _runtime.security`（避免内嵌场景相对 import 失败）
+  - `squad/cli.py` 抽 `_add_squad_subcommands` 共享给 `register_subcommand` 和新 `main(argv=None)`；cli.py 压行 290→279
+  - 新 entry `bin/squad`（Python shebang，加 bin/ 到 sys.path）
+  - 所有现有 squad 测试 yaml→json 迁移（spec_parse / dependency / integration / mailbox）
+  - 6 条新端到端契约（test_runtime_bin_squad.py）：init 结构 + import 改写 + stdlib-only AST + create/status + 破坏性变更回归
+  - 模板替换：lfg.md.tmpl / squad.md.tmpl / task-lifecycle.md.tmpl + AGENTS.md + runbook + product 里的 `harness squad create <spec.yaml>` 全改 `.agent-harness/bin/squad create <spec.json>`
+- 关键决策：
+  - **破而彻底**：不留 yaml 兼容层，硬拒绝 + 精确迁移命令（见 lessons 新条目 2）
+  - **相对 import 改写为绝对**：内嵌运行时里 _runtime/ 是顶级 package，相对父包 `..` 失效 → 复制时 sed 改写（见 lessons 新条目 1）
+  - **squad/cli.py 压行回 280 以下**：把多行 `_add_coord` 调用压成单行；`main` 用一行 import + argparse
+- 改了哪些文件：
+  - 修改：`src/agent_harness/squad/spec.py`（去 yaml）、`squad/cli.py`（main + 压行）、`runtime_install.py`（+ squad 复制 + import 改写 + squad entry）
+  - 测试：`test_squad_spec_parse.py`（全部重写 json）、`test_squad_dependency.py`（fixture yaml→json + 去 textwrap）、`test_squad_integration.py`（同）、`test_squad_mailbox.py`（同）
+  - 新增：`tests/test_runtime_bin_squad.py`（6 条契约）
+  - 模板：squad.md.tmpl + lfg.md.tmpl（harness squad → bin/squad，yaml → json）
+  - 文档：AGENTS.md + runbook.md + product.md + CHANGELOG.md（测试数 411→418）
+  - 知识：lessons.md（2 条新教训：相对 import 改写、破坏性变更哲学）
+- 完成标准（10/10）：
+  1. ✅ spec.py 去 yaml
+  2. ✅ 所有 squad 测试 yaml→json
+  3. ✅ docs/AGENTS 里 spec.yaml 示例改 json
+  4. ✅ runtime_install 复制 squad + security
+  5. ✅ squad.cli.py 加 main
+  6. ✅ bin/squad entry 脚本生成
+  7. ✅ 端到端契约在无 harness + 无 yaml 环境跑通
+  8. ✅ stdlib-only AST 契约扩展到 squad 所有文件 + security
+  9. ✅ 模板里所有 harness squad 替换（3 个 .tmpl + docs）
+  10. ✅ dogfood 刷新本仓库 bin
+
+- Issue #23 进度：子任务 2/3 完成；下一步 Issue #26（lfg 5 档复杂度 + 自动 squad 通道）
