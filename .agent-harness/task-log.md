@@ -711,3 +711,32 @@
   10. ✅ dogfood 刷新本仓库 bin
 
 - Issue #23 进度：子任务 2/3 完成；下一步 Issue #26（lfg 5 档复杂度 + 自动 squad 通道）
+
+## 2026-04-13 Issue #26 — /lfg 整合 squad：5 档复杂度 + 6 介入点（#23 收官）
+
+- 需求：`/lfg` 自动判定复杂度后选执行方式。不让用户判断任务大小但保留关键介入点。#23 拆分的子任务 3，前置 #24 + #25 完成
+- 做了什么：
+  - `lfg.md.tmpl` 阶段 0.3 新增第 5 档"超大-可并行"+ 并行类关键词清单
+  - 新章节"## squad 通道（超大-可并行任务）"：AI 自动生成 spec.json 草稿（默认 scout-builder-reviewer + 3 种备选拓扑），6 介入点，失败兜底表，worker 不递归硬规则回顾
+  - 阶段 4 实施分支补充"squad 通道已在阶段 0.3 自动选择"指引
+  - 新测试 `tests/test_lfg_squad_channel.py`（11 条契约）：第 5 档存在、并行关键词、6 介入点、降级出口、bin/squad 调用、spec json 而非 yaml、compact 强制、默认拓扑、失败兜底
+- 关键决策：
+  - 降级出口必须存在：用户可回"不要并行"→ 自动降级到完整通道
+  - 介入点 2/5 后**强制 /compact** 控制 lfg 主会话 context
+  - lfg 主会话**常驻**担任协调员（而非一次性派发），牺牲 token 换单一入口心智
+  - worker 禁止递归 lfg（沿用 AGENTS.md 第 7 条硬规则，防资源爆炸）
+- 改了哪些文件：
+  - 模板：`src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`（+ 约 100 行）
+  - 测试：`tests/test_lfg_squad_channel.py`（11 条契约）
+  - 文档：`CHANGELOG.md`（新 Added 段）+ 418→429 测试数同步（architecture / release）
+  - dogfood 同步：本仓库 `.claude/commands/lfg.md`
+- 完成标准（7/7）：
+  1. ✅ 阶段 0.3 加第 5 档
+  2. ✅ squad 通道专章（6 介入点 + 拓扑生成 + 降级）
+  3. ✅ 阶段 4 补 squad 分支
+  4. ✅ 自动 spec.json 拓扑草稿模板
+  5. ✅ 11 条契约测试全过
+  6. ✅ 文档同步（CHANGELOG / architecture 测试数）
+  7. ✅ 调用走 `.agent-harness/bin/squad`（Issue #25 已内嵌）
+
+- Issue #23 **meta tracker 收官** — #24 + #25 + #26 全部完成

@@ -100,6 +100,7 @@
 - 安全类：认证、授权、加密、CORS、CSRF、注入
 - 测试类：集成测试、端到端、性能测试、压力测试
 - 运维类：部署、CI/CD、监控、日志、告警
+- **并行类**（触发超大-可并行档）：同时、并行、分头、三方面、兵分、多管齐下、并发开发、三条线、scout-builder-reviewer、调研并实现
 
 | 级别 | 判断标准 | 走哪条通道 |
 |------|---------|-----------|
@@ -107,6 +108,7 @@
 | **小** | 改 1-2 个文件，行为变化明确（bug fix、加字段） | 轻量通道 |
 | **中** | 改 3+ 个文件，需要设计（新功能、新接口） | 标准通道 |
 | **大** | 跨模块、需要架构决策、影响面广 | 完整通道 |
+| **超大-可并行** | 含「并行类」关键词 **或** 可拆 3+ 互不强依赖子任务 **或** 经典「调研→实现→评审」三段 **或** 单 agent 估时 > 4 小时 | **squad 通道**（自动起 tmux 多 worker） |
 
 输出格式：
 ```
@@ -119,10 +121,144 @@
 - 假设：使用 REST 风格而非 GraphQL | 依据：现有 API 均为 REST
 - 假设：新端点不需要认证 | 依据：待确认
 
-确认走标准通道？假设清单是否准确？（用户可回复"走完整通道"或"走轻量通道"覆盖）
+确认走标准通道？假设清单是否准确？（用户可回复"走完整通道"/"轻量通道"/"走单 agent 不要并行"覆盖）
 ```
 
+**如果判定为"超大-可并行"档**，输出格式额外增加 squad 拓扑草稿（见下文 squad 通道章节）并等用户确认；用户若回"不要并行" → 自动降级到**完整通道**（单 agent 跑大任务，不起 tmux）。
+
 **假设清单是必填项**。列出所有隐含假设（技术选型、范围边界、用户意图的理解），格式：`- 假设：... | 依据：...`。没有依据的假设标注"待确认"。
+
+---
+
+## squad 通道（超大-可并行任务）
+
+**进入条件**：阶段 0.3 判定为"超大-可并行"档，用户确认拓扑。
+
+**核心思想**：`/lfg` 主会话扮演**协调员**——起 squad、实时翻译 mailbox 状态、关键节点拉用户介入。worker 在 tmux 后台并行干活。用户可随时 `tmux attach` 介入调试。
+
+### 前置：`/lfg` 自动生成 spec.json 草稿
+
+根据任务描述推断 worker 拓扑。默认模式（经典三段）：
+
+```json
+{
+  "task_id": "<kebab-case 任务名，<= 31 字符>",
+  "base_branch": "<当前 master/main>",
+  "workers": [
+    {
+      "name": "scout",
+      "capability": "scout",
+      "prompt": "探索 <相关模块路径>，输出现状报告到 report.md（3 段：现有实现/痛点/建议切入点）"
+    },
+    {
+      "name": "builder",
+      "capability": "builder",
+      "depends_on": ["scout"],
+      "prompt": "读 scout 的 report.md + <任务规格>，按 TDD 实现：先写失败测试 → 实现 → 全过"
+    },
+    {
+      "name": "reviewer",
+      "capability": "reviewer",
+      "depends_on": ["builder"],
+      "prompt": "对 builder 的 worktree diff 跑 /multi-review，输出 review.md。所有 P0/P1 问题汇报到 .agent-harness/squad/<task_id>/workers/reviewer/review.md"
+    }
+  ]
+}
+```
+
+**其他拓扑模板**（根据任务特征选）：
+- **多端点并行实现**：N 个 builder 各做一个端点，1 个 reviewer 统一审查（N+1 worker）
+- **重构 + 迁移**：scout 做调研 → 2 个 builder 分头改前端/后端（无强依赖）→ reviewer 审
+- **独立模块各自迁移**：N 个 builder，互不依赖
+
+### 介入点 1：拓扑确认（🔴 必须）
+
+```
+拟用 squad 通道执行，建议拓扑：
+- scout（scout capability）：探索 src/auth/ → report.md
+- builder（builder capability，depends on scout）：按 spec 实现
+- reviewer（reviewer capability，depends on builder）：做 multi-review
+
+预计：3 个 tmux 窗口 + 3 个 worktree，消耗 ~3x token
+
+确认？回复：
+- "可以" → 直接起 squad
+- "改成 <新拓扑>" → 修改 spec 重问
+- "不要并行，走单 agent" → 降级到完整通道
+```
+
+### 起 squad + watch
+
+```bash
+.agent-harness/bin/squad create spec.json
+.agent-harness/bin/squad watch &   # 后台常驻，自动 advance + watchdog
+```
+
+`/lfg` 主会话保持运行，轮询 mailbox + 把重要事件翻译给用户。
+
+### 介入点 2：scout 完成，builder 可否继续（🔴 必须 + 强制 compact）
+
+scout 写 `done` 事件后：
+1. 读 scout 产出的 `report.md` 摘要
+2. 告知用户："scout 完成。报告要点：<3 条摘要>。builder 可以照这个实现吗？"
+3. 用户确认后 `/compact`（控制 context 爆掉）继续
+4. watchdog + advance 会自动启动 builder
+
+### 介入点 3：worker 失联（watchdog 触发）
+
+`squad watch` 报 `session_lost` 或 `worker_crashed` 时：
+```
+⚠️ worker <name> 失联（<具体原因>）。选择：
+- "重启" → kill window → 重新 spawn
+- "跳过" → 标记 done，继续下游
+- "终止" → stop all + 回归单 agent 完整通道
+```
+
+### 介入点 4：worker 自己卡死
+
+通过 `squad dump | grep stuck`（或 tick 里的异常模式）检测：
+```
+worker <name> 在 <具体问题> 上连续 3 次 RED / 进度停滞 >10min。
+- "我 attach 看看" → 输出 `tmux attach -t squad-<task_id> \; select-window -t <name>`
+- "调整方向" → 给新 prompt 让 watchdog 重启
+- "跳过此 worker，手工接管" → 主会话接收该部分继续
+```
+
+### 介入点 5：reviewer PASS → 确认合并（🔴 必须 + 强制 compact）
+
+```
+✅ reviewer 结论 PASS（0 P0 / <N> P1）。
+各 worker 成果：
+- scout：report.md
+- builder：<改动摘要 + 关键 commit SHA>
+- reviewer：review.md
+
+所有 worker done。准备合并各 worktree 到 ？
+回复 "合并" / "回退" / "让我先手动检查"
+```
+
+用户回 "合并" 后 `/compact`，进入介入点 6。
+
+### 介入点 6：finish-branch 合并 + push（🔴 必须）
+
+对每个 worker 的 worktree 跑 `/finish-branch`。行为与现有阶段 10 相同：选四种去向（直接合并 / 建 PR / 保留 / 丢弃）。
+
+### 失败兜底
+
+| 场景 | 回退策略 |
+|---|---|
+| spec 生成错（拓扑不合理） | 回介入点 1 重问 |
+| watchdog 报全部 worker 失联 | stop all → 降级到完整通道 |
+| reviewer FAIL 且连续 3 轮修不完 | stop all → 告知用户"建议人工介入"，保留 worktree |
+| 用户中途 Ctrl+C | `.agent-harness/bin/squad stop all` 保留 worktree，告知用户如何人工接管 |
+
+### 为什么 `/lfg` 主会话常驻而非一次性派发
+
+用户心智：**单一入口**。`/lfg` 主会话从头到尾负责协调，用户只在 6 个介入点出现时回答问题，不用记住"去哪看进度"。代价是 token 消耗——用**介入点 2/5 强制 `/compact`** 抵消。
+
+### worker 内不递归 lfg（硬规则回顾）
+
+AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispatch-agents`，也**不**跑完整 `/lfg` 流水线。worker 的 prompt 应直接指向其具体工作（scout 探索、builder TDD 实现、reviewer 审查），不要让 worker 自己再起子流程，资源会爆炸且 observability 崩坏。
 
 ---
 
@@ -273,7 +409,7 @@
    - 配置/迁移/文档 → `/execute-plan`（直接执行）
    - 计划和执行需要分离（规划者/执行者角色） → `/subagent-dev`（计划在主 agent，执行下放子代理）
    - 3+ 独立短子任务（无共享状态） → `/dispatch-agents`（一次性 map-reduce）
-   - 长任务需角色分权 + 实时观察 + 多 worktree 并行 → `/squad`（tmux 常驻多 agent）
+   - 长任务需角色分权 + 实时观察 + 多 worktree 并行 → **squad 通道已在阶段 0.3 自动选择**，见 `## squad 通道` 章节（用 `.agent-harness/bin/squad create spec.json`）
 2. **执行该步骤**
 3. **验证**：运行步骤中指定的验证命令
 4. **回归检查**：运行 `make test` 确认没有破坏已有功能

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added — /lfg 整合 squad 通道：5 档复杂度 + 6 介入点（Issue #26，#23 子任务 3 / 收官）
+
+- **阶段 0.3 复杂度判定新增第 5 档"超大-可并行"**：信号含「同时/并行/分头/兵分/scout-builder-reviewer」关键词、可拆 3+ 互不强依赖子任务、经典「调研→实现→评审」、单 agent 估时 > 4 小时
+- **新章节 `## squad 通道（超大-可并行任务）`**：/lfg 主会话扮演协调员，自动生成 spec.json 拓扑草稿（默认 scout-builder-reviewer 三段，另有"多端点并行""重构+迁移""独立模块"三种模板）
+- **6 个用户介入点**：拓扑确认（可降级到完整通道）/ scout done 强制 compact / watchdog 失联处置 / worker 卡死处置 / reviewer PASS 强制 compact / finish-branch 合并
+- **失败兜底表 + 硬规则回顾**：worker 内**不**递归 lfg（AGENTS.md 第 7 条）
+- **所有 bin/squad 调用走 Issue #25 的项目内嵌 runtime**
+- **新测试 `tests/test_lfg_squad_channel.py`**（11 条契约）：第 5 档、并行关键词、6 介入点、降级出口、bin/squad 调用、spec 必为 json、/compact 强制、默认拓扑、失败兜底
+
+**Issue #23 meta tracker 三子任务全部完成**（#24 + #25 + #26）：用户 clone init 过的项目 + 开 Claude Code，`/lfg` 任意需求——AI 自动判定复杂度，普通走单 agent，复杂可并行自动起 squad 多 worker + 6 介入点，全程**无需装 harness CLI + 无需装 PyYAML**。
+
 ### Added — squad 项目内嵌 + 破坏性变更 spec.yaml → spec.json（Issue #25，#23 子任务 2）
 
 - **去 PyYAML 依赖**：`src/agent_harness/squad/spec.py` 从 yaml.safe_load 迁到 json.loads；spec 文件必须是 `.json` 后缀，`.yaml` / `.yml` 会拒绝并给出精确迁移命令
@@ -202,7 +213,7 @@
 
 ### Infrastructure
 
-- 418 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
+- 429 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索
