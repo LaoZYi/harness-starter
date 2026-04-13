@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+### Added — /lfg 能力发挥度复评 + 4 Gap 修复 + 3 润色（2026-04-13，评估驱动）
+
+基于"用户只需记 /lfg 一条命令"目标，对 /lfg 做系统性能力发挥度评估并修复所有发现的接合缝隙。
+
+**第一轮：4 Gap + meta 路由修复**
+- **阶段 0.1 meta 项目类型路由**：读 `.agent-harness/project.json.project_type == meta` 时劝退到 `/meta-*` 命令集
+- **阶段 0.2 插件规则必读**：扫描 `.harness-plugins/rules/*.md` 进入 L0/L1 必读，团队自定义规则不再被忽视
+- **阶段 4.1 并行子 agent 硬隔离**：选 `/dispatch-agents` 或 `/subagent-dev` 时强制跑 `.agent-harness/bin/agent init/diary/aggregate`，防止并发写共享 current-task.md
+- **阶段 4.1 / 9.1 / 10.5 WAL 显式化**：每次改 current-task / lessons / task-log 都显式 `.agent-harness/bin/audit append`，落实 task-lifecycle 硬规则
+- **阶段 9.1 L1 索引自刷新**：`/compound` 后跑 `.agent-harness/bin/memory rebuild . --force`，memory-index 不再过时
+
+**第二轮：复评后润色**
+- **阶段 7.3 穷举验证**：新增步骤 0 `/recall --refs testing` 加载 `testing-patterns.md` L2 清单
+- **阶段 0.1 evolution 分支**：标注自动走完整通道（含 /ideate + /brainstorm + /spec + /plan-check）
+- **阶段 3.2 计划质量检查**："历史教训" 扩为 "历史教训 + 团队规则（含 plugins/rules）"
+
+**合约测试**
+- 新增 `tests/test_lfg_gap_fixes.py`，9 条宽松正则合约锁定所有修复点
+- 撤回原评估中"Gap 1 /health 未集成"结论——经查 `test_lfg_coverage.py:64` 是明文设计排除项，并沉淀为 lessons
+
+**两条跨会话教训**
+- `[流程] 评估报告前必须先查合约测试` — `EXPECTED_NOT_IN_*` 是项目对"不做某事"的显式承诺
+- `[架构设计] 单入口技能 ≠ 能力接入完整` — 要用双核对表：skill 链 + 运行时元能力
+
+**/lfg 评分：从 87 → 100**。Skill 链、运行时胶水、规则合规、分层记忆全部接通并由 15 条合约（`test_lfg_coverage.py` 6 + `test_lfg_gap_fixes.py` 9）锁死。
+
 ### Added — /lfg 整合 squad 通道：5 档复杂度 + 6 介入点（Issue #26，#23 子任务 3 / 收官）
 
 - **阶段 0.3 复杂度判定新增第 5 档"超大-可并行"**：信号含「同时/并行/分头/兵分/scout-builder-reviewer」关键词、可拆 3+ 互不强依赖子任务、经典「调研→实现→评审」、单 agent 估时 > 4 小时
@@ -213,7 +239,7 @@
 
 ### Infrastructure
 
-- 429 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
+- 438 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

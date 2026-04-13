@@ -740,3 +740,54 @@
   7. ✅ 调用走 `.agent-harness/bin/squad`（Issue #25 已内嵌）
 
 - Issue #23 **meta tracker 收官** — #24 + #25 + #26 全部完成
+
+## 2026-04-13 /lfg 能力发挥度评估 + 4 Gap 修复
+
+- 需求：用户要求评估 /lfg 是否把项目全部能力都用上；评估后一次性修复所有发现的问题
+- 做了什么：
+  - **评估阶段**：通读 37K 行 lfg.md.tmpl + 30 skill + 运行时元能力（audit/memory/agent/plugins/hooks），对照 task-lifecycle / safety / autonomy 规则逐项核查
+  - **发现 6 个候选 gap**，查合约测试 `test_lfg_coverage.py:64` 后撤回其中 1 个（/health 是明文设计排除项），定稿 4 Gap + 1 meta 路由
+  - **修复**：`lfg.md.tmpl` 5 处插入——阶段 0.1 meta 路由、0.2 plugins 必读、4.1 子 agent 隔离 + audit、9.1 memory rebuild + audit、10.5 归档双 audit
+  - **合约测试**：`tests/test_lfg_gap_fixes.py` 新增 6 条宽松正则合约锁定 5 处插入
+  - **文档同步**：测试计数 429→435（CHANGELOG / architecture / release）+ product.md 新增条目 17
+  - **自吃狗粮**：`.agent-harness/bin/memory rebuild`、`.agent-harness/bin/audit append` ×3 全程按新规则执行
+- 关键决策：
+  - **撤回 Gap 1（/health 集成）**：合约测试已明文把它列为"periodic snapshot, not part of single-task flow"设计排除项。评估前未查合约是重大疏忽，已沉淀为 lessons
+  - **用项目内嵌运行时**（`.agent-harness/bin/*`）而非 `harness` CLI：符合 Issue #24 内嵌策略，避免 AI 工作流依赖用户机器上的 CLI 安装状态
+  - **合约测试用宽松正则**（`audit.*append` 而非精确字符串）：未来措辞微调不会误伤，但关键语义锁死
+  - **不扩展 test_lfg_coverage.py**：runtime bin 不是 skill，不应纳入 EXPECTED_IN_LFG；独立测试文件更清晰
+- 改了哪些文件：
+  - 模板：`src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`（5 处插入 ≈ 50 行净增）
+  - 测试：`tests/test_lfg_gap_fixes.py`（新增，6 条合约）
+  - dogfood：`.claude/commands/lfg.md`（自动同步）
+  - 文档：`CHANGELOG.md` / `docs/architecture.md` / `docs/release.md`（测试计数 429→435）、`docs/product.md`（新增条目 17）
+  - 记忆：`.agent-harness/lessons.md`（+2 条教训 + 分类索引更新）、`.agent-harness/memory-index.md`（rebuild 重建）
+  - WAL：`.agent-harness/audit.jsonl`（+3 条记录）
+- 完成标准（6/6）：
+  1. ✅ 4 Gap + meta 路由在 lfg.md.tmpl 全部修复
+  2. ✅ `tests/test_lfg_gap_fixes.py` 6 条合约全过
+  3. ✅ `make ci` 全绿（435 tests OK + repository checks passed）
+  4. ✅ `make dogfood` 无漂移（差异仅变量替换）
+  5. ✅ `docs/product.md` 已同步
+  6. ✅ 用户验证通过（"没问题就完成任务"）
+
+## 2026-04-13 /lfg 复评后续润色（1 gap + 2 润色）
+
+- 需求：用户要求再次评估 /lfg 能力发挥，把复评剩余的 1 轻 gap + 2 润色一并修掉
+- 做了什么：
+  - **阶段 7.3 穷举验证**：新增步骤 0 "先 `/recall --refs testing` 加载 testing-patterns.md"，让关键路径改动的验证脚本基于项目历史测试模式
+  - **阶段 0.1 evolution 分支**：标注 evolution 模式自动进入完整通道（含 /ideate + /brainstorm + /spec + /plan-check），跳过复杂度评估询问
+  - **阶段 3.2 计划质量检查**：把"历史教训"项扩为"历史教训 + 团队规则（含 plugins/rules）"，让 .harness-plugins/rules/ 约束真正进入计划层
+  - **新增 3 条合约测试**：test_stage_7_3_recalls_testing_patterns_refs / test_evolution_mode_routes_to_full_channel / test_stage_3_2_checks_harness_plugins_rules
+- 关键决策：
+  - 合约测试依然用宽松正则（`/recall.*testing|testing-patterns\.md`），允许未来措辞调整
+  - 不为"用户提示 stop-hook-skip / watchdog-skip sentinel"加提示：这些是运维手段，与 /lfg 流水线边界清晰分离，合理排除
+- 改了哪些文件：
+  - `src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`（3 处增强）
+  - `tests/test_lfg_gap_fixes.py`（+3 条合约，总计 9 条）
+  - `.claude/commands/lfg.md`（dogfood 同步）
+  - `CHANGELOG.md` / `docs/architecture.md` / `docs/release.md`（计数 435→438）
+- 完成标准（3/3）：
+  1. ✅ 3 处润色全部落地
+  2. ✅ 新增 3 条合约测试通过（9/9 绿）
+  3. ✅ make ci 全绿（438 tests OK + repository checks passed）

@@ -48,10 +48,16 @@
 - 任务目标：分析该项目，将可模板化的独特技能融合到本框架
 - 集成规范：改写为中文命令模板 → 放入 `templates/superpowers/.claude/commands/` → 更新 workflow 规则和决策树 → 更新 preset → 更新测试 → 更新文档 → `make dogfood` 同步 → `make ci` 验证
 - 自动设定验收标准：新技能模板存在、测试通过、文档数字同步、dogfood 无漂移
+- **通道选择**：evolution 模式自动走**完整通道**（含 /ideate + /brainstorm + /spec + /plan-check），跳过阶段 0.3 的复杂度评估询问。理由：吸收外部项目思想天然属于"大"复杂度，影响模板 + 测试 + 文档多个层面，需设计先行
 
 **如果输入是普通文本描述**：
 
-1. **先判断是不是运维/元任务**——如果是，告知用户走 CLI 不走 /lfg：
+0. **先检查项目类型**——读 `.agent-harness/project.json` 的 `project_type` 字段：
+   - 若为 `meta`（微服务中央大脑项目）→ **告知用户走 meta 专属命令**（`/meta-sync` / `/meta-populate` / `/meta-create-task` / `/meta-activate-task`）而非 /lfg，退出。meta 项目不含业务代码，走单任务流水线会错。
+   - 文件不存在或 project_type 不是 meta → 继续下一步
+   - `/meta-activate-task` 激活的跨服务任务会注入到具体服务仓库的 current-task.md，在**服务仓库**里跑 /lfg 才合适
+
+1. **再判断是不是运维/元任务**——如果是，告知用户走 CLI 不走 /lfg：
 
    | 用户意图 | 正确入口 | 为什么不走 /lfg |
    |---|---|---|
@@ -81,12 +87,13 @@
 3. 读 `docs/architecture.md` — L0 模块边界，避免在错误的位置写代码
 4. 读 `docs/product.md` — L0 现有功能，避免与已有功能冲突
 5. 读 `docs/decisions/` 目录列表 — 扫一眼已有 ADR 标题，相关的才展开读
+6. **扫描 `.harness-plugins/rules/` 目录**（如存在）—— 用户或团队的自定义规则扩展。发现 `.md` 文件则全部读入，与官方规则同等级合规约束。不存在或目录为空 → 跳过。这是项目的插件机制入口，遗漏会让团队规则被忽视。
 
 **按需检索（L2/L3，禁止默认全量读）**：
 
-6. 如果 memory-index 命中相关话题，或任务描述涉及历史踩坑 → 运行 `/recall <关键词>` 做定向检索（后台会搜 `lessons.md` + `task-log.md`）
-7. 如果任务涉及专业维度（安全 / 性能 / 无障碍 / 测试设计）→ 运行 `/recall --refs <关键词>` 加载对应 checklist（`.agent-harness/references/`）
-8. 如果 /recall 返回明确相关条目，**必须在计划中显式引用教训标题**，说明如何避免重蹈覆辙
+7. 如果 memory-index 命中相关话题，或任务描述涉及历史踩坑 → 运行 `/recall <关键词>` 做定向检索（后台会搜 `lessons.md` + `task-log.md`）
+8. 如果任务涉及专业维度（安全 / 性能 / 无障碍 / 测试设计）→ 运行 `/recall --refs <关键词>` 加载对应 checklist（`.agent-harness/references/`）
+9. 如果 /recall 返回明确相关条目，**必须在计划中显式引用教训标题**，说明如何避免重蹈覆辙
 
 > **禁止**：直接全文读 `lessons.md` 或 `task-log.md`。违反分层加载会挤占 AI 上下文，把热知识（L1）、温知识（L2）、冷知识（L3）变成一锅粥。见 `docs/decisions/0001-layered-memory-loading.md`。
 
@@ -369,7 +376,7 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 - [ ] **可验证性**：每个步骤有验证命令和预期结果
 - [ ] **代码完整性**：代码块不含 `// TODO`、`...` 省略、`TBD`
 - [ ] **边界覆盖**：列出了边界情况和错误场景的处理
-- [ ] **历史教训**：如果 lessons.md 有相关记录，计划中显式说明如何避免
+- [ ] **历史教训 + 团队规则**：如果 lessons.md 或 `.harness-plugins/rules/*.md`（团队自定义规则）有相关记录，计划中显式说明如何引用 / 避免
 - [ ] **依赖明确**：步骤之间的依赖关系和执行顺序清楚
 
 #### 3.3 用户确认
@@ -410,11 +417,25 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
    - 计划和执行需要分离（规划者/执行者角色） → `/subagent-dev`（计划在主 agent，执行下放子代理）
    - 3+ 独立短子任务（无共享状态） → `/dispatch-agents`（一次性 map-reduce）
    - 长任务需角色分权 + 实时观察 + 多 worktree 并行 → **squad 通道已在阶段 0.3 自动选择**，见 `## squad 通道` 章节（用 `.agent-harness/bin/squad create spec.json`）
+
+   > **🔴 并行子 agent 隔离（硬规则）**：选 `/dispatch-agents` 或 `/subagent-dev` 时，主 agent **必须**先为每个子 agent 建立独立日志空间，禁止并发写共享 `current-task.md`：
+   > ```bash
+   > .agent-harness/bin/agent init <agent-id>          # id: ^[a-z0-9][a-z0-9-]{0,30}$
+   > .agent-harness/bin/agent diary  <agent-id> "..."  # 子 agent 过程日志
+   > .agent-harness/bin/agent status <agent-id> "..."  # 子 agent 当前状态
+   > .agent-harness/bin/agent aggregate                # 主 agent 收尾时汇总
+   > ```
+   > 理由：并发写同一个 current-task 会互相覆盖。详见 `.claude/rules/task-lifecycle.md` "并行子 agent 的日志隔离"节。不适用于 `/squad`（squad 有自己的 `squad/<task>/workers/<name>/` 隔离）。
 2. **执行该步骤**
 3. **验证**：运行步骤中指定的验证命令
 4. **回归检查**：运行 `make test` 确认没有破坏已有功能
 5. **提交并打快照 tag**：创建原子 commit，消息格式 `<type>(<scope>): <描述> [plan step N]`，然后打一个轻量 tag `lfg/step-N`（用于精确回滚到任意步骤）
-6. **更新进度**：在 `current-task.md` 中勾选该步骤
+6. **更新进度并写 audit**：在 `current-task.md` 中勾选该步骤；随后追加一条 WAL 审计（task-lifecycle 硬要求）：
+   ```bash
+   .agent-harness/bin/audit append --file current-task.md --op update \
+     --summary "plan step N 完成：<一句话摘要>"
+   ```
+   audit 目录不存在时命令会自然失败，属预期；出现在日常项目中应正常写入。
 
 #### 4.2 遇到问题时的处理
 
@@ -527,6 +548,7 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 如果本次改动涉及**数据安全、用户内容、文件读写、升级迁移**等关键路径，必须做穷举端到端验证：
 
+0. **先加载测试模式清单**：运行 `/recall --refs testing` 展开 `.agent-harness/references/testing-patterns.md`，把项目沉淀的测试模式（边界值策略、并发脚本骨架、错误注入姿势等）作为穷举脚本的参考基线。跳过这一步容易漏覆盖项目历史上踩过的坑
 1. 写一个一次性脚本，在临时目录中模拟真实使用场景
 2. 覆盖五类场景：正常路径、边界情况、错误路径、冲突/竞争、组合场景
 3. 每项检查输出一行 ✅/❌，末尾汇总通过/失败数
@@ -573,6 +595,17 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 - 实施中走过的弯路（说明下次的更优路径）
 - 修复循环中反复出现的模式（说明根因和预防方法）
 - 写入 `.agent-harness/lessons.md`
+
+`/compound` 完成后**必须**两步闭环（不做的话下次 /lfg 读到的 L1 热索引是过时的、WAL 也缺一条）：
+
+```bash
+# 1. 刷新 L1 热索引——memory-index.md 里的"最近教训"自动同步
+.agent-harness/bin/memory rebuild . --force
+
+# 2. 记录 WAL 审计（对 lessons.md 的变更必须登记）
+.agent-harness/bin/audit append --file lessons.md --op append \
+  --summary "/compound 写入 N 条教训：<标题关键词>"
+```
 
 #### 9.2 ADR 状态维护
 
@@ -652,6 +685,13 @@ Lint：<之前> → <之后>（<变化>）
 用户确认通过后：
 1. 在 `.agent-harness/task-log.md` 追加完成记录（需求、做了什么、关键决策、改了哪些文件、完成标准）
 2. 清空 `.agent-harness/current-task.md`（只保留标题和空模板）
+3. **记录 WAL 审计**（两条都要写，task-lifecycle 硬要求）：
+   ```bash
+   .agent-harness/bin/audit append --file task-log.md --op append \
+     --summary "归档任务：<任务一句话摘要>"
+   .agent-harness/bin/audit append --file current-task.md --op update \
+     --summary "清空，任务已归档到 task-log"
+   ```
 
 #### 10.6 关闭源 Issue（仅 Issue 驱动时）
 
