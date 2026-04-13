@@ -116,6 +116,33 @@ harness audit append --file task-log.md --op append --summary "归档任务 Issu
 
 **不做什么**：审计日志是追溯用的旁路，不替代 git；不做自动 rotation（用 `harness audit truncate --before YYYY-MM-DD` 手动清理）。
 
+## 并行子 agent 的日志隔离
+
+当通过 `/dispatch-agents` / `/subagent-dev` 并行分发多个子任务时，**每个子 agent 必须使用独立的 diary/status 空间**，不得并发写共享的 current-task.md：
+
+```bash
+harness agent init <agent-id>                        # 创建 .agent-harness/agents/<id>/
+harness agent diary  <agent-id> "开始扫描 src/utils"  # 追加过程日志
+harness agent status <agent-id> "等待依赖 X 完成"      # 覆盖当前状态
+harness agent list                                    # 主 agent 查看全部
+harness agent aggregate [<id>...]                     # 汇总 diary 供主 agent 合并进 task-log
+```
+
+**id 规范**：`^[a-z0-9][a-z0-9-]{0,30}$`（与 /squad worker 命名规范一致）。
+
+**何时用**：
+- ✅ `/dispatch-agents` 派出的 2+ 独立子任务 → 每个子任务自取 id 写 diary
+- ✅ `/subagent-dev` 执行者 → 执行者写 diary，计划者读 aggregate 汇总
+- ❌ `/squad` 已有 `squad/<task>/workers/<name>/` 隔离，**不要**改用 agents/（两套机制会撞）
+- ❌ 单 agent 任务不需要，用 current-task.md 即可
+
+**主 agent 收尾时**：读 `harness agent aggregate`，把值得归档的内容写入 `task-log.md`（不自动 merge，主 agent 决定）。
+
+**与 audit.jsonl 的关系**：
+- `agents/<id>/diary.md` = "这个 agent 在想什么 / 做什么"（过程）
+- `audit.jsonl` = "这个 agent 改了哪个文件 / 何时"（结果）
+- 两者互补不重复
+
 ## 实现完成后 → 进入"待验证"状态
 
 agent 自测通过后，**不要**直接写 task-log 和清空 current-task。而是：

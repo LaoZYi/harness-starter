@@ -120,3 +120,29 @@
 - 修复轮次：0
 - 最终状态：completed | blocked
 ```
+
+## 子 agent 日志隔离（Issue #14）
+
+计划者（主 agent）读 current-task，实现者（子 agent）写自己的 diary：
+
+```bash
+# 实现者启动时
+harness agent init impl-<taskN>
+harness agent status impl-<taskN> "开始实现任务 N"
+
+# 实现过程中
+harness agent diary impl-<taskN> "读完了 src/foo.py，准备改 bar 函数"
+harness agent diary impl-<taskN> "测试 test_bar_x 失败，原因 <分析>"
+
+# 完成后
+harness agent status impl-<taskN> "DONE，待审查"
+```
+
+计划者（主 agent）回读：
+
+```bash
+harness agent list                     # 看所有实现者状态
+harness agent aggregate impl-task1 impl-task2   # 读指定实现者 diary
+```
+
+**禁止**子 agent 直接写 current-task.md / task-log.md — 主 agent 基于 aggregate 决定哪些要归档进主档。

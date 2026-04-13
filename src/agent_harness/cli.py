@@ -22,6 +22,7 @@ from .initializer import initialize_project
 from .models import ProjectProfile
 from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade, verify_upgrade as _verify
 from .audit_cli import register_subcommand as _reg_audit
+from .agent_cli import register_subcommand as _reg_agent
 from .squad.cli import register_subcommand as _reg_squad
 
 PROJECT_FIELDS = (
@@ -265,16 +266,14 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_p.add_argument("target", nargs="?", default=".", help="项目根目录（默认当前目录）")
     rebuild_p.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
     rebuild_p.set_defaults(func=_cmd_memory_rebuild)
-    _reg_squad(subs)
-    _reg_audit(subs)
+    _reg_squad(subs); _reg_audit(subs); _reg_agent(subs)
     return root
 
 def main() -> None:
-    parser = build_parser()
-    args = parser.parse_args()
-    if not hasattr(args, "func"):
-        parser.print_help(); sys.exit(1)
-    args.func(args)
+    args = build_parser().parse_args()
+    if not hasattr(args, "func"): sys.exit(1)
+    rc = args.func(args)
+    if isinstance(rc, int) and rc != 0: sys.exit(rc)
 
 if __name__ == "__main__":
     main()
