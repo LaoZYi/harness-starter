@@ -193,3 +193,18 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 根因：硬限是架构压力测试。一旦放宽就再没有边界，模块会无限膨胀。280 行是经验值，超出说明该模块在做太多事
 - 规则：碰到 check_repo 行数失败的处理顺序：① 抽 helper 到合适模块（首选）→ ② 简化代码（去重复 import、压 docstring）→ ③ 拆模块。**不要**改 `check_repo.py` 的限值。这次的代价是 watchdog.py 多了一个 helper 函数 `watch_tick_with_report`，但这个边界本来就该有：watchdog 是检测+决策者，coordinator 只该是调度者
 
+
+## 2026-04-13 [架构设计] 幂等去重和退出判定不能共用同一个返回值
+
+- 错误：watchdog 的 `watch_tick_with_report` 用 `detect_failures` 返回的事件列表（含 session_lost）来决定 cmd_watch 是否退出。事件去重写在 mailbox 后，重启 watch 时 detect 看见旧 session_lost 直接返回空 → 调用方误以为 session 还在 → 死循环空转 advance 一个死 session
+- 根因：把两个不同语义的状态——"该不该写新事件"和"该不该退出"——压到同一个返回值上。事件去重的目的是减噪，退出判定的目的是反映当前真实状态；这两个语义在重启场景下错位
+- 规则：去重缓存（mailbox / set / dict）只用于"是否上报"决策；"当前真实状态"必须每次都重新探测。把两者拆成独立判断：`should_report = not already_reported and condition`、`should_exit = condition`。两个谓词共享 `condition` 但不共享缓存
+- 适用范围：所有"周期性 ping + 一次性退出"的健康监控模式（watchdog / heartbeat / liveness probe）
+
+## 2026-04-13 [流程] 辅助监控模块必须有异常隔离边界
+
+- 错误：watchdog 直接调 `mb.append_event` 和 `subprocess.run`，任何异常（SQLite 写失败、tmux server 卡住、磁盘满）会冒泡到 cmd_watch 主调度循环让整个常驻进程死掉
+- 根因：watchdog 是**辅助**监控，但被当成**关键路径**写——没设计异常边界。心智上"它就是个查询，不会出问题"，但 subprocess + SQLite 都是 I/O 边界
+- 规则：辅助/监控/可观测性类模块必须有 try/except 兜底，故障时降级（打印警告 + 返回保守值），不能传播到主调度。判断是否"辅助"的标准：缺了它主流程能不能跑？能 → 必须隔离异常
+- 反例：核心数据写入路径**不能**这样做——必须传播让上层处理（safety/error-attribution rule）
+
