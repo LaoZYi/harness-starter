@@ -495,3 +495,24 @@
   - 文档：`AGENTS.md` (+2 行)、`CONTRIBUTING.md`、`CHANGELOG.md`、`docs/{product,architecture,runbook,release,workflow}.md`
   - 知识：`.agent-harness/memory-index.md`
 - 完成标准（11/11）：全部通过 — init 幂等、diary append、status 覆盖、list 排序、aggregate 汇总、id 规范、并发 200 次无丢失、upgrade skip、技能模板引导、make ci 279→304、文档 + 边界说明
+
+## 2026-04-13 输入安全校验代码化（Issue #15，吸收自 MemPalace）
+
+- 需求：把 `.claude/rules/safety.md` 中"输入信任边界"规则从文档约束变为可复用函数；同时去除 `agent.py` 和 `squad/spec.py` 中完全重复的标识符正则。
+- 做了什么：
+  - 新增 `src/agent_harness/security.py`（119 行），导出 `sanitize_name` / `sanitize_path` / `sanitize_content` + `SecurityError`
+  - `SecurityError` 继承 `ValueError`，保持与现有 `except ValueError` 代码的向后兼容
+  - `sanitize_path` 用 `.resolve()` + `.relative_to()` 防御路径遍历、绝对路径、符号链接三类逃逸
+  - `sanitize_content` 选择 oversize 抛异常（显式告警） + null/控制字符剥除（噪音静默）
+  - 重构 `agent.py`（`_AGENT_ID_RE` → `NAME_PATTERN` / `sanitize_name`）和 `squad/spec.py`（`_NAME_PATTERN` 同上），去除重复正则
+  - 新增 `tests/test_security.py` 25 条三类场景覆盖；Phase 7 穷举 8 个路径遍历攻击向量全部被阻止
+- 关键决策：
+  - 新异常类继承 ValueError 而非 Exception：现有多处 `except ValueError` 做输入校验兜底，破坏公开契约成本高
+  - 只改 agent + squad 两处：最小侵入原则；templating/initializer 的路径校验延后到下一轮（避免单 PR 牵涉面过大）
+  - 不纳入 POSIX 权限检查（0o700/0o600）：跨平台风险，与脚手架定位冲突
+- 改了：
+  - 新增：`src/agent_harness/security.py`、`tests/test_security.py`
+  - 修改：`src/agent_harness/agent.py`、`src/agent_harness/squad/spec.py`
+  - 文档：`docs/architecture.md`（辅助层新增条目，测试数 304→329）、`docs/product.md`（功能 16）、`CHANGELOG.md`、`docs/release.md`
+  - 知识：`.agent-harness/lessons.md`（2 条架构设计教训）、`memory-index.md`
+- 完成标准（5/5）：security.py 导出完整 / 两处重构完成 / 25 条测试 + 穷举 8/8 / make ci 329 全绿 / 文档四处同步
