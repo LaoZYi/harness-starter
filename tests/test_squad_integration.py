@@ -67,17 +67,14 @@ class SquadDryRunIntegrationTests(unittest.TestCase):
         self.assertEqual(manifest["tmux_session"], "squad-smoke")
         self.assertEqual(len(manifest["workers"]), 3)
 
-        # 2. status.jsonl has one "dry-run-rendered" record per worker
-        status_lines = (
-            (self.tmp / ".agent-harness" / "squad" / "smoke" / "status.jsonl")
-            .read_text()
-            .splitlines()
-        )
-        self.assertEqual(len(status_lines), 3)
-        for line in status_lines:
-            rec = json.loads(line)
-            self.assertEqual(rec["event"], "dry-run-rendered")
-            self.assertIn("ts", rec)
+        # 2. mailbox has one "dry-run-rendered" event per worker (Issue #21 迁移到 SQLite)
+        from agent_harness.squad.mailbox import read_events
+        squad_dir = self.tmp / ".agent-harness" / "squad" / "smoke"
+        events = read_events(squad_dir, event_type="dry-run-rendered")
+        self.assertEqual(len(events), 3)
+        for evt in events:
+            self.assertEqual(evt["event"], "dry-run-rendered")
+            self.assertIn("ts", evt)
 
         # 3. each worker has rendered settings.local.json + squad-context.md + task-prompt.md
         for w in ("scout-a", "builder-a", "reviewer-a"):

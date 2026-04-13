@@ -89,62 +89,49 @@ def list_active_squads(root: Path) -> list[str]:
 
 
 def append_status(root: Path, task_id: str, record: dict[str, Any]) -> None:
+    """追加一条状态事件。
+
+    Issue #21 迁移：内部走 SQLite mailbox，签名保持兼容 19a 的调用方（cli.py / coordinator.py）。
+    旧的 status.jsonl 不再写入，已有文件保留供 `harness squad dump` 导出参考。
+    """
+    from . import mailbox as _mb  # 延迟导入避免循环
     d = squad_dir(root, task_id)
-    d.mkdir(parents=True, exist_ok=True)
-    path = d / "status.jsonl"
-    record = {"ts": time.time(), **record}
-    line = json.dumps(record, ensure_ascii=False) + "\n"
-    with _locked_append(path) as f:
-        f.write(line)
+    event = record.get("event", "info")
+    worker = record.get("worker")
+    message = record.get("message", "")
+    # 其他字段塞进 payload 以保证前向兼容
+    extras = {k: v for k, v in record.items()
+              if k not in ("event", "worker", "message", "ts")}
+    _mb.append_event(d, event_type=event, worker=worker,
+                     message=message, payload=extras or None)
 
 
 def read_status_tail(root: Path, task_id: str, limit: int = 50) -> list[dict[str, Any]]:
-    path = squad_dir(root, task_id) / "status.jsonl"
-    if not path.is_file():
-        return []
-    with path.open("r", encoding="utf-8") as f:
-        lines = f.readlines()[-limit:]
-    return [json.loads(line) for line in lines if line.strip()]
+    """返回最近 limit 条事件。Issue #21：走 mailbox。"""
+    from . import mailbox as _mb
+    d = squad_dir(root, task_id)
+    events = _mb.read_events(d)
+    return events[-limit:] if events else []
 
 
 def read_all_status(root: Path, task_id: str) -> list[dict[str, Any]]:
-    """Read full status.jsonl — needed for dependency reasoning (done set)."""
-    path = squad_dir(root, task_id) / "status.jsonl"
-    if not path.is_file():
-        return []
-    with path.open("r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
+    """Read all events — needed for dependency reasoning (done set)."""
+    from . import mailbox as _mb
+    return _mb.read_events(squad_dir(root, task_id))
 
 
 def done_workers(root: Path, task_id: str) -> set[str]:
     """Set of worker names that have emitted a `done` event."""
-    return {
-        r["worker"]
-        for r in read_all_status(root, task_id)
-        if r.get("event") == "done" and "worker" in r
-    }
+    from . import mailbox as _mb
+    return _mb.done_workers(squad_dir(root, task_id))
 
 
 def pending_worker_info(
     root: Path, task_id: str,
 ) -> dict[str, float]:
-    """Map worker name → earliest `pending` event timestamp, for workers that
-    have a pending event but no subsequent `spawned` event (still blocked).
-
-    Used by `squad status` to show blocked_since age.
-    """
-    pending: dict[str, float] = {}
-    spawned: set[str] = set()
-    for r in read_all_status(root, task_id):
-        name = r.get("worker")
-        if not name:
-            continue
-        event = r.get("event")
-        if event == "pending" and name not in pending:
-            pending[name] = r.get("ts", 0.0)
-        elif event == "spawned":
-            spawned.add(name)
-    return {k: v for k, v in pending.items() if k not in spawned}
+    """Map worker name → earliest `pending` event timestamp, for workers still blocked."""
+    from . import mailbox as _mb
+    return _mb.pending_worker_info(squad_dir(root, task_id))
 
 
 @contextlib.contextmanager

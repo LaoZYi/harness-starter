@@ -307,15 +307,22 @@ class WorkerStateDerivationTests(_BaseDependencyTest):
 
     def test_pending_over_30min_triggers_stuck_warning(self):
         self._create_linear()
-        # 手动注入一个 31 分钟前的 pending 事件
+        # 注入一个 31 分钟前的 pending 事件：直接操作 mailbox db 的 ts 字段
+        import sqlite3
         from agent_harness.squad.state import squad_dir
-        status_path = squad_dir(self.tmp, "linear") / "status.jsonl"
-        status_path.parent.mkdir(parents=True, exist_ok=True)
-        import json as _json
+        from agent_harness.squad.mailbox import db_path
+        sd = squad_dir(self.tmp, "linear")
+        # 先 append 一条 pending，再改 ts 到 31 分钟前
+        append_status(self.tmp, "linear",
+                      {"worker": "builder", "event": "pending", "message": "x"})
+        conn = sqlite3.connect(str(db_path(sd)))
         old_ts = time.time() - 31 * 60
-        with status_path.open("a", encoding="utf-8") as f:
-            f.write(_json.dumps({"ts": old_ts, "worker": "builder",
-                                 "event": "pending", "message": "x"}) + "\n")
+        conn.execute(
+            "UPDATE events SET ts = ? WHERE worker = 'builder' AND event_type = 'pending'",
+            (old_ts,),
+        )
+        conn.commit()
+        conn.close()
 
         with patch("agent_harness.squad.coordinator.list_windows", return_value=[]):
             state = derive_worker_state(

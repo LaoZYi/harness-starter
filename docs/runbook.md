@@ -58,6 +58,8 @@ harness squad attach <worker>                               # 输出 tmux attach
 harness squad stop <worker|task_id|all>                     # 停止 worker / 整个 squad
 harness squad done <worker>                                 # 标记 worker 完成（供 advance 识别，Issue #19a）
 harness squad advance                                       # 启动依赖已满足的 pending worker（幂等）
+harness squad watch [--interval 3]                          # 常驻进程：轮询 mailbox 自动 advance（Issue #21，Ctrl+C 退出）
+harness squad dump                                          # 导出 mailbox 事件为 JSONL（调试用，Issue #21）
 ```
 
 未安装时也可通过 `PYTHONPATH=src python -m agent_harness` 替代 `harness`。
