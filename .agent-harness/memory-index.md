@@ -23,10 +23,10 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-13 多 agent 日志隔离（Issue #14，吸收自 MemPalace）
 - 2026-04-13 Stop + PreCompact hook（Issue #13，吸收自 MemPalace）
 - 2026-04-13 变更审计 WAL（Issue #12，吸收自 MemPalace）
 - 2026-04-13 /lfg 技能覆盖完整化：33 个技能全员接入 + 契约测试锁死
-- 2026-04-13 代码健康审计：280 行硬规则违反修复 + 守卫自动化
 - 2026-04-12 lessons.md 结构化分区（Issue #11，灵感自 MemPalace）
 
 ## 参考资料（.agent-harness/references/）

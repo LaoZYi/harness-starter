@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（279 个）。
+- `make test`：运行框架级回归测试（304 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -11,6 +11,15 @@
 - `make upgrade-plan TARGET=/path/to/repo ARGS="..."`：预览升级会新增和改动哪些文件。
 - `make upgrade-apply TARGET=/path/to/repo ARGS="..."`：执行升级并自动备份被覆盖文件。
 - `make init TARGET=/path/to/repo ARGS="..."`：初始化目标项目。
+
+## 多 agent 日志隔离（子 agent diary）
+
+- `harness agent init <id>`：创建 `.agent-harness/agents/<id>/{diary.md, status.md}`（幂等）
+- `harness agent diary <id> "..."`：追加过程日志（时间戳 + 文本）
+- `harness agent status <id> "..."`：覆盖当前状态
+- `harness agent list`：按最近活动列出 agent
+- `harness agent aggregate [<id>...]`：汇总 diary 供主 agent 归档决策
+- id 规范：`^[a-z0-9][a-z0-9-]{0,30}$`（与 /squad 一致）
 
 ## 变更审计
 

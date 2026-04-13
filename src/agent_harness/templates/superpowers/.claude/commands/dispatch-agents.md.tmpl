@@ -120,3 +120,23 @@
 | #2   | [域名] | done | N          | 无   |
 集成状态：通过/未通过
 ```
+
+## 子 agent 日志隔离（Issue #14）
+
+并发写 current-task.md 会互相覆盖。每个派出的子 agent 必须使用独立 diary：
+
+```bash
+harness agent init agent-1         # 创建 .agent-harness/agents/agent-1/
+harness agent diary agent-1 "扫描 src/auth/ 找到 3 处 TODO"
+harness agent status agent-1 "正在重写 auth/session.py"
+```
+
+主 agent 收集时：
+
+```bash
+harness agent list                 # 看哪些子 agent 活跃
+harness agent aggregate            # 汇总所有 diary
+harness agent aggregate agent-1 agent-3  # 只汇总特定 id
+```
+
+id 规范：`^[a-z0-9][a-z0-9-]{0,30}$`。子 agent **禁止**直接写 current-task.md / task-log.md / lessons.md — 主 agent 根据 aggregate 结果决定哪些值得进主档。

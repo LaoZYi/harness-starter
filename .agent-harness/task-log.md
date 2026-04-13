@@ -467,3 +467,31 @@
   - [x] make ci 通过（263 → 279）
   - [x] make dogfood 同步后框架仍可用（sentinel 兜底）
   - [x] 文档全量同步 + lessons 沉淀
+
+
+## 2026-04-13 — Issue #14：多 agent 日志隔离（吸收自 MemPalace）
+
+- 需求：给 /dispatch-agents 和 /subagent-dev 场景的并行子 agent 提供独立目录，避免并发写共享 current-task 互相覆盖
+- 做了什么：
+  - `src/agent_harness/agent.py`（233 行）：init_agent / diary_append / status_set / status_read / list_agents / aggregate，fcntl 锁（append 用 LOCK_EX+O_APPEND，status 用 LOCK_EX+truncate，沿 2026-04-12 "先锁再 truncate" 教训）
+  - `src/agent_harness/agent_cli.py`：`harness agent init/diary/status/list/aggregate` 五子命令
+  - 目录：`.agent-harness/agents/<id>/{diary.md, status.md}`；id 规范 `^[a-z0-9][a-z0-9-]{0,30}$`（与 squad 统一）
+  - upgrade 策略：`.agent-harness/agents/*` → skip
+  - `/dispatch-agents` + `/subagent-dev` 技能模板加子 agent 日志隔离段
+  - `task-lifecycle.md` 规则加"并行子 agent 的日志隔离"段
+  - `tests/test_agent.py` 25 测试：init 幂等 + id 规范（大写/shell 元字符/超长）+ diary（UTF-8/自动创建）+ status（覆盖）+ list（排序/过滤非法目录）+ aggregate（全量/子集/空）+ 并发 10x20 + CLI 端到端 + upgrade skip + squad 边界
+  - 附带修复：`cli.py:main` 原本丢弃 handler 返回码，测试 "init BAD!" 时暴露 → 改为 `sys.exit(rc)` 透传。cli.py 压缩到 279 行保硬规则
+  - 全量文档计数 279 → 304：AGENTS/CONTRIBUTING/CHANGELOG/docs/{product,architecture,runbook,release,workflow}.md
+- 关键决策：
+  - **最小实现**：没做 MemPalace 的 50 agent 上限、没加 Python 包装层、没 hook 强制；库函数 + CLI + 规则提示三层
+  - **复用 fcntl 模式**：与 audit.py 同源，保证并发写安全；lessons "先锁再 truncate" 教训直接套用到 status_set
+  - **与 /squad 严格分离**：文档明确边界——/squad 重型（tmux + worktree + capability）走 squad/<task>/workers/；轻型 /dispatch-agents + /subagent-dev 走 agents/<id>/。契约测试 test_agents_and_squad_are_separate_subdirs 锁定
+  - **aggregate 只读不合并**：主 agent 基于汇总决定哪些进 task-log，避免自动合并的边界问题
+  - **暴露并修复 cli.py:main rc 丢弃**：算本次任务的顺手改进，影响 audit / agent 两个命令族的错误码语义
+- 改了哪些文件：
+  - 新建：`src/agent_harness/agent.py`、`agent_cli.py`、`templates/common/.agent-harness/agents/.gitkeep.tmpl`、`tests/test_agent.py`
+  - 修改：`src/agent_harness/cli.py`、`upgrade.py`、`scripts/check_repo.py`、`templates/common/.claude/rules/task-lifecycle.md.tmpl`、`templates/superpowers/.claude/commands/{dispatch-agents,subagent-dev}.md.tmpl`
+  - dogfood：`.claude/commands/{dispatch-agents,subagent-dev}.md`、`.claude/rules/task-lifecycle.md`
+  - 文档：`AGENTS.md` (+2 行)、`CONTRIBUTING.md`、`CHANGELOG.md`、`docs/{product,architecture,runbook,release,workflow}.md`
+  - 知识：`.agent-harness/memory-index.md`
+- 完成标准（11/11）：全部通过 — init 幂等、diary append、status 覆盖、list 排序、aggregate 汇总、id 规范、并发 200 次无丢失、upgrade skip、技能模板引导、make ci 279→304、文档 + 边界说明

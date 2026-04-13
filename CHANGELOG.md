@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added — 多 agent 日志隔离（Issue #14，吸收自 MemPalace）
+
+- **新模块 `src/agent_harness/agent.py`**（233 行）：`init_agent / diary_append / status_set / status_read / list_agents / aggregate`，fcntl LOCK_EX + O_APPEND 并发 append 安全；status 用 LOCK_EX + truncate 原子覆盖；agent id 规范 `^[a-z0-9][a-z0-9-]{0,30}$`（与 /squad 一致）
+- **新 CLI `harness agent`**（`agent_cli.py`）：`init / diary / status / list / aggregate` 五个子命令
+- **目录结构**：`.agent-harness/agents/<id>/{diary.md, status.md}`，每个子 agent 独立空间避免并发覆盖
+- **技能模板更新**：`/dispatch-agents` 和 `/subagent-dev` 末尾新增"子 agent 日志隔离"段，指导 id 规范 + 禁止直接写 current-task
+- **task-lifecycle 规则新增"并行子 agent 的日志隔离"**，与 WAL 段配套
+- **upgrade 策略**：`.agent-harness/agents/*` 列入 `skip`（用户数据保留）
+- **附带修复**：`cli.py:main` 原先丢弃 handler 返回码，改为 `sys.exit(rc)` 透传；agent CLI 的 `init BAD!` 现在正确返回 exit 2
+- **新测试 `tests/test_agent.py`**（25 测试）：init 幂等 + id 规范（拒绝大写/shell 元字符/超长）+ diary 追加/UTF-8/自动创建 + status set/read/overwrite + list 排序/过滤非法目录 + aggregate 全量/子集/空 + 并发 10×20 无丢失 + CLI 端到端 + upgrade skip 契约 + squad 边界不相交
+- **与 /squad 的边界**：文档明确——`/squad` 重型（tmux + worktree + capability）仍用 `squad/<task>/workers/`；轻型 `/dispatch-agents` 和 `/subagent-dev` 用 `agents/<id>/`
+
 ### Added — 会话保护 hooks（Issue #13，吸收自 MemPalace）
 
 - **Stop hook** (`.claude/hooks/stop.sh`)：AI 即将停止时检查 `.agent-harness/current-task.md`，若有 `- [ ]` 未勾选 且 无"状态：待验证" 则 block（顶级 JSON `{"decision":"block","reason":...}`），要求 AI 先把进度写到 current-task.md
@@ -132,7 +144,7 @@
 
 ### Infrastructure
 
-- 279 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
+- 304 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索
