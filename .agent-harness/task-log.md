@@ -644,3 +644,34 @@
   5. ✅ `.agent-harness/.watchdog-skip` sentinel 完全静默
   6. ✅ 14 条测试覆盖三类失联场景（≥4 个 case 要求超额完成）+ 端到端 4 场景 smoke 全通过
   7. ✅ 文档同步：product / architecture / release / CHANGELOG 测试数 382→396
+
+## 2026-04-13 Issue #24 — audit / memory 项目内嵌（解除 AI 工作流对 harness CLI 的运行时依赖）
+
+- 需求：用户 clone 一个 init 过的 harness 项目，即使没装 harness CLI 也能跑 `/lfg` 等 AI 工作流所需的所有命令。Issue #23 拆分的子任务 1，地基
+- 做了什么：
+  - 新模块 `src/agent_harness/runtime_install.py`（139 行）：`install_runtime(target_root)` 复制 3 个 stdlib 源文件 + 生成精简 _shared.py + 写两个 entry 脚本 + README
+  - `audit_cli.py` / `memory.py` 新增 `main(argv=None)` 函数（抽 `_add_audit_subcommands` 共享逻辑；harness CLI 路径不受影响）
+  - `initializer.initialize_project` / `upgrade.execute_upgrade` 末尾自动调 `install_runtime`（强制覆盖式）
+  - `scripts/dogfood.py` 增加刷新本仓库 bin
+  - 模板调用替换：`templates/common/.claude/rules/task-lifecycle.md.tmpl` + `templates/common/.agent-harness/memory-index.md.tmpl` + `templates/superpowers/.claude/commands/lfg.md.tmpl` 里的 `harness audit/memory` → `.agent-harness/bin/audit/memory`
+  - 10 条端到端契约测试：`tests/test_runtime_bin.py`（init 结构、stdlib-only AST 契约、bin/audit 全命令、bin/memory rebuild、upgrade 覆盖式刷新）
+- 关键决策：
+  - **划清命令边界**：`harness` CLI = 维护者工具；`.agent-harness/bin/` = 使用者工具。这是个**原则**，不只是权宜
+  - **复制源码 > 重新实现**：避免两份漂移，但要给宿主模块去顶层副作用（见 lessons 新增条目 2）
+  - **不纳入 save_base / three-way merge**：_runtime 是框架资产无用户数据，每次 upgrade 覆盖即可
+  - **280 行硬限驱动拆模块**：install_runtime 新建独立文件 `runtime_install.py`，不塞进 initializer.py 污染职责
+- 改了哪些文件：
+  - 新增：`src/agent_harness/runtime_install.py`（139 行）、`tests/test_runtime_bin.py`（10 条契约，211 行）
+  - 修改：`audit_cli.py`（+ main + _add_audit_subcommands 抽取）、`memory.py`（+ main）、`initializer.py`（+ install_runtime 调用 + 压行）、`upgrade.py`（+ import + install_runtime 调用 + 压行）、`scripts/dogfood.py`（+ install_runtime）、3 个 .tmpl（替换调用）、本仓库 `.claude/commands/lfg.md` + `.claude/rules/task-lifecycle.md`（dogfood 同步产物）
+  - 文档：`docs/runbook.md`（加"项目自带运行时"段 + 变更审计改为 bin/audit）、`docs/architecture.md`（audit_cli.py 加 main 说明 + 新增 runtime_install.py 条目）、`CHANGELOG.md`（Added 段 + 测试数 411）
+  - 知识：`lessons.md` 新增 2 条（AI 运行时必须项目内嵌 + 复制源码要去顶层副作用）
+- 完成标准（7/7）：
+  1. ✅ `install_runtime` 安装 bin + _runtime + entry + README
+  2. ✅ init 时自动装；upgrade 时覆盖式刷新
+  3. ✅ audit_cli / memory 新增 main 函数，cli.py 不变
+  4. ✅ 3 个 .tmpl 全部替换 harness audit/memory 为 .agent-harness/bin/
+  5. ✅ 10 条端到端契约（含 ast 层面的 stdlib-only 守卫）
+  6. ✅ `_runtime/*.py` 纯 stdlib 守住（AST 扫描契约通过）
+  7. ✅ docs/runbook + architecture + CHANGELOG 同步；dogfood 自身；本仓库 bin 可跑 audit tail
+
+- Issue #23 进度：子任务 1/3 完成；下一步 Issue #25（squad 项目内嵌）

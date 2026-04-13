@@ -23,10 +23,34 @@
 
 ## 变更审计
 
-- `harness audit append --file lessons.md --op append --summary "..."`：追加审计记录（agent 身份读 `HARNESS_AGENT` env）
-- `harness audit tail [--limit N] [--json]`：查看最近 N 条（默认 20，按时间倒序）
-- `harness audit stats [--json]`：按 file / op / agent 聚合统计
-- `harness audit truncate --before YYYY-MM-DD`：裁剪早于指定日期的记录
+**推荐用项目自带运行时（clone 即用，无需 harness CLI）**：
+
+- `.agent-harness/bin/audit append --file lessons.md --op append --summary "..."`：追加审计记录（agent 身份读 `HARNESS_AGENT` env）
+- `.agent-harness/bin/audit tail [--limit N] [--json]`：查看最近 N 条（默认 20，按时间倒序）
+- `.agent-harness/bin/audit stats [--json]`：按 file / op / agent 聚合统计
+- `.agent-harness/bin/audit truncate --before YYYY-MM-DD`：裁剪早于指定日期的记录
+
+也可用 `harness audit ...`（等价，但需维护者机器装了 harness CLI）。
+
+## 项目自带运行时（.agent-harness/bin/）
+
+**Issue #24**：AI 工作流调用的命令已项目内嵌，**无需使用者装 harness CLI**。
+
+结构：
+
+```
+.agent-harness/bin/
+├── audit      # 等价于 harness audit
+├── memory     # 等价于 harness memory
+├── README.md  # 说明
+└── _runtime/  # 纯 stdlib 源码副本（harness 自动管理，勿手工改）
+```
+
+**定位**：
+- **`harness` CLI**（`pipx install agent-harness-starter`）—— 项目**维护者**用，负责 init / upgrade / doctor / export / stats / sync
+- **`.agent-harness/bin/`** —— 项目**使用者**（clone 仓库的人）用，AI 工作流所需的所有命令都从这里调
+
+**升级**：`.agent-harness/bin/_runtime/` 在 `harness upgrade apply` 时强制覆盖（无用户数据）。
 
 ## 使用 harness 命令
 

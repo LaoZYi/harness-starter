@@ -210,13 +210,12 @@ def initialize_project(
         skipped.extend(ps)
     if not dry_run:
         from .upgrade import save_base
-        # Read back actual written files (not re-render) to guarantee base == current
-        actual: dict[str, str] = {}
-        for rel in written:
-            fp = target_root / rel
-            if fp.exists() and fp.is_file():
-                actual[rel] = fp.read_text(encoding="utf-8")
+        from .runtime_install import install_runtime
+        actual = {rel: (target_root / rel).read_text(encoding="utf-8")
+                  for rel in written
+                  if (target_root / rel).exists() and (target_root / rel).is_file()}
         save_base(target_root, actual)
+        install_runtime(target_root)
     return InitializationResult(
         target_root=str(target_root),
         context=context,

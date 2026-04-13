@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from agent_harness.initializer import SUPERPOWERS_ROOT, TEMPLATE_ROOT, prepare_initialization  # noqa: E402
+from agent_harness.runtime_install import install_runtime  # noqa: E402
 from agent_harness.templating import render_templates  # noqa: E402
 
 SYNC_PREFIXES = (".claude/commands/", ".claude/rules/", ".claude/hooks/", ".claude/settings.json")
@@ -53,7 +54,8 @@ def main() -> None:
             actual_path.write_text(expected, encoding="utf-8")
             updated += 1
             print(f"  ~ {rel_path}")
-    print(f"\n同步完成：{created} 个新增，{updated} 个更新")
+    install_runtime(ROOT)  # Issue #24: 刷新本仓库的 .agent-harness/bin/ 运行时
+    print(f"\n同步完成：{created} 个新增，{updated} 个更新；bin/_runtime 已刷新")
 
 
 if __name__ == "__main__":

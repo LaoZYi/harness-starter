@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Project-embedded audit runtime — equivalent to `harness audit`.
+
+此文件由 harness 生成，请勿手工修改（下次 upgrade 会覆盖）。
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _runtime.audit_cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(main())
