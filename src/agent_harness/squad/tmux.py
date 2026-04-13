@@ -69,6 +69,32 @@ def build_new_window_cmd(
     ]
 
 
+def build_list_windows_cmd(session: str) -> list[str]:
+    """Build `tmux list-windows -t <session> -F '#{window_name}'` command.
+
+    Caller runs this and splits stdout on newlines to get active window names.
+    Used by `squad advance` to detect already-launched workers (idempotent spawn).
+    """
+    _validate_name("session", session)
+    return ["tmux", "list-windows", "-t", session, "-F", "#{window_name}"]
+
+
+def list_windows(session: str) -> list[str]:
+    """Run `tmux list-windows` and return window names. Returns [] if session
+    doesn't exist or tmux is unavailable (not an error — advance can still
+    proceed, just treats all workers as unlaunched)."""
+    try:
+        result = subprocess.run(
+            build_list_windows_cmd(session),
+            capture_output=True, text=True, check=False,
+        )
+    except (FileNotFoundError, TmuxError):
+        return []
+    if result.returncode != 0:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
 def ensure_tmux_available() -> str:
     """Return tmux version string, or raise TmuxError with install hint."""
     path = shutil.which("tmux")
