@@ -552,3 +552,33 @@
   8. ✅ 所有新增/修改技能同步到 /lfg 覆盖表（EXPECTED_IN_LFG 契约测试通过）
   9. ✅ 测试数 329→347、技能数 30→31 全部同步
   10. ✅ make ci 347/347 全绿
+
+## 2026-04-13 /squad 依赖触发 + 拓扑序启动（Issue #19a，阶段 2 部分）
+
+- 需求：Issue #19 阶段 2 的第一部分——`depends_on` 真实生效，按拓扑序启动 worker，前置 done 后才启动下游。阶段 2 的其他机制（SQLite mailbox / 持久 coordinator / watchdog）拆新 Issue。
+- 做了什么：
+  - `cmd_create` 改造：只启动 wave 0（无 depends_on 的 worker），有依赖的写 pending 事件
+  - 新命令 `harness squad advance [--task-id T] [--dry-run]`：扫描 done + tmux 窗口，启动依赖已满足的 pending worker（幂等）
+  - 新命令 `harness squad done <worker> [-m MSG]`：便捷写 done 事件
+  - `cmd_status` 增强：显示三态（✅ done / 🟢 running / ⏳/🔴 pending）+ 阻塞时长 + 30min 超时警告
+  - 新模块 `squad/coordinator.py` 承载依赖推进逻辑（为 Issue #19c 持久 coordinator 预留位置）
+  - `state.py` 新增 `done_workers` / `pending_worker_info` / `read_all_status` 查询辅助（纯函数）
+  - `tmux.py` 新增 `list_windows(session)` 检测已启动窗口
+  - 17 个新测试覆盖：线性依赖、菱形依赖、advance 幂等、状态三态推导、30min 超时警告、find_squad 边界
+- 关键决策：
+  - **三源对账推导状态**，不在 manifest 中持久化 worker status。避免 19b/19c 再改 schema
+  - **新建 coordinator.py 而非塞 cli.py**。cli.py 会超 280 行；且 coordinator 正是 19c 的未来扩展位
+  - **done 是显式事件**，不监听 tmux 窗口 exit。worker 自己写 status.jsonl 或用 `harness squad done` 命令
+  - **超时只警告不终止**。进程杀/降级留给 19c（coordinator）/ 19d（watchdog）
+- 改了：
+  - 修改：`src/agent_harness/squad/cli.py`（cmd_create + cmd_status 改造 + 注册新子命令）、`state.py`（查询辅助）、`tmux.py`（list_windows）
+  - 新增：`src/agent_harness/squad/coordinator.py`（158 行）、`tests/test_squad_dependency.py`（328 行 / 17 条测试）
+  - 文档：`docs/product.md`、`docs/architecture.md`（模块层 + 测试层）、`docs/runbook.md`、测试数 347→364 同步到 CHANGELOG / architecture / release
+  - 知识：`.agent-harness/lessons.md`（2 条新教训：三源对账、模块拆分前留好未来位置）、`memory-index.md`
+- 完成标准（6/6）：
+  1. ✅ 线性依赖 scout→builder→reviewer 按序启动（测试覆盖）
+  2. ✅ 菱形依赖 scout→{builder,linter}→reviewer 需两个前置都 done（测试覆盖）
+  3. ✅ advance 幂等（mock live_windows 测试覆盖）
+  4. ✅ status 三态 + 阻塞时长 + 30min 警告（derive_worker_state 4 条测试）
+  5. ✅ 阶段 1 的 28 条 squad 测试不 regression；新增 17 条（共 45 条 squad 测试）
+  6. ✅ product / architecture / runbook 文档同步
