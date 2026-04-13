@@ -177,3 +177,19 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 错误：`_locked_write` 用 `os.open(..., O_TRUNC)` 再 `flock`，在文件打开时就清空了。并发两个 writer 场景下可能导致 A 拿锁前已被 B 清空，数据写到悬空描述符
 - 根因：`O_TRUNC` 在 `open()` 时生效，与后续获取锁之间存在窗口。经典 lock-before-mutate 违反
 - 规则：flock + truncate 组合必须顺序：`os.open(O_WRONLY|O_CREAT)` → `flock(LOCK_EX)` → `os.ftruncate(0)` → `os.lseek(0)` → 写入。或用"写临时文件 + `os.replace()`"做原子替换（更稳但更复杂）。本次修复采用前者
+
+## 2026-04-13 [架构设计] watchdog 把"已上报"也写进事件流，避免外挂状态文件
+
+- 场景：Issue #22 squad watchdog 要做幂等去重——同一 worker 失联在多个 tick 里只报一次。直觉是开个 set/dict 记录 reported 状态
+- 决策：直接把 `worker_crashed` / `session_lost` 写进 mailbox，下次 tick 反查 mailbox 判断是否已上报。**不引入外挂状态文件**
+- 根因：sqaud 已经有"三源对账推导状态"原则（lessons/2026-04-13）。再加一份去重状态会破坏单一真相源——重启 / 多进程共享时这份状态会漂移
+- 规则：去重/标记状态优先写进现有事件流（mailbox / log / db），让查询替代缓存。代价是每 tick 多一次小查询，收益是少一份漂移源 + 重启自动恢复 + 测试更纯（mailbox 是已有 fixture）
+- 副作用：要求新事件类型必须登记 `KNOWN_TYPES`，否则下游过滤会失效——这点恰好已经有契约测试守住
+
+## 2026-04-13 [流程] 280 行硬限触发时不扩规则要拆/瘦模块
+
+- 场景：watchdog 集成 cmd_watch 时 coordinator.py 涨到 299 行触超 280 限
+- 决策：拒绝改硬限。先把 watchdog 调用 + 打印 + 退出标志整体抽到 watchdog.py 的 `watch_tick_with_report`（瘦 10 行）；仍超就压平 import + 简化 cmd_dump（再瘦 9 行）压到 280
+- 根因：硬限是架构压力测试。一旦放宽就再没有边界，模块会无限膨胀。280 行是经验值，超出说明该模块在做太多事
+- 规则：碰到 check_repo 行数失败的处理顺序：① 抽 helper 到合适模块（首选）→ ② 简化代码（去重复 import、压 docstring）→ ③ 拆模块。**不要**改 `check_repo.py` 的限值。这次的代价是 watchdog.py 多了一个 helper 函数 `watch_tick_with_report`，但这个边界本来就该有：watchdog 是检测+决策者，coordinator 只该是调度者
+

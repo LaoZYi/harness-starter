@@ -95,6 +95,27 @@ def list_windows(session: str) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def build_has_session_cmd(session: str) -> list[str]:
+    """Build `tmux has-session -t <session>` for watchdog probing."""
+    _validate_name("session", session)
+    return ["tmux", "has-session", "-t", session]
+
+
+def session_exists(session: str) -> bool:
+    """Return True if tmux session is alive. False on missing tmux / invalid name / dead session."""
+    try:
+        cmd = build_has_session_cmd(session)
+    except TmuxError:
+        return False
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError:
+        return False
+    return result.returncode == 0
+
+
 def ensure_tmux_available() -> str:
     """Return tmux version string, or raise TmuxError with install hint."""
     path = shutil.which("tmux")

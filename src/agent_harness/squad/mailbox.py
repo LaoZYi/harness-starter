@@ -42,6 +42,8 @@ KNOWN_TYPES = frozenset({
     "pending", "spawned", "spawn_failed", "done", "info", "error",
     "squad_stopped", "worker_stopped",
     "dry-run-rendered",  # 19a dry-run 路径的事件
+    "session_lost", "worker_crashed",  # Issue #22 watchdog
+    "watch_exited",  # cmd_watch 退出标记（已在用，补登记）
 })
 
 

@@ -13,16 +13,10 @@ import sys
 import time
 from pathlib import Path
 
-from .state import (
-    Manifest,
-    append_status,
-    done_workers,
-    list_active_squads,
-    pending_worker_info,
-    read_manifest,
-    squad_dir,
-)
-from .tmux import build_new_window_cmd, list_windows
+from .state import (Manifest, append_status, done_workers, list_active_squads,
+                    pending_worker_info, read_manifest, squad_dir)
+from .tmux import build_new_window_cmd, list_windows, session_exists
+from .watchdog import watch_tick_with_report
 from .worker_files import run_check
 
 
@@ -237,6 +231,17 @@ def cmd_watch(args) -> int:
         if started:
             print(f"[squad watch] 启动 {len(started)} 个 worker：{', '.join(started)}", flush=True)
 
+        # Issue #22：tick 末尾跑 watchdog；session_lost 立即退出
+        if watch_tick_with_report(
+            root, task_id, m,
+            session_exists_fn=session_exists,
+            list_windows_fn=list_windows,
+            printer=lambda s: print(s, flush=True),
+        ):
+            append_status(root, task_id,
+                          {"event": "watch_exited", "message": "session_lost"})
+            return 0
+
         # 所有 worker 都 done → 自动退出
         done_set = done_workers(root, task_id)
         if all(w.name in done_set for w in m.workers):
@@ -268,10 +273,8 @@ def cmd_dump(args) -> int:
     if found is None:
         return 1
     task_id, _ = found
-    d = squad_dir(root, task_id)
-    count = 0
-    for line in _mb.dump_to_jsonl(d):
+    lines = list(_mb.dump_to_jsonl(squad_dir(root, task_id)))
+    for line in lines:
         print(line)
-        count += 1
-    print(f"[squad dump] 共 {count} 条事件", file=sys.stderr)
+    print(f"[squad dump] 共 {len(lines)} 条事件", file=sys.stderr)
     return 0
