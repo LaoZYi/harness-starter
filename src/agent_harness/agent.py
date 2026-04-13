@@ -15,12 +15,13 @@ from __future__ import annotations
 
 import contextlib
 import os
-import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
+
+from .security import NAME_PATTERN, SecurityError, sanitize_name
 
 try:
     import fcntl as _fcntl
@@ -28,9 +29,6 @@ try:
 except ImportError:  # Windows native (non-WSL)
     _fcntl = None  # type: ignore[assignment]
     _HAS_FCNTL = False
-
-
-_AGENT_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
 
 
 class AgentError(ValueError):
@@ -46,10 +44,12 @@ def _require_fcntl() -> None:
 
 
 def _validate_id(agent_id: str) -> None:
-    if not isinstance(agent_id, str) or not _AGENT_ID_RE.match(agent_id):
+    try:
+        sanitize_name(agent_id)
+    except SecurityError as exc:
         raise AgentError(
             f"agent id 不合法（仅允许小写字母/数字/连字符，长度 1-31）：{agent_id!r}"
-        )
+        ) from exc
 
 
 def _now_iso() -> str:
@@ -177,7 +177,7 @@ def list_agents(project_root: Path) -> list[AgentRecord]:
         return []
     records: list[AgentRecord] = []
     for d in sorted(root.iterdir()):
-        if not d.is_dir() or not _AGENT_ID_RE.match(d.name):
+        if not d.is_dir() or not NAME_PATTERN.match(d.name):
             continue
         diary = d / "diary.md"
         status_ts, status_state = status_read(project_root, d.name)

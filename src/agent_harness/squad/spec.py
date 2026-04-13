@@ -1,16 +1,16 @@
 """YAML spec parsing for /squad — worker definitions, dependency validation."""
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from ..security import NAME_PATTERN
+
 
 _ALLOWED_CAPABILITIES = ("scout", "builder", "reviewer")
-_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
 
 
 class SpecError(ValueError):
@@ -54,7 +54,7 @@ def parse_spec(path: Path) -> Spec:
 
     if not task_id or not isinstance(task_id, str):
         raise SpecError("缺少必填字段 task_id")
-    if not _NAME_PATTERN.match(task_id):
+    if not NAME_PATTERN.match(task_id):
         raise SpecError(f"task_id 名称不合法（仅允许小写字母/数字/连字符，长度 1-31）：{task_id!r}")
     if not base_branch or not isinstance(base_branch, str):
         raise SpecError("缺少必填字段 base_branch")
@@ -78,7 +78,7 @@ def _parse_worker(data: Any, idx: int) -> Worker:
 
     if not name or not isinstance(name, str):
         raise SpecError(f"workers[{idx}] 缺少 name")
-    if not _NAME_PATTERN.match(name):
+    if not NAME_PATTERN.match(name):
         raise SpecError(
             f"workers[{idx}] 名称不合法（仅允许小写字母/数字/连字符，长度 1-31）：{name!r}"
         )

@@ -27,6 +27,7 @@
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
 - `src/agent_harness/_shared.py`：共享常量（TEMPLATE_ROOT、META_ROOT 等）、slugify、require_harness。
 - `src/agent_harness/memory.py`：分层记忆索引维护（`rebuild_index()` 从 lessons/task-log/references 重建 `memory-index.md`）。
+- `src/agent_harness/security.py`：统一输入安全校验（`sanitize_name` / `sanitize_path` / `sanitize_content` + `SecurityError`）。将 `.claude/rules/safety.md` 的信任边界从文档约束代码化为强制函数。agent.py 和 squad/spec.py 复用其 `NAME_PATTERN` 和 `sanitize_name`，消除重复正则。吸收自 MemPalace（Issue #15）。
 - `src/agent_harness/audit.py`：关键文件变更审计 WAL（`append_audit / tail / stats / truncate_before`），fcntl 锁保证并发安全，只追踪 current-task / task-log / lessons 三个文件。
 - `src/agent_harness/agent.py` + `agent_cli.py`：多 agent 日志隔离（`init_agent / diary_append / status_set / list_agents / aggregate`），fcntl 锁保证并发 append 无丢失；专为 `/dispatch-agents` 和 `/subagent-dev` 场景服务，与 /squad 的 workers/ 目录并列但互不相交。
 - `src/agent_harness/templates/common/.claude/hooks/`：Claude Code 会话保护 hooks — `session-start.sh`（打开项目时展示未完成任务）、`stop.sh`（停止前检查 current-task 未勾选 checkbox，可通过 `.stop-hook-skip` sentinel 放行）、`pre-compact.sh`（压缩前追加 audit 检查点 + stderr 提示）。
@@ -44,7 +45,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：304 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（28 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）。
+- `tests/`：329 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（28 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）、security 输入校验（25 条：sanitize_name/path/content 覆盖正常、边界、路径遍历、符号链接逃逸、null 字节、控制字符、oversize）。
 
 ## 约束
 
