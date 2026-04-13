@@ -5,7 +5,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from .coordinator import cmd_advance, cmd_done, derive_worker_state
+from .coordinator import cmd_advance, cmd_done, cmd_dump, cmd_watch, derive_worker_state
 from .spec import parse_spec
 from .state import (
     Manifest,
@@ -249,21 +249,25 @@ def register_subcommand(subs) -> None:
     stp.add_argument("--project", help="项目根目录（默认当前目录）")
     stp.set_defaults(func=cmd_stop)
 
-    adv = sq_subs.add_parser(
-        "advance",
-        help="推动 squad 前进：启动依赖已满足的 pending worker（阶段 2 依赖触发）",
-    )
-    adv.add_argument("--task-id", help="squad task id（默认自动选择唯一活跃 squad）")
-    adv.add_argument("--project", help="项目根目录（默认当前目录）")
-    adv.add_argument("--dry-run", action="store_true", help="只打印将启动哪些 worker，不创建 tmux 窗口")
-    adv.set_defaults(func=cmd_advance)
+    def _add_coord(name, help_, func, extra=None):
+        p = sq_subs.add_parser(name, help=help_)
+        p.add_argument("--task-id", help="squad task id（默认自动选择唯一活跃 squad）")
+        p.add_argument("--project", help="项目根目录（默认当前目录）")
+        if extra:
+            extra(p)
+        p.set_defaults(func=func)
+        return p
 
-    dn = sq_subs.add_parser(
-        "done",
-        help="标记某 worker 完成（写 done 事件，供 advance 识别）",
-    )
+    _add_coord("advance", "推动 squad：启动依赖已满足的 pending worker", cmd_advance,
+               lambda p: p.add_argument("--dry-run", action="store_true",
+                                        help="只打印将启动哪些 worker，不创建 tmux 窗口"))
+
+    def _add_done(p):
+        p.add_argument("-m", "--message", help="done 事件附带消息")
+    dn = _add_coord("done", "标记某 worker 完成（写 done 事件）", cmd_done, _add_done)
     dn.add_argument("worker", help="worker 名")
-    dn.add_argument("--task-id", help="squad task id（默认自动选择唯一活跃 squad）")
-    dn.add_argument("--project", help="项目根目录（默认当前目录）")
-    dn.add_argument("-m", "--message", help="done 事件附带消息")
-    dn.set_defaults(func=cmd_done)
+
+    _add_coord("watch", "常驻进程：轮询 mailbox 自动 advance（Issue #21）", cmd_watch,
+               lambda p: p.add_argument("--interval", type=int, default=3,
+                                        help="轮询间隔秒数（默认 3s）"))
+    _add_coord("dump", "导出 mailbox 为 JSONL（调试用）", cmd_dump)

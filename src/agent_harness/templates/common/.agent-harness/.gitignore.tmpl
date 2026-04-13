@@ -1,0 +1,18 @@
+# SQLite mailbox WAL 副文件（Issue #21）
+# 这些文件会被 SQLite 自动管理，重启后可能自动清理或重建——不应进入 git
+squad/*/mailbox.db-wal
+squad/*/mailbox.db-shm
+
+# mailbox.db 本身是运行时状态，也不建议提交（但若要保留历史跑过的 squad 记录可手动 --force 加）
+squad/*/mailbox.db
+
+# Agent diary/status 运行时状态（Issue #14 多 agent 日志隔离）
+agents/*/diary.md
+agents/*/status.md
+
+# 工具调用计数器（Issue #17 context-monitor hook）
+.tool-call-count
+
+# 本地 sentinels（用户手动控制的开关，不 commit）
+.stop-hook-skip
+.context-monitor-skip

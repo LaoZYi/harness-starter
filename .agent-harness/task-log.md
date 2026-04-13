@@ -582,3 +582,36 @@
   4. ✅ status 三态 + 阻塞时长 + 30min 警告（derive_worker_state 4 条测试）
   5. ✅ 阶段 1 的 28 条 squad 测试不 regression；新增 17 条（共 45 条 squad 测试）
   6. ✅ product / architecture / runbook 文档同步
+
+## 2026-04-13 /squad SQLite mailbox + watch/dump（Issue #21，合并原 #20）
+
+- 需求：Issue #21 的合并版（含原 #20 SQLite mailbox + 原 #21 持久 coordinator）。
+- 做了什么：
+  - 新模块 `mailbox.py`（183 行）：SQLite WAL 模式事件存储；`append_event / read_events / done_workers / pending_worker_info / dump_to_jsonl`；索引 event_type + worker
+  - 新命令 `harness squad watch [--interval 3]`：常驻进程轮询 mailbox → 自动 advance；SIGTERM 优雅退出；全 worker done 后自动退出
+  - 新命令 `harness squad dump`：导出 mailbox 为 JSONL（调试）
+  - `state.py` 的 `append_status / done_workers / pending_worker_info` 签名不变，内部 delegate 到 mailbox（19a 调用方无感）
+  - 模板 `.agent-harness/.gitignore` 自动生成，排除 `mailbox.db-wal` / `mailbox.db-shm` 等 WAL 副文件
+  - 18 条新测试：mailbox 基础（WAL、过滤、payload roundtrip）、state 兼容层、watch（全 done 退出、max_iterations、自动 advance）、dump、gitignore 模板
+- 关键决策：
+  - **合并 #20 到 #21**：避免两次破坏性重构，mailbox 无 consumer 就是空转
+  - **保留 state.py 旧签名作兼容层**：迁移风险隔离在 mailbox 模块内
+  - **Source-verify sqlite3 WAL / check_same_thread / Row factory 全部验证通过**
+  - **WAL 副文件模板 gitignore 自动生成**：目标项目无需手动配置
+  - **cli.py 用 `_add_coord` helper 保持 <280 行**：沿用 19a 建立的"模块拆分前留好未来位置"原则
+- 改了：
+  - 新增：`src/agent_harness/squad/mailbox.py`、`src/agent_harness/templates/common/.agent-harness/.gitignore.tmpl`、`tests/test_squad_mailbox.py`（18 条）
+  - 修改：`src/agent_harness/squad/state.py`（兼容层 delegate）、`coordinator.py`（cmd_watch + cmd_dump + _advance_once 共享函数）、`cli.py`（_add_coord helper + 注册 watch/dump）
+  - 测试：`test_squad_integration.py`（迁移到 mailbox API）、`test_squad_dependency.py`（pending 30min 测试改为操作 SQL）
+  - 文档：`docs/product.md`、`docs/architecture.md`（模块层 + 测试层）、`docs/runbook.md`、测试数 364→382 同步到 CHANGELOG / architecture / release
+  - 知识：`.agent-harness/lessons.md`（2 条新教训：兼容层、无 consumer 空转）、`memory-index.md`
+- 完成标准（9/9）：
+  1. ✅ mailbox.py 存在，WAL 模式
+  2. ✅ state.py 签名不变，内部切换（19a 17 条 + 其他 squad 测试不 regression）
+  3. ✅ coordinator.py 新增 cmd_watch
+  4. ✅ cmd_watch 轮询 + 自动 advance（mock 测试）
+  5. ✅ harness squad dump 导出 JSONL
+  6. ✅ .gitignore 模板规则
+  7. ✅ 19a 17 条 + 阶段 1 28 条 squad 测试全通过
+  8. ✅ 新增 18 条测试（mailbox 10 + state 3 + watch 3 + dump 1 + gitignore 1）
+  9. ✅ 文档同步（product / architecture / runbook + 测试数 364→382）
