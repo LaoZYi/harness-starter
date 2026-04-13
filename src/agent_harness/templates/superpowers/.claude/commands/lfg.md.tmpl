@@ -51,22 +51,44 @@
 
 **如果输入是普通文本描述**：
 
-1. **复述任务**：用自己的话重新描述任务目标，确认理解正确
-2. **明确验收标准**：这个任务做到什么程度算"完成"？列出 3-5 条可验证的标准
-3. 如果任务描述模糊 → **🔴 停下来向用户提问**，直到验收标准清晰
+1. **先判断是不是运维/元任务**——如果是，告知用户走 CLI 不走 /lfg：
 
-### 0.2 加载历史知识（自动）
+   | 用户意图 | 正确入口 | 为什么不走 /lfg |
+   |---|---|---|
+   | 初始化新项目 / 给其他仓库接入 | `harness init <target>` | /lfg 是日常开发流水线，不做脚手架生成 |
+   | 升级已接入项目的模板 | `harness upgrade plan/apply <target>` | 同上 |
+   | 检查项目健康度 / 看统计 | `harness doctor / export / stats <target>` | 诊断类，非任务流 |
+   | 同步 meta 仓库上下文到服务 | `harness sync --all` / `harness sync <target>` | 运维类 |
+   | 重建分层记忆索引 | `harness memory rebuild <target>` | 工具类 |
+   | 并行派遣多个常驻 agent | `harness squad create <spec.yaml>` 或 /squad | 不是单任务流 |
+   | 周期性代码体检 / 工程回顾 / 知识库 lint | `/health` / `/retro` / `/lint-lessons` | 元技能，lfg 阶段 9.3 有快速版 |
+   | 自我进化搜索 | `/evolve` | 元技能，会反向触发 lfg |
 
-**在制定任何计划之前**，先读取项目的历史经验和约束：
+   属于上表任一项 → 告知对应命令，退出 /lfg；不属于 → 继续下一步
 
-1. 读 `.agent-harness/lessons.md` — 搜索与本次任务相关的已知问题和解决方案
-2. 读 `.agent-harness/task-log.md` 最近 5 条记录 — 了解项目最近做了什么
-3. 读 `docs/architecture.md` — 了解模块边界，避免在错误的位置写代码
-4. 读 `docs/product.md` — 了解现有功能，避免与已有功能冲突
-5. 读 `AGENTS.md` — 了解硬规则约束，不可违反
-6. 读 `docs/decisions/` — 浏览已有架构决策记录（ADR），了解历史技术选型和约束
+2. **复述任务**：用自己的话重新描述任务目标，确认理解正确
+3. **明确验收标准**：这个任务做到什么程度算"完成"？列出 3-5 条可验证的标准
+4. 如果任务描述模糊 → **🔴 停下来向用户提问**，直到验收标准清晰
 
-如果在 `lessons.md` 中发现相关教训，**必须在计划中显式引用**，说明如何避免重蹈覆辙。
+### 0.2 加载历史知识（自动，分层加载）
+
+**在制定任何计划之前**，按分层记忆规则从 L0/L1 开始读，只在需要时才下沉到 L2/L3：
+
+**必读（L0/L1 常驻）**：
+
+1. 读 `.agent-harness/memory-index.md` — L1 热索引（最近 10 教训 + 5 任务 + references 清单 + 主题索引）
+2. 读 `AGENTS.md` — L0 硬规则约束，不可违反
+3. 读 `docs/architecture.md` — L0 模块边界，避免在错误的位置写代码
+4. 读 `docs/product.md` — L0 现有功能，避免与已有功能冲突
+5. 读 `docs/decisions/` 目录列表 — 扫一眼已有 ADR 标题，相关的才展开读
+
+**按需检索（L2/L3，禁止默认全量读）**：
+
+6. 如果 memory-index 命中相关话题，或任务描述涉及历史踩坑 → 运行 `/recall <关键词>` 做定向检索（后台会搜 `lessons.md` + `task-log.md`）
+7. 如果任务涉及专业维度（安全 / 性能 / 无障碍 / 测试设计）→ 运行 `/recall --refs <关键词>` 加载对应 checklist（`.agent-harness/references/`）
+8. 如果 /recall 返回明确相关条目，**必须在计划中显式引用教训标题**，说明如何避免重蹈覆辙
+
+> **禁止**：直接全文读 `lessons.md` 或 `task-log.md`。违反分层加载会挤占 AI 上下文，把热知识（L1）、温知识（L2）、冷知识（L3）变成一锅粥。见 `docs/decisions/0001-layered-memory-loading.md`。
 
 ### 0.3 评估复杂度（自动，用户可覆盖）
 
@@ -144,7 +166,9 @@
 
 1. 记录当前分支和 HEAD commit → 存入 `current-task.md`（用于回滚）
 2. **创建隔离环境**（完整通道必须，标准通道推荐）：
-   - 创建新的工作分支（或 worktree）
+   - 长任务 / 风险任务 / 并行任务 → 运行 `/use-worktrees` 创建独立 worktree（推荐），避免污染主工作区
+   - 短任务 / 单文件改动 → `git checkout -b <feat/fix>/<topic>-<date>` 建工作分支即可
+   - 涉及生产环境数据或"危险操作"（rm -rf / drop table / force push）→ 先运行 `/careful` 做一轮安全拦截
    - 运行 `{{test_command}}` 确认基线测试通过
    - 基线测试失败 → **🔴 停下来告诉用户**，不在有问题的基础上工作
 3. **记录质量基线**：
@@ -196,6 +220,8 @@
 2. **如果没有**：运行 `/write-plan` 生成计划
 3. **如果有**：阅读已有计划/规格，评估是否仍然适用
 4. **如果计划涉及架构选择**（技术选型、模式选择、关键设计决策）：运行 `/adr` 记录决策，ADR 存入 `docs/decisions/`
+5. **如果计划引用了框架/库的具体 API、CLI flag、配置项**（如 "使用 React useState"、"传 --foo flag"）：运行 `/source-verify` 从官方文档验证，防止凭训练数据编 API。教训来自 lessons.md 的"CLI flag 假设在 plan 阶段必须 source-verify"
+6. **如果任务可拆成多个 2-5 分钟粒度的子步骤**：在计划中生成对应的 `/todo` 清单，写到 current-task.md 的 Progress 段；执行阶段逐项勾选
 
 #### 3.2 计划质量检查（必须通过才能继续）
 
@@ -244,6 +270,7 @@
 1. **选择执行方式**：
    - 写功能代码 → `/tdd`（先写测试再实现）
    - 配置/迁移/文档 → `/execute-plan`（直接执行）
+   - 计划和执行需要分离（规划者/执行者角色） → `/subagent-dev`（计划在主 agent，执行下放子代理）
    - 3+ 独立短子任务（无共享状态） → `/dispatch-agents`（一次性 map-reduce）
    - 长任务需角色分权 + 实时观察 + 多 worktree 并行 → `/squad`（tmux 常驻多 agent）
 2. **执行该步骤**
@@ -287,8 +314,9 @@
 
 **通过门：评审结论为 PASS**
 
-1. 运行 `/multi-review` — 6 角色并行评审所有变更
-2. 收集评审报告
+1. 运行 `/request-review` — 整理本次变更的 diff 摘要、关键决策、验收标准，形成结构化评审材料（评审员可直接拿去用）
+2. 运行 `/multi-review` — 6 角色并行评审所有变更（以 `/request-review` 产出为输入）
+3. 收集评审报告
 
 | 结论 | 下一步 |
 |------|--------|
@@ -303,12 +331,13 @@
 **通过门：重新评审 PASS，或达到 3 轮上限**
 
 每一轮：
-1. **分析根因**：不是直接改代码，先理解评审员为什么标记这个问题
-2. 按 P0 → P1 优先级修复
-3. 每个修复创建独立 commit：`fix: <问题描述> [review round N]`
-4. 运行 `{{test_command}}` 确认修复没有引入新问题
-5. 重新运行 `/multi-review`
-6. PASS → 结束循环
+1. 运行 `/receive-review` — 结构化消化评审反馈：分类（接受 / 质疑 / 推迟）、按 P0→P1 排序、标记有争议项
+2. **分析根因**：不是直接改代码，先理解评审员为什么标记这个问题
+3. 按 P0 → P1 优先级修复
+4. 每个修复创建独立 commit：`fix: <问题描述> [review round N]`
+5. 运行 `{{test_command}}` 确认修复没有引入新问题
+6. 重新运行 `/multi-review`
+7. PASS → 结束循环
 
 **3 轮后仍有 P0/P1 → 🔴 停下来**：
 
@@ -337,8 +366,11 @@
 
 #### 7.1 技术验证
 
-1. `{{test_command}}` — 全部测试通过
-2. `{{check_command}}` — 代码质量检查通过
+运行 `/verify` — 完成前验证技能，输出证据链（不只是"跑通"而是"证明跑通"）：
+
+1. `{{test_command}}` — 全部测试通过（记录测试数、耗时、新增测试）
+2. `{{check_command}}` — 代码质量检查通过（记录警告数变化）
+3. `/verify` 还会产出结构化报告：验收标准对照 + 测试证据 + 未覆盖边界提示，作为阶段 7.2 的输入
 
 #### 7.2 验收标准核验
 
@@ -426,12 +458,11 @@
 
 #### 10.1 代码收尾
 
-- 在工作分支/worktree 中 → **🔴 让用户选择**：
-  - 合并到主分支
-  - 创建 PR
-  - 保留分支不合并
-  - 丢弃所有变更
-- 在主分支 → `/git-commit` 确保所有变更已提交
+- 在工作分支 / worktree 中 → 运行 `/finish-branch` 技能处理：
+  - 技能会依次检查：未提交改动、基分支同步、冲突预检、PR/合并方式选择、远端推送策略
+  - 涉及 `git reset --hard` / `git push --force` / `rm -rf` 等危险动作前，自动串 `/careful` 做拦截确认
+  - 用户可在技能交互中选四种去向：合并到主分支 / 创建 PR / 保留分支不合并 / 丢弃所有变更
+- 在主分支 → `/git-commit` 确保所有变更已提交（不允许在 master 上 `git reset --hard`，如需撤销用 `git revert`）
 
 #### 10.2 文档同步
 
@@ -592,21 +623,25 @@ fi
 
 任何阶段都可以回滚。用户说"回退"时：
 
+> **先串 `/careful`**：回滚都要用 `git reset --hard`，属于不可逆操作。每次回滚前先运行 `/careful` 做安全拦截确认——列出将被丢弃的 commit、未推送的改动、未保存的 worktree 文件，让用户肉眼过一遍再执行。
+
 ### 精确回滚（回退到某一步）
 
 如果用户说"回退到第 N 步"：
-1. 在回滚前先打一个快照 tag `lfg/pre-rollback`（保护当前状态，让回滚本身也可撤销）
-2. `git reset --hard lfg/step-N`（在工作分支上）
-3. 更新 `current-task.md` 进度，将第 N+1 步之后的 checkbox 改回 `[ ]`
-4. 从第 N+1 步继续
+1. 运行 `/careful`：展示 step-N 之后的 commit 列表，确认要丢弃
+2. 在回滚前先打一个快照 tag `lfg/pre-rollback`（保护当前状态，让回滚本身也可撤销）
+3. `git reset --hard lfg/step-N`（在工作分支上）
+4. 更新 `current-task.md` 进度，将第 N+1 步之后的 checkbox 改回 `[ ]`
+5. 从第 N+1 步继续
 
 ### 全量回滚（回退到任务开始前）
 
-1. 在回滚前先打一个快照 tag `lfg/pre-rollback`
-2. 读取 `current-task.md` 中记录的基线 commit
-3. `git reset --hard <基线commit>`（在工作分支上）或删除 worktree
-4. 清理 `current-task.md` 中的 LFG 进度和所有 `lfg/*` tag
-5. 告知用户已回退到任务开始前的状态
+1. 运行 `/careful`：展示整个任务的 commit 列表 + 未提交改动，确认要丢弃
+2. 在回滚前先打一个快照 tag `lfg/pre-rollback`
+3. 读取 `current-task.md` 中记录的基线 commit
+4. `git reset --hard <基线commit>`（在工作分支上）或删除 worktree
+5. 清理 `current-task.md` 中的 LFG 进度和所有 `lfg/*` tag
+6. 告知用户已回退到任务开始前的状态
 
 ### 撤销回滚
 
@@ -636,3 +671,27 @@ fi
 | 沉淀 + 知识维护 | ⚙️ 自动 | 不停 |
 | 待验证 | 🔴 确认 | 展示完成报告，等用户确认 |
 | 收尾 | 🔴 确认 | 选择合并方式 |
+
+---
+
+## 技能覆盖清单（自检用）
+
+本流水线在各阶段串起下列技能，形成"单入口驱动全框架"的闭环。新增技能时，应回到本文件决定接入点并在此表补一行。
+
+| 阶段 | 调用的技能 |
+|---|---|
+| 0.1 任务分流 | CLI 分支（`harness init/upgrade/doctor/export/stats/sync/memory rebuild/squad`）、元技能分支（`/health` `/retro` `/lint-lessons` `/evolve`） |
+| 0.2 历史加载 | `/recall`（L2/L3 按需）、`/recall --refs`（references 按需） |
+| 1 环境准备 | `/use-worktrees`、`/careful`（危险操作前） |
+| 2 构思 | `/ideate`、`/brainstorm` |
+| 2.5 规格 | `/spec` |
+| 3 计划 | `/write-plan`、`/adr`、`/source-verify`（API 类任务必跑）、`/todo`（拆分粒度） |
+| 4 实施 | `/tdd`、`/execute-plan`、`/subagent-dev`、`/dispatch-agents`、`/squad`、`/debug` |
+| 5 评审 | `/request-review`、`/multi-review` |
+| 6 修复 | `/receive-review`、`/multi-review` |
+| 7 验证 | `/verify`、`/cso`（生产项目） |
+| 9 沉淀 | `/compound`、快速 `/lint-lessons`（仅 2 项，完整版留给周期性任务） |
+| 10 收尾 | `/git-commit`、`/finish-branch`、`/doc-release`、`/careful`（回滚前） |
+| 元任务（非单任务流，不由 /lfg 驱动） | `/write-skill`（写新技能）、`/evolve`（自我进化）、`/health`（体检）、`/retro`（工程回顾）、`/lint-lessons` 完整版、`/process-notes`（产品笔记）、`/use-superpowers`（技能选择器，与 /lfg 平级） |
+
+> 如果用户问"某某能力在 /lfg 里怎么用"，查本表；找不到说明这个能力不走 /lfg，按上表最后一行处理或直接用 CLI。

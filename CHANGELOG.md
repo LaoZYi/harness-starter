@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Changed — /lfg 技能覆盖完整化（2026-04-13）
+
+- **/lfg 流水线串起全部 33 条命令**（30 superpowers + 3 common）：补接入 `/recall`（阶段 0.2 分层加载）、`/use-worktrees` + `/careful`（阶段 1 + 回滚点）、`/source-verify` + `/todo`（阶段 3 API 验证 + 任务拆分）、`/subagent-dev`（阶段 4 选型）、`/request-review` + `/receive-review`（阶段 5/6 结构化评审循环）、`/verify`（阶段 7 验证）、`/finish-branch`（阶段 10 收尾）
+- **阶段 0.1 新增运维任务分流表**：用户问"初始化项目 / 升级 / doctor / export / stats / sync / memory rebuild / squad / health / retro / lint-lessons / evolve" 时 /lfg 会告知对应 CLI 或元技能入口，而非错误地拉进开发流水线
+- **阶段 0.2 从全文加载改为分层加载**：默认读 `memory-index.md`（L1）+ L0 规则；L2/L3 通过 `/recall` 和 `/recall --refs` 按需检索。与 `task-lifecycle` 规则和 ADR 0001 对齐
+- **回滚机制加 /careful 拦截**：`git reset --hard` 前强制走一轮确认，展示将丢弃的 commit 和未推送改动
+- **lfg.md.tmpl 末尾新增"技能覆盖清单"**：按阶段列出每个技能的接入点，未来新增技能有自检锚点
+- **新增 tests/test_lfg_coverage.py**（5 测试）：锁死 EXPECTED_IN_LFG（26 个必须接入）和 EXPECTED_NOT_IN_LFG（7 个明确豁免）契约，每个技能都必须被分类——防止新技能被沉默遗漏
+
 ### Fixed — 代码健康审计（2026-04-13）
 
 - **squad/cli.py 模块拆分**：303 → 220 行，辅助函数（`_SQUAD_CONTEXT_TEMPLATE`、worktree provision、settings/prompt 渲染、通用 `run_check`）抽到新模块 `squad/worker_files.py`。修复 AGENTS.md 280 行硬规则违反
@@ -103,7 +112,7 @@
 
 ### Infrastructure
 
-- 238 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
+- 243 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索
