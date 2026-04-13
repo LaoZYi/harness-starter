@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+### Added — 项目内嵌运行时：audit / memory 脱离 harness CLI 依赖（Issue #24，#23 子任务 1）
+
+- **新模块 `src/agent_harness/runtime_install.py`**：`install_runtime(target_root)` 把
+  audit/audit_cli/memory 源码复制到目标项目 `.agent-harness/bin/_runtime/`，生成精简
+  `_shared.py`（去除原文件顶层读取 VERSION / 检查 templates/ 的副作用），写两个可执行
+  entry 脚本（`audit` / `memory`，Python shebang）
+- **initializer.initialize_project** 末尾自动调用 `install_runtime`
+- **upgrade.execute_upgrade** 末尾自动调用 `install_runtime` — 覆盖式刷新 _runtime 模块
+  和 entry 脚本（视为框架资产，无用户数据）
+- **audit_cli.py + memory.py** 新增 `main(argv=None)` 函数，供 bin entry 独立调用；
+  `harness audit` / `harness memory` 通过 cli.py 的路径不受影响
+- **scripts/dogfood.py** 增加 `install_runtime(ROOT)` 步骤——本仓库每次 dogfood 自动
+  刷新 bin/_runtime
+- **模板调用替换**：3 个 .tmpl（task-lifecycle / memory-index / lfg）里的
+  `harness audit/memory` 换成 `.agent-harness/bin/audit/memory`
+- **新测试 `tests/test_runtime_bin.py`**（10 条端到端契约）：
+  - init 创建 bin 目录 + entry 脚本 + _runtime 模块
+  - `_runtime/*.py` 必须纯 stdlib（ast 层面强制）
+  - bin/audit append/tail/rejects-invalid 在无 harness CLI 环境下跑通
+  - bin/memory rebuild 在无 harness CLI 环境下跑通
+  - upgrade 覆盖式刷新 _runtime 和 entry 脚本
+- **原则确立**：`harness` CLI 面向**项目维护者**（init/upgrade/doctor/...）；
+  `.agent-harness/bin/` 面向**项目使用者**（AI 工作流调的所有命令）
+
 ### Added — squad Tier 0 Watchdog（Issue #22，#19 拆分阶段 2 收官）
 
 - **新模块 `src/agent_harness/squad/watchdog.py`**（199 行）：纯函数 + 依赖注入设计
@@ -164,7 +188,7 @@
 
 ### Infrastructure
 
-- 401 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护）
+- 411 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

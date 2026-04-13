@@ -208,3 +208,19 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 规则：辅助/监控/可观测性类模块必须有 try/except 兜底，故障时降级（打印警告 + 返回保守值），不能传播到主调度。判断是否"辅助"的标准：缺了它主流程能不能跑？能 → 必须隔离异常
 - 反例：核心数据写入路径**不能**这样做——必须传播让上层处理（safety/error-attribution rule）
 
+
+## 2026-04-13 [架构设计] AI 运行时调用必须项目内嵌，不能依赖使用者机器的 CLI
+
+- 场景：Issue #24。/lfg 模板里已经在调 `harness audit/memory`；用户 clone 一个 init 过的项目，没装 harness → `command not found`。整合 squad 进 lfg 会更糟（依赖一堆 harness squad 子命令）
+- 决策：划清两个角色的命令边界——`harness` CLI（维护者工具：init/upgrade/doctor）vs `.agent-harness/bin/`（使用者工具：AI 工作流调的 audit/memory/squad/...）。后者项目内嵌，clone 即用
+- 根因：脚手架框架的"使用者"不一定是"维护者"。接入一次后 clone 项目的人没义务装 harness。把两种用户混为一谈会制造隐性依赖
+- 规则：脚手架类框架发到目标项目的任何 AI 工作流脚本/命令，调用的都必须是**项目自带**的运行时（`.agent-harness/bin/...`），不能是**机器 PATH**上的工具。维护者专用命令（脚手架生成/升级）可以例外
+- 适用范围：所有"接入一次，之后 AI 自主工作"的脚手架框架
+
+## 2026-04-13 [架构设计] 复制源码做内嵌运行时时，要给宿主模块去掉顶层副作用
+
+- 错误：初版 install_runtime 直接复制 `src/agent_harness/_shared.py` 到 `.agent-harness/bin/_runtime/`。_shared.py 顶层有 `FRAMEWORK_VERSION = (PKG_DIR / "VERSION").read_text()` 和 `if not TEMPLATE_ROOT.is_dir(): raise`——在内嵌运行时场景这两个都不成立，import 就崩
+- 根因：原框架模块的顶层副作用（读资源文件、校验目录结构）是面向"装在 site-packages 里有完整发行物"的假设写的。内嵌场景只需模块里的部分函数（`require_harness`）
+- 规则：需要复制到"只拿一部分功能"的内嵌运行时时，**不要整文件复制**有顶层副作用的模块。要么改写纯函数版本，要么做一个内嵌专用的精简替身（本次做法：runtime_install.py 内置一个 `_SHARED_EMBEDDED` 字符串，只保留 `require_harness` 函数）。不要为了"单一数据源"而硬拖框架代码进来
+- 延伸：设计模块时就让核心函数"纯"（无顶层 I/O），顶层副作用放 `__init__.py` 或明确的 `configure()`——可复用性天然提高
+

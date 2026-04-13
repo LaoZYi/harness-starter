@@ -10,6 +10,7 @@ from ._merge3 import json_merge, merge3
 from ._shared import PKG_DIR, PLACEHOLDER_RE, SUPERPOWERS_ROOT, TEMPLATE_ROOT
 from .initializer import _load_preset, prepare_initialization
 from .models import UpgradeExecutionResult, UpgradePlanResult
+from .runtime_install import install_runtime
 from .templating import render_templates
 
 BASE_DIR = ".agent-harness/.base"
@@ -56,8 +57,6 @@ def _filter_rendered(rendered: dict[str, str], only_files: list[str] | None) -> 
 
 def _build_diff(rp: str, cur: str, exp: str) -> str:
     return "".join(unified_diff(cur.splitlines(keepends=True), exp.splitlines(keepends=True), fromfile=f"a/{rp}", tofile=f"b/{rp}"))
-
-
 def _render_all(root: Path, answers: dict[str, object]) -> dict[str, str]:
     _, _, ctx = prepare_initialization(root, answers)
     project_type = str(answers.get("project_type") or "backend-service")
@@ -74,7 +73,7 @@ def _render_all(root: Path, answers: dict[str, object]) -> dict[str, str]:
 
 def _generate_changelog(plan: UpgradePlanResult) -> str:
     lines = [f"# 升级变更摘要\n\n时间：{datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n"]
-    for label, files in [("新增", plan.create_files), ("更新", plan.update_files), ("未变化", plan.unchanged_files)]:
+    for label, files in (("新增", plan.create_files), ("更新", plan.update_files), ("未变化", plan.unchanged_files)):
         if files:
             lines.append(f"\n## {label}文件（{len(files)} 个）\n")
             lines.extend(f"- `{f}`" for f in files)
@@ -234,6 +233,7 @@ def execute_upgrade(
             skipped.append(rp)
 
     save_base(target_root, rendered)
+    install_runtime(target_root)  # Issue #24
     progress_marker.unlink(missing_ok=True)
     cl_path = target_root / ".agent-harness" / "upgrade-changelog.md"
     cl_path.parent.mkdir(parents=True, exist_ok=True)
