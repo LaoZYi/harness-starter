@@ -196,8 +196,9 @@ def initialize_project(
     written, skipped = materialize_templates(TEMPLATE_ROOT, target_root, context, force=force, dry_run=dry_run, exclude=exclude)
     if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
         sw, ss = materialize_templates(SUPERPOWERS_ROOT, target_root, context, force=force, dry_run=dry_run)
-        written.extend(sw)
-        skipped.extend(ss)
+        written.extend(sw); skipped.extend(ss)
+        from .skills_registry import apply_to_target  # Issue #27 <<SKILL_*>>
+        apply_to_target(SUPERPOWERS_ROOT, target_root, dry_run=dry_run)
     type_root = PKG_DIR / "templates" / project_type
     if type_root.is_dir():
         tw, ts = materialize_templates(type_root, target_root, context, force=force, dry_run=dry_run)

@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+### Added — Skills Registry SSOT（Issue #27 / GitLab #11，2026-04-13）
+
+把 34 个 skill 的元数据抽到 `templates/superpowers/skills-registry.json` 单一真相源，消除三处文档（use-superpowers.md.tmpl / lfg.md.tmpl / test_lfg_coverage.py）的同步漂移风险。
+
+**新文件**：
+- `src/agent_harness/templates/superpowers/skills-registry.json`：34 skill 元数据（id / category / one_line / triggers / lfg_stage / expected_in_lfg / exclusion_reason / decision_tree_label）
+- `src/agent_harness/skills_registry.py`：渲染器（load_registry / render_decision_tree / render_skill_index_by_phase / render_lfg_coverage_table / apply_to_target）
+- `src/agent_harness/skills_lint.py`：三检查（孤儿 .md.tmpl / 注册但缺文件 / expected_in_lfg=true 但 lfg 未引用）
+- `tests/test_skills_registry.py`：13 条契约（registry 加载 / 渲染 / lint）
+
+**改造**：
+- `use-superpowers.md.tmpl`：手写决策树和三段索引替换为 `<<SKILL_DECISION_TREE>>` 和 `<<SKILL_INDEX_BY_PHASE>>` 占位符
+- `lfg.md.tmpl`：手写阶段覆盖表替换为 `<<SKILL_COVERAGE_TABLE>>` 占位符
+- `tests/test_lfg_coverage.py`：EXPECTED_IN_LFG / EXPECTED_NOT_IN_LFG 改为从 registry 读取（消除硬编码 set）
+- `initializer.py` / `upgrade.py` / `scripts/dogfood.py`：材化 superpowers 模板后调用 `apply_to_target` 替换 `<<SKILL_*>>`
+- `cli.py`：新增 `harness skills lint <target>` 子命令
+- `Makefile`：`make ci` 串入 `make skills-lint` 守卫
+
+**占位符设计**：使用 `<<SKILL_xxx>>` 双尖括号，与 `{{var}}` jinja 占位符隔离，避免双重替换冲突。
+
+**约束**：
+- 加新 skill 只改 `skills-registry.json`，不直接编辑两个 .md.tmpl 的 skill 段落（PR 模板已加 checkbox）
+- 不引入 PyYAML（沿用 .json，符合 Issue #25 运行时无依赖承诺）
+- 渲染发生在模板时（init / upgrade / dogfood），非运行时
+
+**评分**：/lfg 单一入口完整性进一步加固，新增 `skills lint` 把"反向合约"自动化，杜绝未来 skill 漂移。
+
 ### Added — /lfg 能力发挥度复评 + 4 Gap 修复 + 3 润色（2026-04-13，评估驱动）
 
 基于"用户只需记 /lfg 一条命令"目标，对 /lfg 做系统性能力发挥度评估并修复所有发现的接合缝隙。
@@ -239,7 +266,7 @@
 
 ### Infrastructure
 
-- 438 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
+- 451 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

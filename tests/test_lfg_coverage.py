@@ -22,57 +22,20 @@ SKILLS_DIR = ROOT / "src" / "agent_harness" / "templates" / "superpowers" / ".cl
 COMMON_DIR = ROOT / "src" / "agent_harness" / "templates" / "common" / ".claude" / "commands"
 
 
-# Skills that MUST be referenced by /lfg at some pipeline stage.
-# Source: gap analysis 2026-04-13 — map each skill to its call-site stage.
-EXPECTED_IN_LFG = {
-    # Stage 0.2 — layered memory loading
-    "/recall",
-    # Stage 1 — env setup
-    "/use-worktrees",
-    "/careful",
-    # Stage 2 / 2.5 — ideation + spec
-    "/ideate",
-    "/brainstorm",
-    "/spec",
-    # Stage 3 — planning
-    "/write-plan",
-    "/plan-check",
-    "/adr",
-    "/source-verify",
-    "/todo",
-    # Stage 4 — implementation
-    "/tdd",
-    "/execute-plan",
-    "/subagent-dev",
-    "/dispatch-agents",
-    "/squad",
-    "/debug",
-    # Stage 5 / 6 — review
-    "/request-review",
-    "/multi-review",
-    "/receive-review",
-    # Stage 7 — verification
-    "/verify",
-    "/cso",
-    # Stage 9 — compound
-    "/compound",
-    "/lint-lessons",
-    # Stage 10 — wrap-up
-    "/git-commit",
-    "/finish-branch",
-    "/doc-release",
-}
-
-# Skills intentionally NOT in /lfg — must be justified here.
-EXPECTED_NOT_IN_LFG = {
-    "/lfg": "self-reference would be infinite recursion",
-    "/use-superpowers": "meta skill-selector, peer to /lfg",
-    "/write-skill": "manually invoked when authoring new skills",
-    "/evolve": "periodic self-evolution, reverse-triggers /lfg via evolution Issues",
-    "/health": "periodic code-quality snapshot, not part of single-task flow",
-    "/retro": "periodic engineering retrospective",
-    "/process-notes": "product-notes processing, different domain",
-}
+# Skills classification is now sourced from skills-registry.json (Issue #27).
+# This avoids drift between use-superpowers.md.tmpl, lfg.md.tmpl, and the contract test.
+# To add/remove skills: edit src/agent_harness/templates/superpowers/skills-registry.json
+# and run `harness skills lint .`.
+import sys as _sys
+_sys.path.insert(0, str(ROOT / "src"))
+from agent_harness.skills_registry import (  # noqa: E402
+    expected_in_lfg as _expected_in_lfg,
+    expected_not_in_lfg as _expected_not_in_lfg,
+    load_registry as _load_registry,
+)
+_REGISTRY = _load_registry(ROOT / "src" / "agent_harness" / "templates" / "superpowers")
+EXPECTED_IN_LFG = _expected_in_lfg(_REGISTRY)
+EXPECTED_NOT_IN_LFG = _expected_not_in_lfg(_REGISTRY)
 
 
 def _skill_names() -> set[str]:

@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from agent_harness.initializer import SUPERPOWERS_ROOT, TEMPLATE_ROOT, prepare_initialization  # noqa: E402
 from agent_harness.runtime_install import install_runtime  # noqa: E402
+from agent_harness.skills_registry import apply_to_rendered_dict  # noqa: E402
 from agent_harness.templating import render_templates  # noqa: E402
 
 SYNC_PREFIXES = (".claude/commands/", ".claude/rules/", ".claude/hooks/", ".claude/settings.json")
@@ -37,7 +38,9 @@ def main() -> None:
     _, _, context = prepare_initialization(ROOT, answers)
     rendered = render_templates(TEMPLATE_ROOT, context)
     if SUPERPOWERS_ROOT.is_dir():
-        rendered.update(render_templates(SUPERPOWERS_ROOT, context))
+        sp_rendered = render_templates(SUPERPOWERS_ROOT, context)
+        apply_to_rendered_dict(SUPERPOWERS_ROOT, sp_rendered)  # Issue #27
+        rendered.update(sp_rendered)
 
     updated = 0
     created = 0

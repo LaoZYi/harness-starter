@@ -2,7 +2,7 @@ PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 PACKAGE = src/agent_harness
 HARNESS = PYTHONPATH=src $(PYTHON) -m agent_harness
 
-.PHONY: test check ci assess upgrade-plan upgrade-apply init sync-superpowers dogfood
+.PHONY: test check ci skills-lint assess upgrade-plan upgrade-apply init sync-superpowers dogfood
 
 test:
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests -v
@@ -11,7 +11,10 @@ check:
 	$(PYTHON) scripts/check_repo.py
 	$(PYTHON) -m compileall -q $(PACKAGE) tests scripts
 
-ci: check test
+skills-lint:
+	$(HARNESS) skills lint .
+
+ci: check skills-lint test
 
 assess:
 ifndef TARGET

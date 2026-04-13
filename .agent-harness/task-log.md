@@ -791,3 +791,37 @@
   1. ✅ 3 处润色全部落地
   2. ✅ 新增 3 条合约测试通过（9/9 绿）
   3. ✅ make ci 全绿（438 tests OK + repository checks passed）
+
+## 2026-04-13 Issue #27 Skills Registry SSOT 抽取
+
+- 需求：把 34 个 skill 元数据抽到 skills-registry.json 单一真相源，消除 use-superpowers.md.tmpl / lfg.md.tmpl / test_lfg_coverage.py 三处漂移风险
+- 做了什么：15 步实施全部落地
+  - 新增 4 文件：skills-registry.json / skills_registry.py / skills_lint.py / test_skills_registry.py
+  - 改造 3 模板/测试：use-superpowers.md.tmpl（`<<SKILL_DECISION_TREE>> + <<SKILL_INDEX_BY_PHASE>>`）、lfg.md.tmpl（`<<SKILL_COVERAGE_TABLE>>`）、test_lfg_coverage.py（从 registry 读）
+  - 钩子接入 5 处 consumer：initializer.py / upgrade.py / scripts/dogfood.py / scripts/check_repo.py / test_gsd_absorb.py
+  - CLI：`harness skills lint <target>` 子命令（skills_lint.register_subcommand 模式，与 audit/agent/squad 一致）
+  - Makefile：`make skills-lint` + `make ci` 串入
+  - 文档：CHANGELOG / architecture / product / PR 模板同步
+- 关键决策：
+  - 占位符 `<<SKILL_*>>` 双尖括号 vs `{{var}}` jinja——语法互斥保证两套 render_template 调用顺序无关
+  - 不引 PyYAML，坚持 .json（符合 Issue #25 运行时无依赖承诺 + 兼容层降低迁移成本 lessons 的反例）
+  - 触发三次 280 行硬限时抽 apply_to_rendered_dict 公共函数，一次救 upgrade.py 和 dogfood.py
+  - check_repo 的"决策树覆盖"检查从读 .tmpl 改为读渲染后内容，兼顾未来 skill 元数据都移到 registry
+- 改了哪些文件（19 个）：
+  - 新：skills-registry.json / skills_registry.py / skills_lint.py / test_skills_registry.py / specs/2026-04-13-skills-registry-plan.md
+  - 改模板：use-superpowers.md.tmpl / lfg.md.tmpl
+  - 改核心：cli.py / initializer.py / upgrade.py / templating 钩子
+  - 改脚本：scripts/dogfood.py / scripts/check_repo.py / Makefile
+  - 改测试：test_lfg_coverage.py / test_gsd_absorb.py
+  - 改文档：CHANGELOG.md / docs/architecture.md / docs/product.md / docs/release.md / .github/PULL_REQUEST_TEMPLATE.md
+  - dogfood 同步：.claude/commands/{use-superpowers,lfg}.md
+- 完成标准（7/7）：
+  1. ✅ R-001 registry.json 含 34 skill（27 in_lfg + 7 excluded）
+  2. ✅ R-002 use-superpowers 决策树 + 三段索引改渲染
+  3. ✅ R-003 lfg 阶段覆盖表改渲染
+  4. ✅ R-004 test_lfg_coverage 改读 registry
+  5. ✅ R-005 harness skills lint + CI 串入
+  6. ✅ R-006 docs 同步
+  7. ✅ R-007 PR 模板 checkbox
+- 质量变化：测试 438→451（+13）；check_repo 加 skills-lint 守卫；净代码 -48 行
+- 用户验证通过
