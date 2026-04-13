@@ -107,6 +107,46 @@ def read_status_tail(root: Path, task_id: str, limit: int = 50) -> list[dict[str
     return [json.loads(line) for line in lines if line.strip()]
 
 
+def read_all_status(root: Path, task_id: str) -> list[dict[str, Any]]:
+    """Read full status.jsonl — needed for dependency reasoning (done set)."""
+    path = squad_dir(root, task_id) / "status.jsonl"
+    if not path.is_file():
+        return []
+    with path.open("r", encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def done_workers(root: Path, task_id: str) -> set[str]:
+    """Set of worker names that have emitted a `done` event."""
+    return {
+        r["worker"]
+        for r in read_all_status(root, task_id)
+        if r.get("event") == "done" and "worker" in r
+    }
+
+
+def pending_worker_info(
+    root: Path, task_id: str,
+) -> dict[str, float]:
+    """Map worker name → earliest `pending` event timestamp, for workers that
+    have a pending event but no subsequent `spawned` event (still blocked).
+
+    Used by `squad status` to show blocked_since age.
+    """
+    pending: dict[str, float] = {}
+    spawned: set[str] = set()
+    for r in read_all_status(root, task_id):
+        name = r.get("worker")
+        if not name:
+            continue
+        event = r.get("event")
+        if event == "pending" and name not in pending:
+            pending[name] = r.get("ts", 0.0)
+        elif event == "spawned":
+            spawned.add(name)
+    return {k: v for k, v in pending.items() if k not in spawned}
+
+
 @contextlib.contextmanager
 def _locked_write(path: Path) -> Iterator[Any]:
     """Exclusive lock first, truncate second — avoids empty-file race if a

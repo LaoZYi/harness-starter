@@ -26,7 +26,7 @@
     - **需求 ID 三元映射**（/spec + /write-plan + /verify）：R-ID 贯穿规格→计划→验证全链路，验证时硬检查每个 R-ID 为 satisfied / out-of-scope / missed，missed 阻断完成。配套 L2 参考清单 `requirement-mapping-checklist.md`
     - **/plan-check 新技能**：8 维度（需求覆盖 / 原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环，作为 /write-plan 收尾或独立调用；/lfg 阶段 3 已串入
     - **上下文监控 Hook（降级版）**：经 source-verify 后，Claude Code statusline 不暴露 `remaining_percentage`，降级为 PostToolUse 工具调用计数代理指标（50/100/150 三级阈值提醒 /compact），纯 shell 跨平台；`touch .agent-harness/.context-monitor-skip` 可关闭
-16. **多 agent 常驻协作（/squad，阶段 1 MVP）**：通过 `harness squad create <spec.yaml>` 在 tmux 中同时启动多个带独立 worktree 的 Claude Code worker，按 capability（scout / builder / reviewer）用 `settings.local.json` 的 `permissions.deny` 运行时强制工具权限。共享状态写 `.agent-harness/squad/<task_id>/`（manifest + status.jsonl）。与 `/dispatch-agents`（一次性短任务）并存：`/squad` 适合长任务、需实时观察、需角色分权的场景。阶段 1 硬依赖 tmux，不支持 Windows 原生（用 WSL）。
+16. **多 agent 常驻协作（/squad，阶段 1 MVP + 19a 依赖触发）**：通过 `harness squad create <spec.yaml>` 在 tmux 中按**拓扑序**启动多个带独立 worktree 的 Claude Code worker，按 capability（scout / builder / reviewer）用 `settings.local.json` 的 `permissions.deny` 运行时强制工具权限。共享状态写 `.agent-harness/squad/<task_id>/`（manifest + status.jsonl）。**阶段 2 依赖触发（Issue #19a）**：有 `depends_on` 的 worker 先渲染产物但不开 tmux 窗口，写 `pending` 事件；`harness squad done <worker>` 标记完成，`harness squad advance` 扫描并启动依赖已满足的 worker（幂等）；`harness squad status` 显示三态（✅ done / 🟢 running / ⏳/🔴 pending）+ 阻塞时长 + 30min 超时警告。与 `/dispatch-agents`（一次性短任务）并存：`/squad` 适合长任务、需实时观察、需角色分权的场景。硬依赖 tmux，不支持 Windows 原生（用 WSL）。阶段 2 的其他机制（SQLite mailbox / 持久 coordinator / watchdog）拆为 Issue #19b/c/d。
 
 ## 支持的项目类型（9 种）
 

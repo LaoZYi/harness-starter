@@ -5,12 +5,15 @@ import subprocess
 import time
 from pathlib import Path
 
+from .coordinator import cmd_advance, cmd_done, derive_worker_state
 from .spec import parse_spec
 from .state import (
     Manifest,
     WorkerRecord,
     append_status,
+    done_workers,
     list_active_squads,
+    pending_worker_info,
     read_manifest,
     squad_dir,
     write_manifest,
@@ -19,6 +22,7 @@ from .tmux import (
     build_new_session_cmd,
     build_new_window_cmd,
     ensure_tmux_available,
+    list_windows,
 )
 from .worker_files import (
     provision_worker_worktree,
@@ -53,13 +57,20 @@ def cmd_create(args) -> int:
     if not dry_run:
         run_check(build_new_session_cmd(session_name), f"启动 tmux session {session_name}")
 
-    # 2. provision each worker — on failure, tear down session + worktrees
+    # 2. provision each worker — on failure, tear down session + worktrees.
+    #
+    # Wave-0 启动策略（Issue #19 阶段 2 依赖触发）：
+    # - 渲染所有 worker 的产物（worktree + settings + prompt）
+    # - 只对**无 depends_on 的 worker** 真正创建 tmux 窗口（wave 0）
+    # - 有依赖的 worker 写 pending 事件；等 `harness squad advance` 在依赖 done 后触发启动
+    # - Dry-run 不区分 wave，全部只渲染不开窗口
     worker_records: list[WorkerRecord] = []
     try:
         for w in spec.workers:
             wt_path = provision_worker_worktree(root, spec, w, dry_run=dry_run)
             write_worker_files(root, spec, w, wt_path)
-            if not dry_run:
+            is_wave0 = not w.depends_on
+            if not dry_run and is_wave0:
                 run_check(
                     build_new_window_cmd(
                         session=session_name,
@@ -78,10 +89,18 @@ def cmd_create(args) -> int:
                     depends_on=list(w.depends_on),
                 )
             )
+            if dry_run:
+                event = "dry-run-rendered"
+            elif is_wave0:
+                event = "spawned"
+            else:
+                event = "pending"
+            msg = f"worktree={wt_path}"
+            if not is_wave0 and not dry_run:
+                msg += f"; blocked_by={','.join(w.depends_on)}"
             append_status(
                 root, spec.task_id,
-                {"worker": w.name, "event": "spawned" if not dry_run else "dry-run-rendered",
-                 "message": f"worktree={wt_path}"},
+                {"worker": w.name, "event": event, "message": msg},
             )
     except RuntimeError as exc:
         print(f"[squad] 创建失败，清理中：{exc}")
@@ -104,11 +123,18 @@ def cmd_create(args) -> int:
     )
     write_manifest(root, manifest)
 
+    wave0 = [w for w in worker_records if not w.depends_on]
+    pending = [w for w in worker_records if w.depends_on]
+
     if dry_run:
         print(f"[squad] dry-run 完成：{len(worker_records)} 个 worker 的产物已渲染（未启动 tmux/worker）")
         print(f"[squad] 检查：ls {sdir} / cat {worker_records[0].worktree}/.claude/settings.local.json")
     else:
         print(f"[squad] 已创建 squad '{spec.task_id}'，{len(worker_records)} 个 worker")
+        print(f"[squad] wave 0 已启动 ({len(wave0)})：{', '.join(w.name for w in wave0) or '（无 — 所有 worker 都有依赖？检查 spec）'}")
+        if pending:
+            print(f"[squad] pending ({len(pending)})：{', '.join(w.name + '←[' + ','.join(w.depends_on) + ']' for w in pending)}")
+            print(f"[squad] 依赖完成后运行：harness squad done <worker>  然后  harness squad advance")
         print(f"[squad] 观察：tmux attach -t {session_name}")
         print(f"[squad] 状态：harness squad status")
     return 0
@@ -121,6 +147,7 @@ def cmd_status(args) -> int:
         print("[squad] 当前没有活跃的 squad。")
         return 0
 
+    now = time.time()
     for task_id in active:
         m = read_manifest(root, task_id)
         if m is None:
@@ -129,7 +156,10 @@ def cmd_status(args) -> int:
         print(f"  base_branch: {m.base_branch}")
         print(f"  workers:")
         for w in m.workers:
-            print(f"    - {w.name} [{w.capability}] → {w.worktree}")
+            state = derive_worker_state(
+                root, task_id, m.tmux_session, w.name, w.depends_on, now,
+            )
+            print(f"    - {w.name} [{w.capability}] {state} → {w.worktree}")
     return 0
 
 
@@ -218,3 +248,22 @@ def register_subcommand(subs) -> None:
     stp.add_argument("target", help="worker 名 / task_id / 'all'")
     stp.add_argument("--project", help="项目根目录（默认当前目录）")
     stp.set_defaults(func=cmd_stop)
+
+    adv = sq_subs.add_parser(
+        "advance",
+        help="推动 squad 前进：启动依赖已满足的 pending worker（阶段 2 依赖触发）",
+    )
+    adv.add_argument("--task-id", help="squad task id（默认自动选择唯一活跃 squad）")
+    adv.add_argument("--project", help="项目根目录（默认当前目录）")
+    adv.add_argument("--dry-run", action="store_true", help="只打印将启动哪些 worker，不创建 tmux 窗口")
+    adv.set_defaults(func=cmd_advance)
+
+    dn = sq_subs.add_parser(
+        "done",
+        help="标记某 worker 完成（写 done 事件，供 advance 识别）",
+    )
+    dn.add_argument("worker", help="worker 名")
+    dn.add_argument("--task-id", help="squad task id（默认自动选择唯一活跃 squad）")
+    dn.add_argument("--project", help="项目根目录（默认当前目录）")
+    dn.add_argument("-m", "--message", help="done 事件附带消息")
+    dn.set_defaults(func=cmd_done)

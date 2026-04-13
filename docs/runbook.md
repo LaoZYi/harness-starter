@@ -52,10 +52,12 @@ harness sync /path/to/service --meta /path/to/meta          # 同步单个服务
 harness sync /path/to/service                               # 再次同步（meta 路径已记住）
 harness memory rebuild .                                    # 从 lessons/task-log 重建 memory-index.md
 harness memory rebuild . --force                            # 覆盖已有索引
-harness squad create spec.yaml                              # 按 YAML 创建 tmux 多 agent squad
-harness squad status                                        # 列出活跃 squad 和 workers
+harness squad create spec.yaml                              # 按 YAML 创建 tmux 多 agent squad（仅启动 wave 0）
+harness squad status                                        # 显示三态（done/running/pending）+ 阻塞时长
 harness squad attach <worker>                               # 输出 tmux attach 命令
 harness squad stop <worker|task_id|all>                     # 停止 worker / 整个 squad
+harness squad done <worker>                                 # 标记 worker 完成（供 advance 识别，Issue #19a）
+harness squad advance                                       # 启动依赖已满足的 pending worker（幂等）
 ```
 
 未安装时也可通过 `PYTHONPATH=src python -m agent_harness` 替代 `harness`。
