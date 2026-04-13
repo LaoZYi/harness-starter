@@ -231,7 +231,15 @@ def cmd_watch(args) -> int:
         if started:
             print(f"[squad watch] 启动 {len(started)} 个 worker：{', '.join(started)}", flush=True)
 
-        # Issue #22：tick 末尾跑 watchdog；session_lost 立即退出
+        # 所有 worker 都 done → 优先于 watchdog 退出（避免完成时 kill session 被误判）
+        done_set = done_workers(root, task_id)
+        if all(w.name in done_set for w in m.workers):
+            print("[squad watch] 所有 worker 已 done，退出。", flush=True)
+            append_status(root, task_id,
+                          {"event": "watch_exited", "message": "all workers done"})
+            return 0
+
+        # Issue #22：tick 末尾跑 watchdog；session 失联立即退出
         if watch_tick_with_report(
             root, task_id, m,
             session_exists_fn=session_exists,
@@ -240,14 +248,6 @@ def cmd_watch(args) -> int:
         ):
             append_status(root, task_id,
                           {"event": "watch_exited", "message": "session_lost"})
-            return 0
-
-        # 所有 worker 都 done → 自动退出
-        done_set = done_workers(root, task_id)
-        if all(w.name in done_set for w in m.workers):
-            print("[squad watch] 所有 worker 已 done，退出。", flush=True)
-            append_status(root, task_id,
-                          {"event": "watch_exited", "message": "all workers done"})
             return 0
 
         iteration += 1

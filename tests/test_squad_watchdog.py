@@ -15,6 +15,7 @@ from agent_harness.squad.state import (
 )
 from agent_harness.squad.watchdog import (
     SENTINEL_NAME, detect_failures, is_skipped, run_watchdog_tick,
+    watch_tick_with_report,
 )
 
 
@@ -264,6 +265,112 @@ class MailboxIntegrationTests(unittest.TestCase):
             self.assertEqual(len(crashed), 1)
             self.assertEqual(crashed[0]["worker"], "a")
             self.assertIn("disappeared", crashed[0]["message"])
+
+
+class WatchTickExitDecisionTests(unittest.TestCase):
+    """watch_tick_with_report 的退出判定独立于事件去重——回归保护重启场景。"""
+
+    def test_exits_when_session_dead_even_if_already_reported(self):
+        """重启 watch 后即使 session_lost 已存在 mailbox，session 真死仍要退出。
+
+        这是一个真实 bug 场景：原实现根据 detect_failures 返回的事件判退出，
+        幂等去重让重启场景下的 watch 错过退出信号、空转死循环。
+        """
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            m = _make_manifest(root)
+            _spawn(root, "wd", "a")
+
+            # 第一次 tick：session 死，写 session_lost，应退出
+            should_exit_1 = watch_tick_with_report(
+                root, "wd", m,
+                session_exists_fn=lambda s: False,
+                list_windows_fn=lambda s: [],
+                printer=lambda _: None,
+            )
+            self.assertTrue(should_exit_1)
+
+            # 模拟 watch 重启：session 仍真死，但 session_lost 已在 mailbox
+            should_exit_2 = watch_tick_with_report(
+                root, "wd", m,
+                session_exists_fn=lambda s: False,
+                list_windows_fn=lambda s: [],
+                printer=lambda _: None,
+            )
+            self.assertTrue(should_exit_2,
+                            "重启后 session 真死仍必须退出，不能因 session_lost "
+                            "幂等记录而误判 session 还在")
+
+    def test_no_exit_when_session_alive_and_no_failures(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            m = _make_manifest(root)
+            _spawn(root, "wd", "a")
+            should_exit = watch_tick_with_report(
+                root, "wd", m,
+                session_exists_fn=lambda s: True,
+                list_windows_fn=lambda s: ["a"],
+                printer=lambda _: None,
+            )
+            self.assertFalse(should_exit)
+
+    def test_sentinel_skip_does_not_force_exit(self):
+        """sentinel 关 watchdog ≠ 关 watch；session 死不死都让 watch 自己决定。"""
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            (root / ".agent-harness").mkdir(parents=True, exist_ok=True)
+            (root / ".agent-harness" / SENTINEL_NAME).touch()
+            m = _make_manifest(root)
+            _spawn(root, "wd", "a")
+            # 即使 session 死了，sentinel 启用时也不应让 watch_tick_with_report 触发退出
+            should_exit = watch_tick_with_report(
+                root, "wd", m,
+                session_exists_fn=lambda s: False,
+                list_windows_fn=lambda s: [],
+                printer=lambda _: None,
+            )
+            self.assertFalse(should_exit)
+
+
+class ExceptionIsolationTests(unittest.TestCase):
+    """watchdog 内部异常必须被隔离，不能让 cmd_watch 主调度循环崩溃。"""
+
+    def test_exception_in_session_probe_is_swallowed(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            m = _make_manifest(root)
+            _spawn(root, "wd", "a")
+
+            def boom(_):
+                raise RuntimeError("simulated tmux server hang")
+
+            captured: list[str] = []
+            should_exit = watch_tick_with_report(
+                root, "wd", m,
+                session_exists_fn=boom,
+                list_windows_fn=lambda s: [],
+                printer=captured.append,
+            )
+            self.assertFalse(should_exit)
+            self.assertTrue(any("watchdog 内部异常" in s for s in captured),
+                            f"expected isolation warning in {captured}")
+
+    def test_exception_in_list_windows_is_swallowed(self):
+        with TemporaryDirectory() as td:
+            root = Path(td)
+            m = _make_manifest(root)
+            _spawn(root, "wd", "a")
+
+            captured: list[str] = []
+            should_exit = watch_tick_with_report(
+                root, "wd", m,
+                session_exists_fn=lambda s: True,
+                list_windows_fn=lambda s: (_ for _ in ()).throw(
+                    OSError("simulated subprocess fail")),
+                printer=captured.append,
+            )
+            self.assertFalse(should_exit)
+            self.assertTrue(any("watchdog 内部异常" in s for s in captured))
 
 
 if __name__ == "__main__":

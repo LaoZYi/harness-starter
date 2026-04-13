@@ -123,22 +123,49 @@ def watch_tick_with_report(
     list_windows_fn: Callable[[str], list[str]] | None = None,
     printer: Callable[[str], None] = print,
 ) -> bool:
-    """供 cmd_watch 使用：跑一次 tick，打印新失联，返回是否因 session_lost 应退出。"""
-    failures = run_watchdog_tick(
-        root, task_id, manifest,
-        session_exists_fn=session_exists_fn,
-        list_windows_fn=list_windows_fn,
-    )
-    session_lost = False
+    """供 cmd_watch 使用：跑一次 tick，打印新失联，返回是否应退出 watch。
+
+    退出判断**独立于事件去重**：直接探测 session 当前是否存活——否则 session_lost
+    幂等记录会让重启后的 watch 误以为 session 还在，傻傻继续轮询一个死 session。
+
+    异常隔离：watchdog 是辅助监控，内部任何异常（mailbox SQL 故障、tmux 卡住等）
+    都不应该让 cmd_watch 主调度循环崩溃——记一行警告后正常返回 False。
+    """
+    if session_exists_fn is None or list_windows_fn is None:
+        from . import tmux as _tmux
+        if session_exists_fn is None:
+            session_exists_fn = _tmux.session_exists
+        if list_windows_fn is None:
+            list_windows_fn = _tmux.list_windows
+
+    try:
+        failures = run_watchdog_tick(
+            root, task_id, manifest,
+            session_exists_fn=session_exists_fn,
+            list_windows_fn=list_windows_fn,
+        )
+    except Exception as exc:  # noqa: BLE001 — 辅助监控故意吃掉所有异常
+        printer(
+            f"[squad watch] watchdog 内部异常（已隔离，watch 继续）："
+            f"{type(exc).__name__}: {exc}"
+        )
+        return False
+
     for ev in failures:
         if ev["event"] == "session_lost":
             printer(f"[squad watch] ⚠️  {ev['message']}")
-            session_lost = True
         else:
             printer(
                 f"[squad watch] ⚠️  worker 失联：{ev['worker']} — {ev['message']}"
             )
-    return session_lost
+
+    # sentinel 启用时仍允许 watch 继续（用户主动关 watchdog ≠ 关 watch）
+    if is_skipped(root):
+        return False
+    try:
+        return not session_exists_fn(manifest.tmux_session)
+    except Exception:  # noqa: BLE001 — 探测失败保守地不退出
+        return False
 
 
 def run_watchdog_tick(
