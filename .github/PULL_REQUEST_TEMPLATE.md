@@ -6,6 +6,7 @@
 
 - [ ] 运行了 `make check`
 - [ ] 运行了 `make test` 或 `make ci`
+- [ ] 如新增/修改 skill：**只改了 `templates/superpowers/skills-registry.json`**，未直接编辑 `use-superpowers.md.tmpl` 或 `lfg.md.tmpl` 的 skill 元数据段（Issue #27）
 
 请写出你实际执行的命令和结果。
 

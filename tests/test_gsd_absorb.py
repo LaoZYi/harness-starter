@@ -156,8 +156,14 @@ class WorkflowIntegrationTests(unittest.TestCase):
         self.assertIn("/plan-check", text)
 
     def test_use_superpowers_decision_tree_includes_plan_check(self):
-        text = (SKILLS / "use-superpowers.md.tmpl").read_text(encoding="utf-8")
-        self.assertIn("/plan-check", text)
+        # Issue #27: decision tree + skill index are rendered from skills-registry.json.
+        # /plan-check appears in skill index (process category) — that's the canonical
+        # location now (decision tree only lists skills with explicit decision_tree_label).
+        import sys as _sys
+        _sys.path.insert(0, str(PKG.parent))
+        from agent_harness.skills_registry import load_registry, render_skill_index_by_phase
+        registry = load_registry(PKG / "templates" / "superpowers")
+        self.assertIn("/plan-check", render_skill_index_by_phase(registry))
 
 
 if __name__ == "__main__":

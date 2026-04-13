@@ -266,7 +266,8 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild_p.add_argument("target", nargs="?", default=".", help="项目根目录（默认当前目录）")
     rebuild_p.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
     rebuild_p.set_defaults(func=_cmd_memory_rebuild)
-    _reg_squad(subs); _reg_audit(subs); _reg_agent(subs)
+    from .skills_lint import register_subcommand as _reg_skills
+    _reg_squad(subs); _reg_audit(subs); _reg_agent(subs); _reg_skills(subs)
     return root
 
 def main() -> None:

@@ -15,8 +15,7 @@ from .templating import render_templates
 
 BASE_DIR = ".agent-harness/.base"
 
-# File category manifest. overwrite=pure template, skip=user data,
-# json_merge=structured merge, default=three_way line-based merge.
+# File category: overwrite/skip/json_merge/three_way (default).
 FILE_CATEGORIES: dict[str, str] = {
     ".claude/commands/*": "overwrite",
     ".claude/rules/*": "overwrite",
@@ -64,7 +63,10 @@ def _render_all(root: Path, answers: dict[str, object]) -> dict[str, str]:
     exclude = [f".claude/rules/{r}" for r in preset.get("exclude_rules", [])]
     rendered = render_templates(TEMPLATE_ROOT, ctx, exclude=exclude)
     if answers.get("superpowers", True) and SUPERPOWERS_ROOT.is_dir():
-        rendered.update(render_templates(SUPERPOWERS_ROOT, ctx))
+        sp_rendered = render_templates(SUPERPOWERS_ROOT, ctx)
+        from .skills_registry import apply_to_rendered_dict  # Issue #27
+        apply_to_rendered_dict(SUPERPOWERS_ROOT, sp_rendered)
+        rendered.update(sp_rendered)
     type_root = PKG_DIR / "templates" / project_type
     if type_root.is_dir():
         rendered.update(render_templates(type_root, ctx))
@@ -174,7 +176,6 @@ def execute_upgrade(
             bp.parent.mkdir(parents=True, exist_ok=True)
             bp.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
 
-    # Process files by category
     created: list[str] = []
     updated: list[str] = []
     skipped: list[str] = []
@@ -203,12 +204,10 @@ def execute_upgrade(
             updated.append(rp)
         elif cat == "three_way":
             if not base_path.exists():
-                # No base dir at all: first upgrade after migration
                 output_path.write_text(new_content, encoding="utf-8")
                 updated.append(rp)
                 conflicts[rp] = ["无基准版本，已用框架版本覆盖（备份至 backups/）"]
             elif not base_content:
-                # Base exists but empty/corrupted: warn and overwrite
                 output_path.write_text(new_content, encoding="utf-8")
                 updated.append(rp)
                 conflicts[rp] = ["基准文件损坏或为空，已用框架版本覆盖（备份至 backups/）"]

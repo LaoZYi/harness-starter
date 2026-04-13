@@ -853,22 +853,24 @@ fi
 
 ## 技能覆盖清单（自检用）
 
-本流水线在各阶段串起下列技能，形成"单入口驱动全框架"的闭环。新增技能时，应回到本文件决定接入点并在此表补一行。
+本流水线在各阶段串起下列技能，形成"单入口驱动全框架"的闭环。**新增技能只改 `templates/superpowers/skills-registry.json`，不要直接编辑此处**——下表由 registry 自动渲染。
 
 | 阶段 | 调用的技能 |
 |---|---|
-| 0.1 任务分流 | CLI 分支（`harness init/upgrade/doctor/export/stats/sync/memory rebuild/squad`）、元技能分支（`/health` `/retro` `/lint-lessons` `/evolve`） |
-| 0.2 历史加载 | `/recall`（L2/L3 按需）、`/recall --refs`（references 按需） |
-| 1 环境准备 | `/use-worktrees`、`/careful`（危险操作前） |
+| 0.2 历史加载 | `/recall` |
+| 1 环境准备 | `/use-worktrees`、`/careful` |
 | 2 构思 | `/ideate`、`/brainstorm` |
 | 2.5 规格 | `/spec` |
-| 3 计划 | `/write-plan`、`/plan-check`（标准/完整通道必跑）、`/adr`、`/source-verify`（API 类任务必跑）、`/todo`（拆分粒度） |
-| 4 实施 | `/tdd`、`/execute-plan`、`/subagent-dev`、`/dispatch-agents`、`/squad`、`/debug` |
-| 5 评审 | `/request-review`、`/multi-review` |
-| 6 修复 | `/receive-review`、`/multi-review` |
-| 7 验证 | `/verify`、`/cso`（生产项目） |
-| 9 沉淀 | `/compound`、快速 `/lint-lessons`（仅 2 项，完整版留给周期性任务） |
-| 10 收尾 | `/git-commit`、`/finish-branch`、`/doc-release`、`/careful`（回滚前） |
-| 元任务（非单任务流，不由 /lfg 驱动） | `/write-skill`（写新技能）、`/evolve`（自我进化）、`/health`（体检）、`/retro`（工程回顾）、`/lint-lessons` 完整版、`/process-notes`（产品笔记）、`/use-superpowers`（技能选择器，与 /lfg 平级） |
+| 3 计划 | `/adr`、`/write-plan`、`/plan-check`、`/todo`、`/source-verify` |
+| 4 实施 | `/debug`、`/tdd`、`/execute-plan`、`/dispatch-agents`、`/squad`、`/subagent-dev` |
+| 5 评审 | `/multi-review`、`/request-review` |
+| 6 修复 | `/multi-review`、`/receive-review` |
+| 7 验证 | `/verify`、`/cso` |
+| 7.3 穷举验证 | `/recall` |
+| 9 沉淀 | `/compound`、`/lint-lessons` |
+| 10 收尾回滚 | `/careful` |
+| 10 收尾 | `/git-commit`、`/doc-release`、`/finish-branch` |
+| 元任务（非单任务流，不由 /lfg 驱动） | `/lfg`（self-reference would be infinite recursion）、`/use-superpowers`（meta skill-selector, peer to /lfg）、`/write-skill`（manually invoked when authoring new skills）、`/evolve`（periodic self-evolution, reverse-triggers /lfg via evolution Issues）、`/health`（periodic code-quality snapshot, not part of single-task flow）、`/retro`（periodic engineering retrospective）、`/process-notes`（product-notes processing, different domain） |
 
-> 如果用户问"某某能力在 /lfg 里怎么用"，查本表；找不到说明这个能力不走 /lfg，按上表最后一行处理或直接用 CLI。
+> 如果用户问"某某能力在 /lfg 里怎么用"，查本表；找不到说明这个能力不走 /lfg，按上表最后一行处理或直接用 CLI（`harness init/upgrade/doctor/export/stats/sync/memory rebuild/squad`）。
+> 一致性由 `harness skills lint .` 在 CI 中强制保证。

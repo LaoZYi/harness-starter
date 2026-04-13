@@ -226,7 +226,10 @@ def check_dogfood_drift() -> None:
     _, _, context = prepare_initialization(ROOT, answers)
     rendered = render_templates(TEMPLATE_ROOT, context)
     if SUPERPOWERS_ROOT.is_dir():
-        rendered.update(render_templates(SUPERPOWERS_ROOT, context))
+        from agent_harness.skills_registry import apply_to_rendered_dict  # Issue #27
+        sp_rendered = render_templates(SUPERPOWERS_ROOT, context)
+        apply_to_rendered_dict(SUPERPOWERS_ROOT, sp_rendered)
+        rendered.update(sp_rendered)
     check_prefixes = (".claude/commands/", ".claude/rules/", ".claude/hooks/", ".claude/settings.json")
     drifted = []
     for rel_path, expected in rendered.items():
@@ -308,8 +311,15 @@ def check_skill_documentation_coverage() -> None:
         if not path.exists():
             continue
         content = path.read_text(encoding="utf-8")
+        # Issue #27: use-superpowers.md.tmpl uses <<SKILL_*>> placeholders.
+        # Render via skills_registry so the decision-tree check sees actual skill names.
+        if label == "decision tree":
+            from agent_harness.skills_registry import load_registry, render_all
+            try:
+                content = render_all(content, load_registry(PKG / "templates" / "superpowers"))
+            except (FileNotFoundError, ValueError):
+                pass
         for skill in skills:
-            # /use-superpowers doesn't need to reference itself in the decision tree
             if skill == "/use-superpowers" and label == "decision tree":
                 continue
             if skill not in content:
