@@ -28,6 +28,7 @@
 - `src/agent_harness/_shared.py`：共享常量（TEMPLATE_ROOT、META_ROOT 等）、slugify、require_harness。
 - `src/agent_harness/memory.py`：分层记忆索引维护（`rebuild_index()` 从 lessons/task-log/references 重建 `memory-index.md`）。
 - `src/agent_harness/audit.py`：关键文件变更审计 WAL（`append_audit / tail / stats / truncate_before`），fcntl 锁保证并发安全，只追踪 current-task / task-log / lessons 三个文件。
+- `src/agent_harness/templates/common/.claude/hooks/`：Claude Code 会话保护 hooks — `session-start.sh`（打开项目时展示未完成任务）、`stop.sh`（停止前检查 current-task 未勾选 checkbox，可通过 `.stop-hook-skip` sentinel 放行）、`pre-compact.sh`（压缩前追加 audit 检查点 + stderr 提示）。
 - `src/agent_harness/audit_cli.py`：`harness audit` 子命令的 argparse handler（append/tail/stats/truncate）。
 - `src/agent_harness/squad/`：多 agent 常驻协作（阶段 1 MVP）— `spec.py`（YAML 解析/循环检测）、`capability.py`（scout/builder/reviewer 权限渲染）、`tmux.py`（tmux 命令构造 + 可用性检查）、`state.py`（manifest + status.jsonl，fcntl 文件锁）、`worker_files.py`（worktree provision + settings/prompt 渲染 + 通用 run_check）、`cli.py`（`harness squad create|status|attach|stop` 子命令，只做 CLI 调度）。运行时状态写目标项目的 `.agent-harness/squad/<task_id>/`。
 
@@ -42,7 +43,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：263 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（28 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）。
+- `tests/`：279 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（28 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）。
 
 ## 约束
 

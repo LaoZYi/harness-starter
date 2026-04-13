@@ -14,3 +14,5 @@ build/
 
 # /squad runtime state (not templates)
 .agent-harness/squad/
+.agent-harness/.stop-hook-skip
+.agent-harness/audit.jsonl
