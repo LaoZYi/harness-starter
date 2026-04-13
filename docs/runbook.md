@@ -3,7 +3,7 @@
 ## 常用命令
 
 - `make check`：校验框架仓库结构、模板入口、Python 语法和 dogfood 漂移检测。
-- `make test`：运行框架级回归测试（243 个）。
+- `make test`：运行框架级回归测试（263 个）。
 - `make ci`：串联 `check` 和 `test`。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -11,6 +11,13 @@
 - `make upgrade-plan TARGET=/path/to/repo ARGS="..."`：预览升级会新增和改动哪些文件。
 - `make upgrade-apply TARGET=/path/to/repo ARGS="..."`：执行升级并自动备份被覆盖文件。
 - `make init TARGET=/path/to/repo ARGS="..."`：初始化目标项目。
+
+## 变更审计
+
+- `harness audit append --file lessons.md --op append --summary "..."`：追加审计记录（agent 身份读 `HARNESS_AGENT` env）
+- `harness audit tail [--limit N] [--json]`：查看最近 N 条（默认 20，按时间倒序）
+- `harness audit stats [--json]`：按 file / op / agent 聚合统计
+- `harness audit truncate --before YYYY-MM-DD`：裁剪早于指定日期的记录
 
 ## 使用 harness 命令
 

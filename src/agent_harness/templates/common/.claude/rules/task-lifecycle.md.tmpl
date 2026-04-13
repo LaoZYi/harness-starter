@@ -88,6 +88,34 @@ description: 任务生命周期管理 — 确保 current-task.md 被使用
 每完成一个步骤，立即更新 current-task.md 的 checkbox 为 `[x]`。
 禁止等全部做完再批量更新，因为会话中断会丢失所有进度。
 
+## 关键文件变更审计（WAL）
+
+每次修改以下三个关键文件后，追加一条审计记录到 `.agent-harness/audit.jsonl`：
+
+- `current-task.md`
+- `task-log.md`
+- `lessons.md`
+
+用 CLI 追加（推荐）：
+
+```bash
+harness audit append --file current-task.md --op update --summary "标记步骤3完成"
+harness audit append --file lessons.md --op append --summary "新增测试相关教训"
+harness audit append --file task-log.md --op append --summary "归档任务 Issue #42"
+```
+
+**op 四选一**：`create`（首次创建）/ `update`（原地修改）/ `append`（尾部追加）/ `delete`（删除）。
+
+**agent 身份**：默认从环境变量 `HARNESS_AGENT` 读取，可用 `--agent` 显式覆盖。
+
+**为什么要写**：
+- 多 agent 协作时能看清谁在什么时候改了什么，避免互相覆盖
+- 误操作后可以定位到具体时间点回滚
+- `harness audit tail` 随时回看最近 N 条变更
+- `harness audit stats` 查看按文件/agent 分布
+
+**不做什么**：审计日志是追溯用的旁路，不替代 git；不做自动 rotation（用 `harness audit truncate --before YYYY-MM-DD` 手动清理）。
+
 ## 实现完成后 → 进入"待验证"状态
 
 agent 自测通过后，**不要**直接写 task-log 和清空 current-task。而是：
