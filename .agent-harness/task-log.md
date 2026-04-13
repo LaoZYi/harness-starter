@@ -615,3 +615,32 @@
   7. ✅ 19a 17 条 + 阶段 1 28 条 squad 测试全通过
   8. ✅ 新增 18 条测试（mailbox 10 + state 3 + watch 3 + dump 1 + gitignore 1）
   9. ✅ 文档同步（product / architecture / runbook + 测试数 364→382）
+
+## 2026-04-13 Issue #22 — squad Tier 0 Watchdog（最后一块阶段 2 拼图）
+
+- 需求：在 squad coordinator 中加 Tier 0 watchdog——定时 ping tmux session + worker 窗口，发现失联写 mailbox + 提示用户。Issue #19 拆分的最后一块（19a 依赖触发 + 19b/21 mailbox/watch + 19d/22 watchdog 全部完成）
+- 做了什么：
+  - 新增 `src/agent_harness/squad/watchdog.py`（172 行）：`detect_failures` 纯函数（依赖注入 session_exists_fn / list_windows_fn）+ `run_watchdog_tick`（写 mailbox）+ `watch_tick_with_report`（cmd_watch 用 + 返回 session_lost 退出标志）
+  - `tmux.py`：新增 `session_exists` + `build_has_session_cmd`（tmux has-session 探测）
+  - `mailbox.py`：`KNOWN_TYPES` 扩展 `session_lost` / `worker_crashed` / `watch_exited`
+  - `coordinator.py.cmd_watch`：每 tick 末尾跑 watchdog；session_lost 立即写 watch_exited 并退出
+  - 14 条新测试覆盖三类失联场景 + sentinel skip + 幂等去重 + KNOWN_TYPES 注册
+- 关键决策：
+  - **幂等去重写进事件流**：worker_crashed / session_lost 写到 mailbox 后下次 tick 反查，**不引入外挂状态文件**（沿用"三源对账"原则）
+  - **sentinel 模式复用**：`.agent-harness/.watchdog-skip` 沿用 context-monitor 的 skip 模式，统一 UX
+  - **session_lost 优先于 worker_crashed**：session 都没了不再单独报每个 worker 失联（避免噪音 + 立即退出 watch）
+  - **本期不实现 pid 检查 + 自动重启**：worker 不写 pid 跨文件改动太多；自动重启 capability 切换+worktree 状态判断复杂度过高，留后续 Issue
+  - **280 行硬限触发模块边界暴露**：coordinator 集成后涨到 299 行 → 抽 watch_tick_with_report helper 到 watchdog.py + 简化 import 压回 280。沉淀为 lesson
+- 改了哪些文件：
+  - 新增：`src/agent_harness/squad/watchdog.py`（172 行）、`tests/test_squad_watchdog.py`（14 条契约）
+  - 修改：`src/agent_harness/squad/coordinator.py`（cmd_watch 集成 + import/cmd_dump 瘦身回 280 行）、`mailbox.py`（KNOWN_TYPES）、`tmux.py`（session_exists）
+  - 文档：`docs/product.md`、`docs/architecture.md`（模块层 + 测试层 + 测试数 382→396）、`docs/release.md`、`CHANGELOG.md`
+  - 知识：`.agent-harness/lessons.md`（2 条新教训：watchdog 写事件流去重、280 行硬限触发拆模块）、`memory-index.md`
+- 完成标准（7/7）：
+  1. ✅ `src/agent_harness/squad/watchdog.py` 存在，纯函数 + sentinel
+  2. ✅ cmd_watch 集成 watch_tick_with_report
+  3. ✅ tmux session 不存在 → mailbox 写 session_lost + stdout 提示 + watch 退出
+  4. ✅ spawned + 未 done + 窗口消失 → mailbox 写 worker_crashed（幂等）
+  5. ✅ `.agent-harness/.watchdog-skip` sentinel 完全静默
+  6. ✅ 14 条测试覆盖三类失联场景（≥4 个 case 要求超额完成）+ 端到端 4 场景 smoke 全通过
+  7. ✅ 文档同步：product / architecture / release / CHANGELOG 测试数 382→396
