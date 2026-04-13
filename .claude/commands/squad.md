@@ -33,37 +33,50 @@
 - `tmux` ≥ 3.0（macOS: `brew install tmux` / Debian: `sudo apt install tmux`）
 - `claude` CLI 在 PATH 中
 
-## Spec 格式（YAML）
+## Spec 格式（JSON，Issue #25 起去 PyYAML）
 
-```yaml
-task_id: auth-rewrite        # 英文小写+连字符，不超过 31 字符
-base_branch: master          # worktree 基于的分支
-workers:
-  - name: scout-auth         # 同样的命名规则；不允许 shell 元字符
-    capability: scout        # scout | builder | reviewer
-    prompt: "阅读 src/auth/ 所有文件，输出现状报告到 report.md"
-  - name: builder-auth
-    capability: builder
-    depends_on: [scout-auth] # 可选；coordinator 后续阶段实现依赖触发
-    prompt: "读 scout-auth 的 report.md，按 specs/auth-rewrite.md 实现"
-  - name: reviewer-auth
-    capability: reviewer
-    depends_on: [builder-auth]
-    prompt: "对 builder-auth 的 worktree 做 /multi-review，结果写 review.md"
+```json
+{
+  "task_id": "auth-rewrite",
+  "base_branch": "master",
+  "workers": [
+    {
+      "name": "scout-auth",
+      "capability": "scout",
+      "prompt": "阅读 src/auth/ 所有文件，输出现状报告到 report.md"
+    },
+    {
+      "name": "builder-auth",
+      "capability": "builder",
+      "depends_on": ["scout-auth"],
+      "prompt": "读 scout-auth 的 report.md，按 specs/auth-rewrite.md 实现"
+    },
+    {
+      "name": "reviewer-auth",
+      "capability": "reviewer",
+      "depends_on": ["builder-auth"],
+      "prompt": "对 builder-auth 的 worktree 做 /multi-review，结果写 review.md"
+    }
+  ]
+}
 ```
+
+命名规则：task_id 和 worker name 均为 `^[a-z0-9][a-z0-9-]{0,30}$`（不允许 shell 元字符，防注入）。
 
 ## 子命令
 
-### `harness squad create <spec.yaml>`
+> 所有命令优先用项目自带运行时 `.agent-harness/bin/squad`（无需装 harness CLI，clone 即用，Issue #25）。
+
+### `.agent-harness/bin/squad create <spec.json>`
 按 spec 创建 tmux session `squad-<task_id>`，为每个 worker 建独立 worktree、渲染 `.claude/settings.local.json`（按 capability 强制权限）、启动 Claude Code 进程。
 
-### `harness squad status`
+### `.agent-harness/bin/squad status`
 列出当前项目所有活跃 squad 和 workers 元信息（状态文件路径、worktree 路径）。
 
-### `harness squad attach <worker-name>`
+### `.agent-harness/bin/squad attach <worker-name>`
 输出 `tmux attach -t <session> \; select-window -t <worker>` 命令，让你切到该 worker 的终端窗口观察/干预。
 
-### `harness squad stop <worker|task_id|all>`
+### `.agent-harness/bin/squad stop <worker|task_id|all>`
 停止指定 worker（kill window）或整个 squad（kill session）。**不**自动删除 worktree — 留给 `/finish-branch` 处理合并。
 
 ## Capability 权限（运行时强制）
@@ -87,25 +100,23 @@ workers:
 ### 探索 → 实现 → 审查 流水线
 
 ```bash
-cat > /tmp/auth-squad.yaml <<EOF
-task_id: auth-rewrite
-base_branch: master
-workers:
-  - name: scout
-    capability: scout
-    prompt: "探索 src/auth/，输出 3 段现状报告到 report.md"
-  - name: builder
-    capability: builder
-    depends_on: [scout]
-    prompt: "等 scout 的 report.md 就绪后，按 specs/auth.md 实现"
-  - name: reviewer
-    capability: reviewer
-    depends_on: [builder]
-    prompt: "builder 完成后对其 worktree diff 跑 /multi-review，输出 review.md"
+cat > /tmp/auth-squad.json <<'EOF'
+{
+  "task_id": "auth-rewrite",
+  "base_branch": "master",
+  "workers": [
+    {"name": "scout", "capability": "scout",
+     "prompt": "探索 src/auth/，输出 3 段现状报告到 report.md"},
+    {"name": "builder", "capability": "builder", "depends_on": ["scout"],
+     "prompt": "等 scout 的 report.md 就绪后，按 specs/auth.md 实现"},
+    {"name": "reviewer", "capability": "reviewer", "depends_on": ["builder"],
+     "prompt": "builder 完成后对其 worktree diff 跑 /multi-review，输出 review.md"}
+  ]
+}
 EOF
 
-harness squad create /tmp/auth-squad.yaml
-harness squad status
+.agent-harness/bin/squad create /tmp/auth-squad.json
+.agent-harness/bin/squad status
 # tmux attach -t squad-auth-rewrite  # 实时观察
 ```
 
@@ -118,14 +129,14 @@ harness squad status
 
 ## 安全注意
 
-- YAML spec 从不可信源读取时需先人工审查（prompt 内容可能影响 agent 行为）
+- JSON spec 从不可信源读取时需先人工审查（prompt 内容可能影响 agent 行为）
 - worker 名/task_id 被严格限制为 `^[a-z0-9][a-z0-9-]{0,30}$`，防 shell 注入
 - 进 worker 窗口后所有操作都属于**该 capability 的权限范围**，coordinator 不能通过 attach 越权
 - **Pattern 语法来源**：`permissions.deny` 使用 `Bash(<prefix>:*)` / `Bash(<cmd>:*)` 格式，该语法见于 `claude --help` 的 `--disallowedTools` 示例（`"Bash(git:*) Edit"`）。与 `settings.local.json` 的 `permissions.deny` 字段使用同一语法（Claude Code 实现一致）。首次在你项目启用 squad 时建议实测一次：起一个 scout worker，让它尝试 `git status`，若被拒绝则说明运行时生效
 
 ## 调试 / 非 API 模式
 
-- `harness squad create <spec.yaml> --dry-run`：渲染所有产物（worktree 目录、`.claude/settings.local.json`、`squad-context.md`、`task-prompt.md`、`manifest.json`、`status.jsonl`）但**不启动 tmux、不建 git worktree、不调用 claude**。用于测试 pipeline、检查 capability 权限内容、验证 prompt 注入是否正确
+- `.agent-harness/bin/squad create <spec.json> --dry-run`：渲染所有产物（worktree 目录、`.claude/settings.local.json`、`squad-context.md`、`task-prompt.md`、`manifest.json`、`status.jsonl`）但**不启动 tmux、不建 git worktree、不调用 claude**。用于测试 pipeline、检查 capability 权限内容、验证 prompt 注入是否正确
 - 真启动后 worker 资源消耗大，建议先用 `--dry-run` 确认所有产物符合预期再真跑
 
 ## 进阶：与其他技能配合

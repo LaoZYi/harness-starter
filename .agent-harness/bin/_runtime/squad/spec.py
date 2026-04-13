@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..security import NAME_PATTERN
+from _runtime.security import NAME_PATTERN
 
 
 _ALLOWED_CAPABILITIES = ("scout", "builder", "reviewer")

@@ -4,6 +4,7 @@
 
 - `audit` — 等价于 `harness audit`（关键文件变更审计）
 - `memory` — 等价于 `harness memory`（分层记忆索引）
+- `squad` — 等价于 `harness squad`（多 agent 常驻协作，Issue #25）
 - `_runtime/` — 纯 stdlib 运行时源码副本，由 harness 自动管理。**请勿手工修改**
   （下次 `harness upgrade apply` 会覆盖任何改动）
 
@@ -13,6 +14,8 @@
 .agent-harness/bin/audit append --file lessons.md --op append --summary "新沉淀一条教训"
 .agent-harness/bin/audit tail --limit 10
 .agent-harness/bin/memory rebuild . --force
+.agent-harness/bin/squad create spec.json
+.agent-harness/bin/squad status
 ```
 
 无执行权限时可用 python 直接跑：

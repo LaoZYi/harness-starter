@@ -31,26 +31,19 @@ def _make_args(spec_path: Path, project: Path, dry_run: bool = True) -> argparse
 class SquadDryRunIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = Path(tempfile.mkdtemp())
-        self.spec_path = self.tmp / "spec.yaml"
+        self.spec_path = self.tmp / "spec.json"
         self.spec_path.write_text(
-            textwrap.dedent(
-                """
-                task_id: smoke
-                base_branch: master
-                workers:
-                  - name: scout-a
-                    capability: scout
-                    prompt: "探索 src/"
-                  - name: builder-a
-                    capability: builder
-                    depends_on: [scout-a]
-                    prompt: "按 spec 实现"
-                  - name: reviewer-a
-                    capability: reviewer
-                    depends_on: [builder-a]
-                    prompt: "做 /multi-review"
-                """
-            ),
+            json.dumps({
+                "task_id": "smoke", "base_branch": "master",
+                "workers": [
+                    {"name": "scout-a", "capability": "scout",
+                     "prompt": "探索 src/"},
+                    {"name": "builder-a", "capability": "builder",
+                     "depends_on": ["scout-a"], "prompt": "按 spec 实现"},
+                    {"name": "reviewer-a", "capability": "reviewer",
+                     "depends_on": ["builder-a"], "prompt": "做 /multi-review"},
+                ],
+            }, ensure_ascii=False),
             encoding="utf-8",
         )
 

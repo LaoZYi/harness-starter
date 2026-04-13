@@ -23,6 +23,13 @@ _RUNTIME_MODULES: tuple[str, ...] = (
     "audit.py",
     "audit_cli.py",
     "memory.py",
+    "security.py",  # Issue #25: squad.spec 用 NAME_PATTERN
+)
+
+# squad 子包（所有文件都是纯 stdlib；PyYAML 依赖已在 Issue #25 去掉）
+_SQUAD_MODULES: tuple[str, ...] = (
+    "__init__.py", "capability.py", "cli.py", "coordinator.py", "mailbox.py",
+    "spec.py", "state.py", "tmux.py", "watchdog.py", "worker_files.py",
 )
 
 # _shared.py 不能直接复制：原文件顶层读取 VERSION、检查 templates/ 目录，
@@ -72,6 +79,22 @@ if __name__ == "__main__":
     sys.exit(main())
 """
 
+_SQUAD_ENTRY = """\
+#!/usr/bin/env python3
+\"\"\"Project-embedded squad runtime — equivalent to `harness squad` (Issue #25).
+
+此文件由 harness 生成，请勿手工修改（下次 upgrade 会覆盖）。
+\"\"\"
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _runtime.squad.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(main())
+"""
+
 _INIT_PY = '"""Embedded runtime package (harness-managed, do not edit)."""\n'
 
 _README = """\
@@ -81,6 +104,7 @@ _README = """\
 
 - `audit` — 等价于 `harness audit`（关键文件变更审计）
 - `memory` — 等价于 `harness memory`（分层记忆索引）
+- `squad` — 等价于 `harness squad`（多 agent 常驻协作，Issue #25）
 - `_runtime/` — 纯 stdlib 运行时源码副本，由 harness 自动管理。**请勿手工修改**
   （下次 `harness upgrade apply` 会覆盖任何改动）
 
@@ -90,6 +114,8 @@ _README = """\
 .agent-harness/bin/audit append --file lessons.md --op append --summary "新沉淀一条教训"
 .agent-harness/bin/audit tail --limit 10
 .agent-harness/bin/memory rebuild . --force
+.agent-harness/bin/squad create spec.json
+.agent-harness/bin/squad status
 ```
 
 无执行权限时可用 python 直接跑：
@@ -137,14 +163,37 @@ def install_runtime(target_root: Path) -> list[Path]:
     init_file.write_text(_INIT_PY, encoding="utf-8")
     written.append(init_file)
 
-    # 3. Entry 脚本（shebang + 可执行）
-    for name, content in (("audit", _AUDIT_ENTRY), ("memory", _MEMORY_ENTRY)):
+    # 3a. 复制 squad 子包（Issue #25）
+    squad_src = PKG_DIR / "squad"
+    squad_dst = runtime_dir / "squad"
+    squad_dst.mkdir(exist_ok=True)
+    for mod in _SQUAD_MODULES:
+        src = squad_src / mod
+        if src.is_file():
+            shutil.copyfile(src, squad_dst / mod)
+            written.append(squad_dst / mod)
+
+    # 3b. squad 在源码里用 `from ..security import NAME_PATTERN`；bin 场景里
+    # _runtime/ 作为 package（顶层 __init__.py 存在），security 是它的 sibling
+    # 模块 → 改写成绝对 `from _runtime.security import`，entry 脚本只需把 bin/
+    # 加到 sys.path
+    spec_py = squad_dst / "spec.py"
+    if spec_py.is_file():
+        txt = spec_py.read_text(encoding="utf-8")
+        spec_py.write_text(
+            txt.replace("from ..security import", "from _runtime.security import"),
+            encoding="utf-8",
+        )
+
+    # 4. Entry 脚本（shebang + 可执行）
+    for name, content in (("audit", _AUDIT_ENTRY), ("memory", _MEMORY_ENTRY),
+                          ("squad", _SQUAD_ENTRY)):
         entry = bin_dir / name
         entry.write_text(content, encoding="utf-8")
         entry.chmod(0o755)
         written.append(entry)
 
-    # 4. README
+    # 5. README
     readme = bin_dir / "README.md"
     readme.write_text(_README, encoding="utf-8")
     written.append(readme)

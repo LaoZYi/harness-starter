@@ -8,6 +8,8 @@
 
 <!-- 由 /compound 技能或 `harness memory rebuild` 维护。-->
 
+- 2026-04-13 [流程] 破坏性变更用后缀自动检测 + 精确迁移提示，比"兼容旧格式"更好
+- 2026-04-13 [架构设计] 复制 Python 子包做内嵌运行时时，相对 import 必须重写为绝对前缀
 - 2026-04-13 [架构设计] 复制源码做内嵌运行时时，要给宿主模块去掉顶层副作用
 - 2026-04-13 [架构设计] AI 运行时调用必须项目内嵌，不能依赖使用者机器的 CLI
 - 2026-04-13 [流程] 辅助监控模块必须有异常隔离边界
@@ -16,18 +18,16 @@
 - 2026-04-13 [架构设计] watchdog 把"已上报"也写进事件流，避免外挂状态文件
 - 2026-04-12 [测试] 文件锁顺序必须先锁再 truncate
 - 2026-04-12 [架构设计] POSIX-only 模块要 try-except 软导入
-- 2026-04-12 [工具脚本] shell 命令构造必须 shlex.quote 所有路径
-- 2026-04-12 [流程] CLI flag 假设在 plan 阶段必须 source-verify
 
 ## 最近任务（保留最多 5 条）
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-13 Issue #25 — squad 项目内嵌 + spec.yaml → spec.json（破坏性变更）
 - 2026-04-13 Issue #24 — audit / memory 项目内嵌（解除 AI 工作流对 harness CLI 的运行时依赖）
 - 2026-04-13 Issue #22 — squad Tier 0 Watchdog（最后一块阶段 2 拼图）
 - 2026-04-13 /squad SQLite mailbox + watch/dump（Issue #21，合并原 #20）
 - 2026-04-13 /squad 依赖触发 + 拓扑序启动（Issue #19a，阶段 2 部分）
-- 2026-04-13 GSD 吸收三件套 + OpenSwarm 两条加料（Issue #17）
 
 ## 参考资料（.agent-harness/references/）
 

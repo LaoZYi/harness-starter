@@ -224,3 +224,19 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 规则：需要复制到"只拿一部分功能"的内嵌运行时时，**不要整文件复制**有顶层副作用的模块。要么改写纯函数版本，要么做一个内嵌专用的精简替身（本次做法：runtime_install.py 内置一个 `_SHARED_EMBEDDED` 字符串，只保留 `require_harness` 函数）。不要为了"单一数据源"而硬拖框架代码进来
 - 延伸：设计模块时就让核心函数"纯"（无顶层 I/O），顶层副作用放 `__init__.py` 或明确的 `configure()`——可复用性天然提高
 
+
+## 2026-04-13 [架构设计] 复制 Python 子包做内嵌运行时时，相对 import 必须重写为绝对前缀
+
+- 场景：Issue #25 squad 项目内嵌。squad/spec.py 用 `from ..security import NAME_PATTERN`（相对 import）。直接复制到目标 `.agent-harness/bin/_runtime/squad/spec.py` 后，Python 按原 `..` 找父包，但目标环境里 _runtime 本身就是顶级 package → 找不到
+- 决策：复制时自动把相对 import 重写成绝对前缀 `from _runtime.security import NAME_PATTERN`。`_runtime/` 作为 Python package（有 __init__.py），entry 脚本把 bin/ 加进 sys.path，`_runtime.xxx` 即可正确 import 任何 sibling 模块
+- 根因：Python 相对 import 的层级是按运行时 package 深度算的；源码里的 `..` 假设父包存在，内嵌场景里这个假设不成立
+- 规则：向内嵌运行时复制 Python 包时，要么（a）保持原包结构并构造同深度的父包，要么（b）改写相对 import 为绝对前缀。本次选 b——简单、一次性、易测
+- 反例：想用"拷贝时改包名"（sed `agent_harness` → `_runtime`）看起来也行，但若源码里出现字面字符串 `"agent_harness"`（文档、log 消息）会被错误替换，风险大
+
+## 2026-04-13 [流程] 破坏性变更用后缀自动检测 + 精确迁移提示，比"兼容旧格式"更好
+
+- 场景：Issue #25 把 spec.yaml 迁到 spec.json。能否"继续支持 .yaml"？理论可以（保留 yaml import），但这意味着项目内嵌运行时仍依赖 PyYAML，前期承诺失败
+- 决策：硬性拒绝 .yaml / .yml 后缀的 spec 文件，报错里给出具体的 `python -c "import yaml,json; json.dump(yaml.safe_load(...), ..., ensure_ascii=False, indent=2)"` 迁移命令
+- 根因：破坏性变更的矫情做法（兼容双轨）会永久锁死依赖，动机是怕用户有轻微迁移成本。但**精确的迁移命令**让用户迁移成本 < 30 秒，比永远背着旧依赖划算得多
+- 规则：破坏性变更要"破而彻底"。用文件后缀 / 格式标记来明确拒绝旧格式 + 给出**可直接复制执行**的迁移命令。不要用"temporarily 支持旧格式 + deprecation warning + 计划 N 版本后移除"这种拖泥带水路径——它极少真的到移除那一天，反而成了永久技术债
+
