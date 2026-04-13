@@ -302,7 +302,7 @@ project/
 | `/debug` | 4 阶段系统性排障：根因调查 → 模式分析 → 假设验证 → 修复 | superpowers |
 | `/subagent-dev` | 子代理协作开发，两阶段评审（spec + quality） | superpowers |
 | `/dispatch-agents` | 并行分发独立任务给多个 agent（短任务一次性 map-reduce） | superpowers |
-| `/squad` | 常驻多 agent 协作（tmux + worktree + capability 分权 scout/builder/reviewer） | 本地原创 |
+| `/squad` | 常驻多 agent 协作（tmux + worktree + capability 分权 scout/builder/reviewer；SQLite mailbox；`harness squad watch` 自动 advance + Tier 0 watchdog 监控失联） | 本地原创 |
 | `/use-worktrees` | Git worktree 创建隔离开发环境 | superpowers |
 
 ### 验证与评审
