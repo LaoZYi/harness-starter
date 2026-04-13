@@ -22,6 +22,16 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/context-monitor.sh 2>&1 || true"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

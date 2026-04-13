@@ -20,7 +20,13 @@
 15. **多 agent 日志隔离（Issue #14，吸收自 MemPalace）**：`harness agent init/diary/status/list/aggregate` 子命令族，给 `/dispatch-agents` 和 `/subagent-dev` 场景的并行子 agent 提供独立目录 `.agent-harness/agents/<id>/{diary.md, status.md}`，避免并发写共享 current-task.md。agent id 规范 `^[a-z0-9][a-z0-9-]{0,30}$`（与 /squad 一致）；fcntl 锁保证并发写无丢失；主 agent 用 `harness agent aggregate` 汇总后决定哪些值得归档进 task-log（不自动 merge）。与 /squad 的 `squad/<task>/workers/<name>/` 目录各管各的场景，互不相干。
 14. **会话保护 hooks（Issue #13，吸收自 MemPalace）**：Claude Code 的 Stop hook 和 PreCompact hook 自动触发。Stop hook 在 AI 停止前检查 current-task.md 是否还有未勾选 checkbox，有则 block 要求先更新进度；人工放行通过 `touch .agent-harness/.stop-hook-skip` 开关。PreCompact hook 在 `/compact` 前追加一条 audit 检查点并 stderr 提示 AI 把关键决策持久化。两个 hook 配合分层记忆 + 变更审计形成"读-写-保存"完整生命周期。
 16. **输入安全校验代码化（Issue #15，吸收自 MemPalace）**：`src/agent_harness/security.py` 提供 `sanitize_name` / `sanitize_path` / `sanitize_content` + `SecurityError`，把 `.claude/rules/safety.md` 中"输入信任边界"规则从文档约束变为可复用函数。`sanitize_name` 统一了 agent.py 和 squad/spec.py 中重复的标识符正则；`sanitize_path` 防御路径遍历 + 绝对路径 + 符号链接逃逸；`sanitize_content` 对 oversize 抛异常（显式告警），对 null 字节和控制字符静默剥除（保留 `\n\t\r`）。`SecurityError` 继承 `ValueError` 保持向后兼容。
-15. **多 agent 常驻协作（/squad，阶段 1 MVP）**：通过 `harness squad create <spec.yaml>` 在 tmux 中同时启动多个带独立 worktree 的 Claude Code worker，按 capability（scout / builder / reviewer）用 `settings.local.json` 的 `permissions.deny` 运行时强制工具权限。共享状态写 `.agent-harness/squad/<task_id>/`（manifest + status.jsonl）。与 `/dispatch-agents`（一次性短任务）并存：`/squad` 适合长任务、需实时观察、需角色分权的场景。阶段 1 硬依赖 tmux，不支持 Windows 原生（用 WSL）。
+17. **GSD 吸收三件套 + 两条加料（Issue #17，吸收自 gsd-build/get-shit-done + OpenSwarm）**：
+    - **StuckDetector 规则**（task-lifecycle.md + /tdd + /debug）：连续 3 次同模式失败强制停下、写卡点记录、输出 3 个候选方向给用户选，避免在沉没成本上继续绕圈
+    - **/lint-lessons 矛盾检测增强**：检出 3 种矛盾模式 + 2 种张力模式，输出 4 选 1 裁决建议但**不自动合并**
+    - **需求 ID 三元映射**（/spec + /write-plan + /verify）：R-ID 贯穿规格→计划→验证全链路，验证时硬检查每个 R-ID 为 satisfied / out-of-scope / missed，missed 阻断完成。配套 L2 参考清单 `requirement-mapping-checklist.md`
+    - **/plan-check 新技能**：8 维度（需求覆盖 / 原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环，作为 /write-plan 收尾或独立调用；/lfg 阶段 3 已串入
+    - **上下文监控 Hook（降级版）**：经 source-verify 后，Claude Code statusline 不暴露 `remaining_percentage`，降级为 PostToolUse 工具调用计数代理指标（50/100/150 三级阈值提醒 /compact），纯 shell 跨平台；`touch .agent-harness/.context-monitor-skip` 可关闭
+16. **多 agent 常驻协作（/squad，阶段 1 MVP）**：通过 `harness squad create <spec.yaml>` 在 tmux 中同时启动多个带独立 worktree 的 Claude Code worker，按 capability（scout / builder / reviewer）用 `settings.local.json` 的 `permissions.deny` 运行时强制工具权限。共享状态写 `.agent-harness/squad/<task_id>/`（manifest + status.jsonl）。与 `/dispatch-agents`（一次性短任务）并存：`/squad` 适合长任务、需实时观察、需角色分权的场景。阶段 1 硬依赖 tmux，不支持 Windows 原生（用 WSL）。
 
 ## 支持的项目类型（9 种）
 

@@ -53,6 +53,27 @@
 ✗ 验证失败：运行 `{{test_command}}`，40 通过，2 失败。失败测试：test_xxx, test_yyy。
 ```
 
+### 第 5.5 步：R-ID 覆盖硬检查（灵感自 GSD Nyquist 合规）
+
+如果上游 `/spec` 产出过需求矩阵（R1, R2, ..., Rn），必须做**逐条 R-ID 覆盖硬检查**，禁止在任何 R-ID 悬空的情况下宣告完成：
+
+```
+## R-ID 覆盖核验
+
+| R-ID | 需求描述 | 状态 | 证据 / 理由 |
+|------|---------|------|-----------|
+| R1 | 搜索输入框 | ✅ satisfied | test_search_input_renders |
+| R2 | 200ms 返回 | ✅ satisfied | test_search_latency (95p=180ms) |
+| R3 | 空结果提示 | ✅ satisfied | test_empty_state |
+| R4 | 超长输入不崩溃 | ⚠️ out-of-scope | 与用户确认本迭代不做，记录在 follow-up Issue #XX |
+```
+
+**铁律**：
+- 每个 R-ID 必须是以下三态之一：`✅ satisfied`（有测试/证据）、`⚠️ out-of-scope`（明确推迟 + 有理由）、`❌ missed`（遗漏）
+- **出现任何 `❌ missed` → 验证失败**，回到 `/execute-plan` 补实施或和用户确认转为 out-of-scope
+- **不允许**写"整体通过"而不逐条列 R-ID——这是 Scope Reduction 反模式
+- 出现 `⚠️ out-of-scope` 必须注明在哪个后续 Issue 或 follow-up task 中追踪
+
 ### 第 6 步：实操穷举验证（关键功能必做）
 
 如果改动涉及数据安全、用户内容、文件读写等关键路径，单元测试通过**不够**。必须写一个端到端验证脚本：

@@ -137,3 +137,7 @@ make check
 ```
 
 复杂问题将记录写入 `.agent-harness/debug-log.md`。
+
+## StuckDetector 接入
+
+同一根因假设**连续 3 次被证伪** → 必须触发 task-lifecycle 规则中的 StuckDetector：立即停下、写卡点记录、运行 `/brainstorm` 重新发散假设空间，或输出 3 个候选方向给用户选。禁止在同一方向上继续投 tokens。详见 `.claude/rules/task-lifecycle.md` "卡死检测"一节。

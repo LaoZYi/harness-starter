@@ -36,6 +36,7 @@ EXPECTED_IN_LFG = {
     "/spec",
     # Stage 3 — planning
     "/write-plan",
+    "/plan-check",
     "/adr",
     "/source-verify",
     "/todo",
