@@ -353,3 +353,39 @@
   - [x] make ci 通过（234 → 238）
   - [x] 文档全量同步
 - 用户要求全自动修复，免询问
+
+
+## 2026-04-13 — /lfg 技能覆盖完整化（单入口驱动 33 技能）
+
+- 需求：评估 /lfg 是否能发挥框架全部能力，发现 gap 并全部修复
+- 做了什么：
+  - 发现 11 个覆盖盲区（`/recall` `/use-worktrees` `/careful` `/source-verify` `/todo` `/subagent-dev` `/request-review` `/receive-review` `/verify` `/finish-branch` CLI 入口分流 + references 按需）
+  - 阶段 0.1 新增"运维任务分流表"：init/upgrade/doctor/export/stats/sync/memory rebuild/squad/health/retro/lint-lessons/evolve 的走 CLI/元技能，不拉进 /lfg
+  - 阶段 0.2 从"全文读 lessons.md"改为"分层加载"：L0 规则 + L1 memory-index 必读；L2/L3 用 `/recall` 和 `/recall --refs`
+  - 阶段 1 接入 `/use-worktrees` + `/careful`；阶段 3 接入 `/source-verify` + `/todo`；阶段 4 选型表加 `/subagent-dev`
+  - 阶段 5 串 `/request-review` → `/multi-review`；阶段 6 串 `/receive-review`
+  - 阶段 7 用 `/verify` 做完整验证；阶段 10 用 `/finish-branch` 做收尾；回滚前 `/careful` 拦截
+  - 末尾新增"技能覆盖清单"表（按阶段列接入点，含豁免说明）
+  - 新增 `tests/test_lfg_coverage.py`（5 测试）：EXPECTED_IN_LFG (26) + EXPECTED_NOT_IN_LFG (7) 契约、shipped skills 必须被分类、豁免技能不得被 `运行` 命令化、dogfood 同步检查
+  - make dogfood 同步 .claude/commands/lfg.md
+  - 全量文档计数 238 → 243：AGENTS / CONTRIBUTING / CHANGELOG / docs/{architecture,runbook,release,workflow}.md
+  - lessons.md + memory-index.md 新增"统一入口技能必须串起全量能力"（架构设计类）
+- 关键决策：
+  - **契约测试而非口头约束**：新增技能时，test_every_shipped_skill_is_classified 会失败，强迫开发者做"进 lfg 还是豁免"决策。这是本次修复的根因防御
+  - **豁免分两类**：(a) /lfg /use-superpowers 自递归 / 平级；(b) /health /retro /lint-lessons 完整版 /evolve /write-skill /process-notes 是元技能或周期任务，不属单任务流
+  - **CLI 入口显式提示**：/lfg 用户经常被误用于"初始化新项目"，新加的分流表直接告诉用户走 harness init。降低用户记忆负担的正确方式是 /lfg 主动指路，不是假装能做一切
+  - 未修改 lfg 核心阶段编号（0/1/2/2.5/3-10），只在既有阶段内追加技能调用——保向后兼容
+- 改了哪些文件：
+  - 新建：`tests/test_lfg_coverage.py`
+  - 模板：`src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`（+85 行）
+  - dogfood：`.claude/commands/lfg.md`（make dogfood 自动同步）
+  - 文档：`CHANGELOG.md`、`AGENTS.md`、`CONTRIBUTING.md`、`docs/{architecture,runbook,release,workflow}.md`
+  - 知识：`.agent-harness/lessons.md`、`memory-index.md`
+- 完成标准（6/6）：
+  - [x] /lfg 引用 33 个技能中应覆盖的 26 个
+  - [x] CLI 入口 + 元技能豁免说明齐全
+  - [x] 契约测试锁死未来新技能必须被分类
+  - [x] dogfood 无漂移
+  - [x] make ci 通过（238 → 243）
+  - [x] 文档全量同步 + lessons 沉淀
+- 用户要求全自动修复，免询问
