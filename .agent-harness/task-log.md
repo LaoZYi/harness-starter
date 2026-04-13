@@ -516,3 +516,39 @@
   - 文档：`docs/architecture.md`（辅助层新增条目，测试数 304→329）、`docs/product.md`（功能 16）、`CHANGELOG.md`、`docs/release.md`
   - 知识：`.agent-harness/lessons.md`（2 条架构设计教训）、`memory-index.md`
 - 完成标准（5/5）：security.py 导出完整 / 两处重构完成 / 25 条测试 + 穷举 8/8 / make ci 329 全绿 / 文档四处同步
+
+## 2026-04-13 GSD 吸收三件套 + OpenSwarm 两条加料（Issue #17）
+
+- 需求：一次性吸收 gsd-build/get-shit-done 的三件套（上下文监控 Hook / /plan-check / 需求 ID 三元映射）+ OpenSwarm 加料（StuckDetector 规则 / /lint-lessons 矛盾检测），全部落地到框架。
+- 做了什么：按 5 阶段 atomic commit 拆分（B/C/D/E/F/G+H）：
+  - **B StuckDetector**：task-lifecycle.md 新增"卡死检测"章节（4 类触发条件 + 3 步强制停下）；/tdd 和 /debug 技能文档同步
+  - **C 矛盾检测**：/lint-lessons 2.2 节从简单描述升级为 3 矛盾 + 2 张力模式 + 4 选 1 裁决建议（不自动合并）
+  - **D 需求 ID 三元映射**：/spec 加 1.4 需求矩阵（R-ID 连续编号 + 可识别测试信号）；/write-plan 要求每 task 标 R-ID + 末尾覆盖表；/verify 加 5.5 R-ID 覆盖硬检查（satisfied/out-of-scope/missed 三态，missed 阻断）；新增 references/requirement-mapping-checklist.md
+  - **E /plan-check 新技能**：8 维度（需求覆盖 / 任务原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环；workflow 规则 + /lfg 阶段 3 + use-superpowers 决策树 + evolve 对比表 + usage-guide 均同步；技能计数 30→31
+  - **F 上下文监控 Hook**：先 source-verify 发现 Claude Code statusline 不暴露 remaining_percentage → 降级为 PostToolUse 工具调用计数（50/100/150 三级阈值）；纯 shell 跨平台；.context-monitor-skip sentinel 可关；session-start.sh 重置计数器
+  - **G+H 测试 + 文档**：test_gsd_absorb.py 新增 18 条契约测试；product.md 新增功能 17；architecture.md hooks 段 + 测试层更新；测试数 329→347 同步
+- 关键决策：
+  - **拆成 6 个 atomic commit + lfg/step-X tag**：单 commit 20+ 文件几百行不可评审，拆后每阶段独立可回滚
+  - **F 项降级而非硬做**：GSD 原方案依赖未公开字段，降级到"工具调用计数"代理指标既落地又不 hack
+  - **SecurityError 式继承链**：新异常类继承现有上位族（ValueError），保持向后兼容
+  - **契约测试覆盖六个子系统**：不测"怎么调用技能"（技能是 AI 读的提示），测"模板文件里是否存在关键字和结构"——模板不被改漏就对了
+- 改了：
+  - 新增：`src/agent_harness/templates/superpowers/.claude/commands/plan-check.md.tmpl`、`src/agent_harness/templates/common/.agent-harness/references/requirement-mapping-checklist.md.tmpl`、`src/agent_harness/templates/common/.claude/hooks/context-monitor.sh.tmpl`、`tests/test_gsd_absorb.py`
+  - 修改（技能模板）：`tdd.md.tmpl`、`debug.md.tmpl`、`lint-lessons.md.tmpl`、`spec.md.tmpl`、`write-plan.md.tmpl`、`verify.md.tmpl`、`use-superpowers.md.tmpl`、`evolve.md.tmpl`、`lfg.md.tmpl`
+  - 修改（规则）：`common/.claude/rules/task-lifecycle.md.tmpl`、`superpowers/.claude/rules/superpowers-workflow.md.tmpl`
+  - 修改（hook/配置）：`session-start.sh.tmpl`、`settings.json.tmpl`
+  - 修改（dogfood）：`.claude/rules/task-lifecycle.md`、`.claude/commands/*`、`.claude/hooks/*`、`.claude/settings.json`
+  - 契约：`tests/test_lfg_coverage.py`（EXPECTED_IN_LFG 加 /plan-check）
+  - 文档：`CHANGELOG.md`、`docs/product.md`、`docs/architecture.md`、`docs/release.md`、`docs/usage-guide.md`、`.agent-harness/project.json`
+  - 知识：`.agent-harness/lessons.md`（2 条新教训）、`memory-index.md`
+- 完成标准（10/10）：
+  1. ✅ StuckDetector 规则存在且 /tdd /debug 同步
+  2. ✅ /lint-lessons 能检出矛盾候选（模板有"矛盾""张力""保留 A""只检出"等关键字）
+  3. ✅ /spec 产出需求矩阵（R-ID + 测试信号）
+  4. ✅ /write-plan 每步标 R-ID + 末尾覆盖表
+  5. ✅ /verify R-ID 硬检查（三态 satisfied/out-of-scope/missed）
+  6. ✅ /plan-check 8 维度 + 3 轮修订存在
+  7. ✅ Hook 降级方案（statusline API 不支持 remaining_percentage → 工具调用计数代理），端到端测试通过
+  8. ✅ 所有新增/修改技能同步到 /lfg 覆盖表（EXPECTED_IN_LFG 契约测试通过）
+  9. ✅ 测试数 329→347、技能数 30→31 全部同步
+  10. ✅ make ci 347/347 全绿
