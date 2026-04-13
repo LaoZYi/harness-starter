@@ -176,6 +176,7 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/spec` — 规格驱动开发 | ? |
 | `/adr` — 架构决策记录 | ? |
 | `/write-plan` — 实施计划 | ? |
+| `/plan-check` — 8 维度计划校验 | ? |
 | `/tdd` — 测试驱动开发 | ? |
 | `/debug` — 系统性排障 | ? |
 | `/execute-plan` — 按计划执行 | ? |

@@ -113,11 +113,11 @@
 
 ### Highlights
 
-框架从项目脚手架工具升级为**完整的 AI 工程方法论平台**。集成 30 个工作流技能，实现知识驱动的自我进化闭环。
+框架从项目脚手架工具升级为**完整的 AI 工程方法论平台**。集成 31 个工作流技能，实现知识驱动的自我进化闭环。
 
 ### Added
 
-- **30 个工作流技能命令**，融合 3 个开源项目 + 2 个吸收项目 + 2 个本地原创：
+- **31 个工作流技能命令**，融合 3 个开源项目 + 2 个吸收项目 + 2 个本地原创：
   - 来自 [obra/superpowers](https://github.com/obra/superpowers)（14 个）：brainstorm, write-plan, tdd, debug, execute-plan, subagent-dev, dispatch-agents, request-review, receive-review, use-worktrees, finish-branch, write-skill, verify, use-superpowers
   - 来自 [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)（6 个）：ideate, compound, multi-review, lfg, git-commit, todo
   - 来自 [garrytan/gstack](https://github.com/garrytan/gstack)（5 个）：cso, health, retro, doc-release, careful
