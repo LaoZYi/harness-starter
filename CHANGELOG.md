@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added — 会话保护 hooks（Issue #13，吸收自 MemPalace）
+
+- **Stop hook** (`.claude/hooks/stop.sh`)：AI 即将停止时检查 `.agent-harness/current-task.md`，若有 `- [ ]` 未勾选 且 无"状态：待验证" 则 block（顶级 JSON `{"decision":"block","reason":...}`），要求 AI 先把进度写到 current-task.md
+- **人工放行机制**：`touch .agent-harness/.stop-hook-skip` → 下次 Stop 跳过检查。替代 MemPalace 原方案中的 `stop_hook_active` 字段（经 `/source-verify` 确认 Claude Code 文档仅 SubagentStop 保证该字段，Stop 事件无保证）
+- **PreCompact hook** (`.claude/hooks/pre-compact.sh`)：压缩前自动 append 一条 audit 检查点（复用 Issue #12 的 `audit.jsonl`），并 stderr 输出软提示要求 AI 把关键决策持久化。Claude Code 文档明确 PreCompact 无 decision control，本实现不尝试 block
+- **`settings.json.tmpl` 新增两个 event 注册**：Stop 不带 matcher（文档明确静默忽略），PreCompact 也不带 matcher（捕获 manual + auto）
+- **新测试 `tests/test_hooks.py`**（16 测试）：正常/边界/错误/skip sentinel/JSON 多行 reason 合法性/stdin 消费/audit 副作用/stderr 注入/settings 结构契约（含 Stop 不得有 matcher 的 source-verify 锚定）
+- **自我保护测试**：框架 dogfood 自身后，当前 session 有未完成 checkbox 会被自己的 hook 拦住 → 引入 `.stop-hook-skip` sentinel 兜底
+- **与 Issue #12 协作**：PreCompact 直接复用 audit.jsonl 基础设施形成"变更审计 + 压缩 checkpoint"闭环
+
 ### Added — 关键文件变更审计（WAL，Issue #12，吸收自 MemPalace）
 
 - **新模块 `src/agent_harness/audit.py`**（277 行）：`append_audit / read_all / tail / stats / truncate_before`，fcntl LOCK_EX + O_APPEND 保证并发安全；agent 身份从 `HARNESS_AGENT` env 读取，默认 `unknown`；op 四选一（create / update / append / delete）；只追踪 `current-task.md` / `task-log.md` / `lessons.md`
@@ -122,7 +132,7 @@
 
 ### Infrastructure
 
-- 263 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
+- 279 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

@@ -427,3 +427,43 @@
   - [x] upgrade 保留用户已有 audit.jsonl（skip 契约测试锁死）
   - [x] make ci 通过（243 → 263）
   - [x] 文档全量同步
+
+
+## 2026-04-13 — Issue #13：Stop + PreCompact hook 自动保存进度（吸收自 MemPalace）
+
+- 需求：加 Claude Code 的 Stop hook 和 PreCompact hook，防止会话中断丢进度 + 压缩前持久化关键决策
+- 做了什么：
+  - 运行 `/source-verify` 查 Claude Code hook API 文档，发现 3 个关键纠偏：
+    1. Stop hook **不支持 matcher**（文档明确静默忽略）
+    2. `stop_hook_active` 字段仅在 SubagentStop 文档保证，Stop 事件无保证 → 改用 `.stop-hook-skip` sentinel 文件做人工放行
+    3. PreCompact **无 decision control**（文档明确），不能 block
+  - `.claude/hooks/stop.sh.tmpl`：读 current-task → 若有 `- [ ]` 且无"状态：待验证" → 输出顶级 `{"decision":"block","reason":...}` JSON（reason 经 python3 json.dumps 转义，保证多行 + 中文 + 引号合法）
+  - `.claude/hooks/pre-compact.sh.tmpl`：append audit.jsonl 检查点（trigger=manual|auto 从 stdin 提取）+ stderr 输出软提示
+  - `settings.json.tmpl` 注册 Stop + PreCompact，严格按 source-verify 结论（Stop 不加 matcher）
+  - `scripts/check_repo.py` REQUIRED_FILES 加入两个 hook 模板
+  - `tests/test_hooks.py` 16 测试：4 路决策 + sentinel 放行 + JSON 多行合法 + stdin 消费 + audit 副作用 + stderr 内容 + settings 结构契约（含 Stop 不得有 matcher 的 source-verify 锚定）
+  - make dogfood 同步后，当前 session 的 current-task 有未完成 checkbox 会被自己拦住 → `touch .agent-harness/.stop-hook-skip` 兜底
+  - 全量文档计数 263 → 279：AGENTS/CONTRIBUTING/CHANGELOG/docs/{product,architecture,runbook,release,workflow}.md
+- 关键决策：
+  - **source-verify 驱动**：直接修掉 3 个凭记忆写的 API 假设，落地 lessons "CLI flag 假设在 plan 阶段必须 source-verify"
+  - **人工放行用 sentinel 文件**：比依赖未文档化字段稳；脚手架 dogfood 自身时必须自备逃生舱
+  - **PreCompact 只做副作用**：append audit + stderr，不 block；契合 Claude Code 设计
+  - **JSON reason 转义用 python3**：bash printf 无法安全转义多行/中文/引号，嵌入 python3 一行做 json.dumps 最稳
+  - **与 Issue #12 协作**：PreCompact 直接调 audit.jsonl 格式，不再新增记录源
+- 改了哪些文件：
+  - 新建：`templates/common/.claude/hooks/{stop,pre-compact}.sh.tmpl`、`tests/test_hooks.py`
+  - 修改：`templates/common/.claude/settings.json.tmpl`、`scripts/check_repo.py`
+  - dogfood：`.claude/hooks/{stop,pre-compact}.sh`、`.claude/settings.json`
+  - 文档：`AGENTS.md`（无改）、`CONTRIBUTING.md`、`CHANGELOG.md`、`docs/{product,architecture,runbook,release,workflow}.md`
+  - 知识：`.agent-harness/lessons.md`（+1 条架构设计）、`memory-index.md`
+  - 兜底：`.agent-harness/.stop-hook-skip`（本仓库一次性，.gitignore 已含 `.agent-harness/` 子路径？需检查是否应加入 gitignore）
+- 完成标准（9/9）：
+  - [x] 两个 hook 脚本模板存在
+  - [x] Stop 四路决策正确（无文件/待验证/全勾/未勾）
+  - [x] skip sentinel 生效
+  - [x] PreCompact 写 audit + stderr 提示
+  - [x] settings.json 符合 Claude Code 规范（Stop 无 matcher）
+  - [x] 16 测试全绿
+  - [x] make ci 通过（263 → 279）
+  - [x] make dogfood 同步后框架仍可用（sentinel 兜底）
+  - [x] 文档全量同步 + lessons 沉淀
