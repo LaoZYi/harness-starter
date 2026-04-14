@@ -7,7 +7,7 @@
 1. **探测**：扫描目标项目，产出结构化画像（语言、包管理器、命令、目录结构）。
 2. **评估**：根据画像产出接入评分、缺口和建议。
 3. **初始化**：根据项目类型和探测结果生成文档/配置文件。支持 `--scaffold` 从现有技术框架创建。交互式问答支持返回上一步和确认修改。
-4. **工作流技能**：默认生成 30 个结构化开发技能命令（融合 superpowers + compound-engineering + gstack），覆盖构思、设计、计划、执行、评审、安全、沉淀、自我进化全生命周期。可通过 `--no-superpowers` 关闭。外加 3 个 common 层命令（`/process-notes`、`/recall`、`/source-verify`）不受 `--no-superpowers` 影响。
+4. **工作流技能**：默认生成 32 个结构化开发技能命令（融合 superpowers + compound-engineering + gstack + 12-factor-agents），覆盖构思、设计、计划、执行、评审、安全、沉淀、自我进化全生命周期。可通过 `--no-superpowers` 关闭。外加 3 个 common 层命令（`/process-notes`、`/recall`、`/source-verify`）不受 `--no-superpowers` 影响。
 5. **首次分析**：初始化后 current-task.md 预填分析任务，AI 打开项目自动补全文档。
 6. **升级**：对已接入的项目做增量升级，支持三方合并（保留用户内容）、diff 预览、选择性升级和自动备份。冲突时插入标记并醒目提示。
 7. **运维**：doctor（健康检查）、export（画像导出）、stats（任务统计）。
@@ -26,6 +26,8 @@
     - **需求 ID 三元映射**（/spec + /write-plan + /verify）：R-ID 贯穿规格→计划→验证全链路，验证时硬检查每个 R-ID 为 satisfied / out-of-scope / missed，missed 阻断完成。配套 L2 参考清单 `requirement-mapping-checklist.md`
     - **/plan-check 新技能**：8 维度（需求覆盖 / 原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环，作为 /write-plan 收尾或独立调用；/lfg 阶段 3 已串入
     - **上下文监控 Hook（降级版）**：经 source-verify 后，Claude Code statusline 不暴露 `remaining_percentage`，降级为 PostToolUse 工具调用计数代理指标（50/100/150 三级阈值提醒 /compact），纯 shell 跨平台；`touch .agent-harness/.context-monitor-skip` 可关闭
+19. **12-Factor Agent Design 集成（Issue #28，2026-04-14，吸收自 humanlayer/12-factor-agents）**：新增 `/agent-design-check` 技能（4 维度：F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents），针对涉及 `/squad` / `/dispatch-agents` / `/subagent-dev` 的计划做 Agent 工程化体检。配套 `common/rules/agent-design.md` 规则（F8/F10 硬约束：worker 不得自持 retry/loop、单 worker ≤ 10 原子步骤）；`common/rules/task-lifecycle.md` 追加"Context Ownership"段（Factor 3）；`/plan-check` 扩到 8+1 维度（第 9 维度 Agent 工程化条件触发）；`/lfg` 阶段 3 在 `/plan-check` 后自动串联 `/agent-design-check`。**裁剪策略**：12-factor 中 F1/F2/F4/F6/F7/F9/F11/F12 预设自建 LLM 运行时不适用，只在新技能附录中作参考。
+
 18. **skills-registry.json SSOT（Issue #27，2026-04-13）**：把 34 个 skill 的元数据（id / category / triggers / lfg_stage / expected_in_lfg / exclusion_reason）抽到单一 JSON 真相源。下游消费方：`use-superpowers.md.tmpl` 渲染决策树和三段索引；`lfg.md.tmpl` 渲染阶段覆盖表；`tests/test_lfg_coverage.py` 读取 EXPECTED_IN/NOT_IN_LFG；`harness skills lint` CLI 子命令在 CI 中强制三处一致性（孤儿 .md.tmpl / 注册但缺文件 / expected_in_lfg=true 但 lfg 未引用）。`<<SKILL_*>>` 双尖括号占位符避免与 `{{var}}` jinja 占位符冲突。`make ci` 串入 `make skills-lint` 守卫。
 17. **/lfg gap 修复（2026-04-13，评估驱动）**：对单入口 `/lfg` 做 5 处接合补强，把运行时能力真正嵌进流水线：
     - **阶段 0.1 meta 类型路由**：读 `.agent-harness/project.json.project_type == meta` 时劝退到 `/meta-*` 命令集

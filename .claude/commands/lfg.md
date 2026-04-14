@@ -366,10 +366,11 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 5. **如果计划引用了框架/库的具体 API、CLI flag、配置项**（如 "使用 React useState"、"传 --foo flag"）：运行 `/source-verify` 从官方文档验证，防止凭训练数据编 API。教训来自 lessons.md 的"CLI flag 假设在 plan 阶段必须 source-verify"
 6. **如果任务可拆成多个 2-5 分钟粒度的子步骤**：在计划中生成对应的 `/todo` 清单，写到 current-task.md 的 Progress 段；执行阶段逐项勾选
 7. **标准/完整通道下**：计划生成后立即运行 `/plan-check` 做 8 维度结构化校验（需求覆盖 / 原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环。**快速/轻量通道跳过此步**
+8. **如果计划涉及多 agent 协作**（`/squad`、`/dispatch-agents`、`/subagent-dev`、自定义 worker prompt 或 capability 分权）：在 `/plan-check` 通过后额外运行 `/agent-design-check` 做 4 维度体检（F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents），对应 `plan-check` 的第 9 维度。来源：[12-factor-agents](https://github.com/humanlayer/12-factor-agents)。**非多 agent 场景跳过此步**
 
 #### 3.2 计划质量检查（必须通过才能继续）
 
-若已跑 `/plan-check` 且全 8 维度 PASS，跳过本节；否则逐条检查，**不通过就修正计划**：
+若已跑 `/plan-check` 且全 8 维度（+ 第 9 维度如触发）PASS，跳过本节；否则逐条检查，**不通过就修正计划**：
 
 - [ ] **覆盖度**：验收标准的每一条在计划中都有对应步骤（若有 `/spec` R-ID：每个 R-ID 必须映射到 task 或标 out-of-scope）
 - [ ] **具体性**：每个步骤有精确的文件路径（不是"相关文件"）
@@ -861,7 +862,7 @@ fi
 | 1 环境准备 | `/use-worktrees`、`/careful` |
 | 2 构思 | `/ideate`、`/brainstorm` |
 | 2.5 规格 | `/spec` |
-| 3 计划 | `/adr`、`/write-plan`、`/plan-check`、`/todo`、`/source-verify` |
+| 3 计划 | `/adr`、`/write-plan`、`/plan-check`、`/agent-design-check`、`/todo`、`/source-verify` |
 | 4 实施 | `/debug`、`/tdd`、`/execute-plan`、`/dispatch-agents`、`/squad`、`/subagent-dev` |
 | 5 评审 | `/multi-review`、`/request-review` |
 | 6 修复 | `/multi-review`、`/receive-review` |

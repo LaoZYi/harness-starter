@@ -61,9 +61,19 @@
       "id": "plan-check",
       "name": "计划校验",
       "category": "process",
-      "one_line": "8 维度结构化校验 + 最多 3 轮修订",
+      "one_line": "8+1 维度结构化校验 + 最多 3 轮修订",
       "triggers": ["计划写完要验质量", "复杂任务计划校验"],
       "decision_tree_label": null,
+      "lfg_stage": ["3 计划"],
+      "expected_in_lfg": true
+    },
+    {
+      "id": "agent-design-check",
+      "name": "Agent 设计体检",
+      "category": "process",
+      "one_line": "4 维度（F3/F5/F8/F10）体检涉及多 agent 的计划",
+      "triggers": ["设计 squad worker", "dispatch-agents 前校验", "agent 编排"],
+      "decision_tree_label": "计划涉及多 agent？",
       "lfg_stage": ["3 计划"],
       "expected_in_lfg": true
     },

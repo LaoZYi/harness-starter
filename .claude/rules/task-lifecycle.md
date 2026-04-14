@@ -174,6 +174,37 @@ harness agent aggregate [<id>...]                     # 汇总 diary 供主 agen
 - `audit.jsonl` = "这个 agent 改了哪个文件 / 何时"（结果）
 - 两者互补不重复
 
+## Context Ownership（Agent 上下文所有权）
+
+派出任何子 agent 时（`/squad` worker、`/dispatch-agents` 子任务、`/subagent-dev` 执行者），其 prompt + 初始上下文**必须显式设计**，不得依赖默认拼接。
+
+灵感自 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents) Factor 3 "Own Your Context Window"。
+
+### 显式设计的最小要件
+
+每个子 agent prompt 必须写明：
+
+1. **做什么**（任务边界）：一句话说明这个 agent 的产出物
+2. **读哪些**（输入文件清单）：精确路径，不写"相关代码"
+3. **写哪里**（输出位置）：具体文件路径 / mailbox event / diary 段落
+4. **完成条件**（验收标准）：可机械判定的"完成 vs 未完成"
+5. **遇阻如何**（异常路径）：超时 / 依赖缺失 / 测试失败时输出什么，由谁接手
+
+### 反模式
+
+- ❌ "你看着项目情况，做用户搜索功能" —— 缺全部 5 要件
+- ❌ "读相关代码" —— 不具体，agent 会自行扩展上下文到整个仓库
+- ❌ 多个 worker 默认共享 `current-task.md` 做并发读写 —— 违反"并行子 agent 的日志隔离"
+
+### 与分层记忆的关系
+
+L0（规则）和 L1（热索引）由 Claude Code session 加载规则自动注入，子 agent 不用重复。但子 agent 的**任务级上下文**（输入文件、引用的 references、关联的 lessons 教训）必须在 prompt 里列出——即便是主 agent 刚加载过的内容，子 agent 不一定能继承。
+
+### 违反检测
+
+- 涉及多 agent 的计划由 `/agent-design-check` F3 维度审计
+- `.claude/rules/agent-design.md` 定义 F5/F8/F10 配套硬约束
+
 ## 实现完成后 → 进入"待验证"状态
 
 agent 自测通过后，**不要**直接写 task-log 和清空 current-task。而是：

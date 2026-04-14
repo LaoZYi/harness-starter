@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+### Added — 12-Factor Agent Design 集成（Issue #28 / GitLab #12，2026-04-14）
+
+吸收 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)（19k+ ⭐）的方法论，裁剪为本项目真正适用的 4 条 Factor（F3/F5/F8/F10），落地为 1 个新技能 + 1 个新规则 + 2 处增量修改。技能总数 31 → 32 个工作流技能命令。
+
+**新文件**：
+- `templates/superpowers/.claude/commands/agent-design-check.md.tmpl`：4 维度 Agent 设计体检（F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents）
+- `templates/common/.claude/rules/agent-design.md.tmpl`：F8/F10 硬约束 + F5 同步点约束
+- `docs/superpowers/specs/2026-04-14-12factor-agent-design-{spec,plan}.md`
+
+**改动**：
+- `templates/common/.claude/rules/task-lifecycle.md.tmpl`：追加"Context Ownership"段（F3）
+- `templates/superpowers/.claude/commands/plan-check.md.tmpl`：新增第 9 维度"Agent 工程化"（条件触发）
+- `templates/superpowers/.claude/commands/lfg.md.tmpl`：阶段 3 引入 `/agent-design-check` 条件调用
+- `templates/superpowers/skills-registry.json`：注册 `agent-design-check`（第 35 个 skill；其中 expected_in_lfg=true 的技能从 31 升到 32 个）
+
+**裁剪策略**：
+- 本项目是 Claude Code 模板库，非自建 LLM 运行时。12-factor 中 F1/F2/F4/F6/F7/F9/F11/F12 预设"拥有 prompt/tool schema/状态机代码控制权"不适用，只在新技能附录中列出作参考
+- F8（Control Flow）硬约束：worker prompt 禁止自持 retry/loop
+- F10（Small Focused）硬约束：单 worker ≤ 10 原子步骤
+- F3（Context Ownership）加入 task-lifecycle L0-L3 分层之外的"子 agent prompt 必须显式设计"原则
+- F5（Unified State）约束同步点，防止 agent 完成但业务状态不同步
+
 ### Added — Skills Registry SSOT（Issue #27 / GitLab #11，2026-04-13）
 
 把 34 个 skill 的元数据抽到 `templates/superpowers/skills-registry.json` 单一真相源，消除三处文档（use-superpowers.md.tmpl / lfg.md.tmpl / test_lfg_coverage.py）的同步漂移风险。
@@ -235,11 +257,11 @@
 
 ### Highlights
 
-框架从项目脚手架工具升级为**完整的 AI 工程方法论平台**。集成 31 个工作流技能，实现知识驱动的自我进化闭环。
+框架从项目脚手架工具升级为**完整的 AI 工程方法论平台**。集成 31 项工作流技能，实现知识驱动的自我进化闭环（当时基线；当前技能数以最新条目为准）。
 
 ### Added
 
-- **31 个工作流技能命令**，融合 3 个开源项目 + 2 个吸收项目 + 2 个本地原创：
+- **31 项工作流技能命令**（当时基线，后续增量见顶部条目），融合 3 个开源项目 + 2 个吸收项目 + 2 个本地原创：
   - 来自 [obra/superpowers](https://github.com/obra/superpowers)（14 个）：brainstorm, write-plan, tdd, debug, execute-plan, subagent-dev, dispatch-agents, request-review, receive-review, use-worktrees, finish-branch, write-skill, verify, use-superpowers
   - 来自 [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)（6 个）：ideate, compound, multi-review, lfg, git-commit, todo
   - 来自 [garrytan/gstack](https://github.com/garrytan/gstack)（5 个）：cso, health, retro, doc-release, careful

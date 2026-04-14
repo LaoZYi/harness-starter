@@ -1,6 +1,6 @@
 # 计划校验（Plan Check）
 
-在实施计划进入执行前，对 plan 做 8 维度结构化校验 + 最多 3 轮修订循环。防止"计划看起来合理但遗漏关键点"导致中途返工。
+在实施计划进入执行前，对 plan 做 8 维度结构化校验（+ 第 9 维度 Agent 工程化条件触发）+ 最多 3 轮修订循环。防止"计划看起来合理但遗漏关键点"导致中途返工。
 
 灵感自 [gsd-build/get-shit-done](https://github.com/gsd-build/get-shit-done) 的 `/plan-check` 机制。
 
@@ -12,7 +12,7 @@
 - **作为独立调用**：对已存在的 `docs/superpowers/specs/*-plan.md` 做审查
 - **作为 `/lfg` 阶段 3 的质量门**：计划通过 check 才进入实施
 
-**跳过场景**：快速通道的微小任务无需 plan-check，因为计划只有 1-2 行，8 维度校验是冗余开销。
+**跳过场景**：快速通道的微小任务无需 plan-check，因为计划只有 1-2 行，维度校验是冗余开销。
 
 ## 输入
 
@@ -21,7 +21,9 @@
 
 如果都没有，告诉用户先运行 `/write-plan`。
 
-## 8 维度校验
+## 8 + 1 维度校验
+
+> 维度 1-8 为核心校验（所有任务必须跑完）；维度 9 仅在 plan 涉及多 agent 协作时触发。
 
 ### 1. 需求覆盖（Requirement Coverage）
 
@@ -113,11 +115,29 @@
 
 **常见失败**：R3 说"空结果有提示"，plan 里没写 `test_empty_state` 或类似测试名。
 
+### 9. Agent 工程化（Agent Engineering · 条件触发）
+
+**触发条件**：plan 涉及 `/squad`、`/dispatch-agents`、`/subagent-dev` 或自定义 worker prompt / capability 分权。**不涉及多 agent 协作则跳过此维度，不计入评分**。
+
+**检查**：对涉及多 agent 的计划调用 `/agent-design-check` 做 4 维度（F3/F5/F8/F10）体检（来源 [12-factor-agents](https://github.com/humanlayer/12-factor-agents)）。
+
+**通过标准**：
+- F3 Context Ownership：每个子 agent prompt 显式声明输入/输出/完成条件
+- F5 State Unification：有明确的"子 agent 完成 → 主状态（current-task）更新"同步点
+- F8 Control Flow：worker 内**无**自持循环/重试（retry 由 `squad watch` 等外部 watchdog 控制）
+- F10 Small Focused：单 worker 任务粒度 ≤ 10 原子步骤
+
+**常见失败**：
+- squad spec 里 builder worker prompt 写"失败自动重试 3 次"→ 违反 F8 硬规则
+- 一个 worker 承担"探索 + 实现 + 评审"→ 违反 F10（应拆成 scout/builder/reviewer 三个）
+
+**修复建议**：直接运行 `/agent-design-check <plan-path>` 取详细报告和修订建议。
+
 ## 修订循环
 
 ### 第 1 轮 — 初次校验
 
-对 8 维度逐一打分：
+对 8 维度核心 + 维度 9（如触发）逐一打分：
 
 | 维度 | 评分 | 发现的问题 |
 |---|---|---|
@@ -127,7 +147,7 @@
 | ... | ... | ... |
 
 **结论**：
-- **所有 8 维度 PASS** → 输出"计划通过校验，可进入实施"
+- **所有适用维度 PASS**（8 核心 + 9 如触发）→ 输出"计划通过校验，可进入实施"
 - **任何维度 FAIL 或多个 WARN** → 列出修订项，请 `/write-plan` 作者修订
 
 ### 第 2 轮 — 修订后复检

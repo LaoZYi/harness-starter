@@ -167,7 +167,7 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 
 ### 2.2 独特性评估
 
-与本框架已有的 29 个技能逐一对比：
+与本框架已有的技能逐一对比：
 
 | 已有技能 | 是否覆盖 |
 |---------|---------|
@@ -176,7 +176,8 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/spec` — 规格驱动开发 | ? |
 | `/adr` — 架构决策记录 | ? |
 | `/write-plan` — 实施计划 | ? |
-| `/plan-check` — 8 维度计划校验 | ? |
+| `/plan-check` — 8+1 维度计划校验 | ? |
+| `/agent-design-check` — 4 维度 Agent 设计体检 | ? |
 | `/tdd` — 测试驱动开发 | ? |
 | `/debug` — 系统性排障 | ? |
 | `/execute-plan` — 按计划执行 | ? |
