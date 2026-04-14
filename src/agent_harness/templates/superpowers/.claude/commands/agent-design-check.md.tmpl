@@ -1,0 +1,163 @@
+# Agent 设计体检（Agent Design Check）
+
+对涉及多 agent 协作的计划做 4 维度体检，提前发现"巨型 Agent"、"LLM 持有循环"、"状态分裂"、"上下文隐式传递"等常见反模式。
+
+灵感自 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)（19k+ ⭐，"Context Engineering" 概念的提出者）。
+
+**裁剪说明**：12-factor-agents 为自建 LLM 运行时设计的 12 条原则中，本项目（Claude Code 模板库）**只吸收适用的 4 条**（F3 Own Context Window / F5 Unified State / F8 Own Control Flow / F10 Small Focused Agents）。其他 8 条（F1/F2/F4/F6/F7/F9/F11/F12）预设的"我们拥有 prompt/tool schema/状态机代码控制权"在本项目不成立，列于附录仅作参考。
+
+当前项目：`{{project_name}}`（{{project_type}} / {{language}}）
+
+## 适用时机
+
+**必用场景**（计划中命中以下任一关键词）：
+- 涉及 `/squad`、`/dispatch-agents`、`/subagent-dev` 中任意一个
+- 设计自定义 worker prompt 或 capability 分权
+- 多 agent 串行/并行/角色分工
+
+**跳过场景**：
+- 单 agent 任务（快速/轻量/普通标准通道内）→ 明确输出"不适用，跳过"，不要强行评分
+- 纯 CRUD / 配置改动 / 文档同步 → 跳过
+
+## 输入
+
+- 计划文件路径（优先 `docs/superpowers/specs/*-plan.md`，其次 `.agent-harness/current-task.md`）
+- 如涉及 squad：`spec.json`
+
+---
+
+## 4 维度校验
+
+### F3. Context Ownership（上下文所有权）
+
+**对应**：12-factor-agents Factor 3 "Own Your Context Window"
+
+**检查**：派出的每个子 agent，其初始 prompt + 上下文是否被**显式设计**？
+
+**通过标准**：
+- 每个 worker prompt 明确写出"做什么、读哪些文件、产出什么、遇阻怎么办"
+- 没有"你自己看着办"、"按项目惯例做"这种隐式依赖
+- 共享状态（如 scout 的 report.md）在 downstream worker prompt 中显式引用
+- 分层记忆（L0/L1/L2）的加载边界在 worker 级别明确
+
+**反模式**：
+- worker prompt 只写"帮我实现用户搜索" —— 缺少"读哪些文件、写哪里、什么算完成"
+- 多个 worker 默认共享 `current-task.md` 做并发读写（违反隔离）
+
+**修复建议**：在 worker prompt 里补"输入文件清单 + 输出文件清单 + 完成条件"。
+
+---
+
+### F5. State Unification（状态统一）
+
+**对应**：12-factor-agents Factor 5 "Unify Execution State and Business State"
+
+**检查**：agent 的执行状态（在哪步、是否完成）和任务的业务状态（current-task checkbox、task-log 归档）是否有一条明确的同步路径？
+
+**通过标准**：
+- 子 agent 完成后，有明确的"谁负责把完成信号写回 current-task.md"
+- mailbox/diary 过程日志与 task-log 最终归档的分工清楚
+- 失败时状态可回退（worker 崩溃 → current-task checkbox 保留未勾状态，而非"实际未做但已勾"）
+
+**反模式**：
+- worker 完成了但主 agent 没收到信号 → task-log 标"已完成"但业务其实没写入
+- diary 和 current-task 各写各的 → 下次恢复时两边不一致
+
+**修复建议**：明确同步点（"builder done → 主 agent 读 mailbox → 更新 current-task checkbox"）。
+
+---
+
+### F8. Control Flow Ownership（控制流所有权）
+
+**对应**：12-factor-agents Factor 8 "Own Your Control Flow" （本项目的**硬规则**，见 `.claude/rules/agent-design.md`）
+
+**检查**：worker 内的 retry / loop / 分支是否由**外部代码**控制？
+
+**通过标准**：
+- retry 由 `squad watch` 的 watchdog 触发，不由 worker prompt 自行决定重试
+- 循环（如"对 N 个文件重复操作"）由外部调度而非 LLM 自己 while True
+- 分支（如"如果测试失败就回退"）由主 agent 根据 worker 输出决定，不在 worker prompt 里植入分支逻辑
+
+**反模式**：
+- worker prompt 写"测试失败就重试 3 次" → LLM 持有 retry state，状态不可见
+- worker prompt 写"遍历所有端点" → LLM 决定循环边界，进度不可追踪
+
+**修复建议**：把循环/重试外移到 `/lfg` 阶段 4 的主会话或 `squad advance`。
+
+---
+
+### F10. Small Focused Agents（小而专注的 Agent）
+
+**对应**：12-factor-agents Factor 10 "Small, Focused Agents" （本项目的**硬规则**，见 `.claude/rules/agent-design.md`）
+
+**检查**：单个 worker 的任务粒度是否 ≤ 10 个原子步骤？
+
+**通过标准**：
+- 单 worker prompt 描述的工作能在 3-10 步内完成（参考 squad scout/builder/reviewer 的拆法）
+- 超过 10 步 → 拆成多个 worker 或用 `/subagent-dev` 分层
+- 角色单一：一个 worker 不要既做 scout 又做 builder
+
+**反模式**：
+- 一个 worker prompt 写"探索 + 设计 + 实现 + 测试 + 评审" → 这是 5 个 worker 的活
+- builder worker 写"顺便把其他模块也重构一下" → 范围蔓延
+
+**修复建议**：按角色拆分（scout / builder / reviewer 三段是默认模板）。
+
+---
+
+## 输出格式
+
+```
+## Agent 设计体检报告
+
+计划：docs/superpowers/specs/2026-04-14-<topic>-plan.md
+涉及 agent 编排：是（/squad + 3 worker）
+
+### 评分：3/4（🟡 需修订）
+
+| 维度 | 评分 | 发现 |
+|---|---|---|
+| F3 Context Ownership | ✅ PASS | 所有 worker prompt 显式声明输入/输出 |
+| F5 State Unification | ✅ PASS | 明确了 mailbox done → current-task 同步点 |
+| F8 Control Flow | 🔴 FAIL | builder prompt 写"测试失败自动重试 3 次"（违反 F8 硬规则） |
+| F10 Small Focused | ✅ PASS | 3 worker 各 ≤ 8 步 |
+
+### 修订建议
+
+P0（阻断，违反硬规则）：
+- F8：删除 builder prompt 中的"自动重试"逻辑；改由 `squad watch` watchdog 在检测到失败时触发 builder 重启
+
+### 下一步
+
+修订 plan 后重新 `/agent-design-check`，或在 `/plan-check` 第 9 维度确认通过后进入实施。
+```
+
+**评分 4/4** → 进入 `/execute-plan` 或 `/lfg` 阶段 4
+**任意维度 FAIL（违反硬规则）** → 必须修订后复检，不允许"带问题进入实施"
+**任意维度 WARN** → 记录到 current-task.md"已知风险"段，可带警告进入实施
+
+---
+
+## 集成
+
+- `/plan-check` 第 9 维度"Agent 工程化"条件触发 → 自动调用本技能
+- `/lfg` 阶段 3 的计划校验：`/plan-check` 检测到 squad/dispatch-agents/subagent-dev 关键词时，自动串联 `/agent-design-check`
+
+---
+
+## 附录：其他 8 条 Factor（仅参考，本项目未吸收为硬约束）
+
+以下 Factor 在 12-factor-agents 原文中重要，但本项目是 Claude Code 模板库而非 LLM 运行时，不控制对应层面，因此**不作为体检维度**：
+
+| Factor | 原文要点 | 本项目不吸收的原因 |
+|---|---|---|
+| F1 NL→Tool Calls | 自然语言转结构化工具调用 | Claude Code 原生能力，我们不重新实现 |
+| F2 Own Your Prompts | 拥有每个 prompt 的模板 | 本项目**就是**模板库，这条天然满足 |
+| F4 Tools as Structured Outputs | 工具返回值标准化 schema | 我们不定义 MCP/tool schema |
+| F6 Launch/Pause/Resume | 任务可挂起恢复 | Claude Code session 层负责 |
+| F7 Contact Humans | 人工介入接口 | `/lfg` 已有 6 个介入点 |
+| F9 Compact Errors | 错误摘要入上下文 | 与 Claude Code 的 `/compact` 重合 |
+| F11 Trigger From Anywhere | 多入口触发（API/webhook） | 脚手架不涉及 |
+| F12 Stateless Reducer | Agent 视作纯函数 | 我们不写 Agent 运行时 |
+
+> 如果未来本项目扩展到"自建 Agent 运行时"层，再把这 8 条纳入体检。
