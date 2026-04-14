@@ -117,6 +117,10 @@ class SquadBinEndToEndTests(unittest.TestCase):
 
     def _init_git(self, path: Path):
         subprocess.run(["git", "init", "-q"], cwd=path, check=True)
+        # 显式设置 local user.name/email，避免环境缺少全局 git config 时 commit 失败
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=path, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=path, check=True)
+        subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=path, check=True)
         subprocess.run(["git", "commit", "--allow-empty", "-m", "init", "-q"],
                        cwd=path, check=True)
         subprocess.run(["git", "branch", "-M", "master"], cwd=path, check=True)

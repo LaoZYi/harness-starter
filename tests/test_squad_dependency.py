@@ -96,6 +96,10 @@ class _BaseDependencyTest(unittest.TestCase):
         # 初始化 git 仓库（worktree provision 需要）
         import subprocess
         subprocess.run(["git", "init", "-q"], cwd=self.tmp, check=True)
+        # 显式设置 local user.name/email，避免环境缺少全局 git config 时 commit 失败
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.tmp, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=self.tmp, check=True)
+        subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=self.tmp, check=True)
         subprocess.run(["git", "commit", "--allow-empty", "-m", "init", "-q"],
                        cwd=self.tmp, check=True)
         subprocess.run(["git", "branch", "-M", "master"], cwd=self.tmp, check=True)
