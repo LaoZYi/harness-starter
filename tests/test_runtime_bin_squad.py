@@ -15,6 +15,9 @@ from pathlib import Path
 
 from agent_harness.initializer import initialize_project
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _git_helper import init_git_repo as _init_git_repo  # noqa: E402
+
 
 _BASE_ANSWERS: dict[str, object] = {
     "project_name": "Squad Bin Target",
@@ -116,14 +119,7 @@ class SquadBinEndToEndTests(unittest.TestCase):
     """bin/squad 在无 harness CLI 环境下 create/status 全流程通。"""
 
     def _init_git(self, path: Path):
-        subprocess.run(["git", "init", "-q"], cwd=path, check=True)
-        # 显式设置 local user.name/email，避免环境缺少全局 git config 时 commit 失败
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=path, check=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=path, check=True)
-        subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=path, check=True)
-        subprocess.run(["git", "commit", "--allow-empty", "-m", "init", "-q"],
-                       cwd=path, check=True)
-        subprocess.run(["git", "branch", "-M", "master"], cwd=path, check=True)
+        _init_git_repo(path)
 
     def test_bin_squad_create_dry_run(self):
         """无 harness + 无 PyYAML 环境 bin/squad create --dry-run 成功。"""

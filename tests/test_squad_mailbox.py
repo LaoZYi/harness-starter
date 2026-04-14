@@ -35,15 +35,10 @@ from agent_harness.squad.state import (
 )
 
 
-def _init_git(path: Path) -> None:
-    subprocess.run(["git", "init", "-q"], cwd=path, check=True)
-    # 显式设置 local user.name/email，避免环境缺少全局 git config 时 commit 失败
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=path, check=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=path, check=True)
-    subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=path, check=True)
-    subprocess.run(["git", "commit", "--allow-empty", "-m", "init", "-q"],
-                   cwd=path, check=True)
-    subprocess.run(["git", "branch", "-M", "master"], cwd=path, check=True)
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).parent))
+from _git_helper import init_git_repo as _init_git  # noqa: E402
 
 
 def _make_linear_spec(tmp: Path) -> Path:

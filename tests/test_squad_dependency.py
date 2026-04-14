@@ -13,11 +13,15 @@ from __future__ import annotations
 
 import argparse
 import io
+import sys
 import tempfile
 import time
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from _git_helper import init_git_repo as _init_git_repo  # noqa: E402
 from unittest.mock import patch
 
 from agent_harness.squad import cli as squad_cli
@@ -94,15 +98,7 @@ class _BaseDependencyTest(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = Path(tempfile.mkdtemp())
         # 初始化 git 仓库（worktree provision 需要）
-        import subprocess
-        subprocess.run(["git", "init", "-q"], cwd=self.tmp, check=True)
-        # 显式设置 local user.name/email，避免环境缺少全局 git config 时 commit 失败
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.tmp, check=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=self.tmp, check=True)
-        subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=self.tmp, check=True)
-        subprocess.run(["git", "commit", "--allow-empty", "-m", "init", "-q"],
-                       cwd=self.tmp, check=True)
-        subprocess.run(["git", "branch", "-M", "master"], cwd=self.tmp, check=True)
+        _init_git_repo(self.tmp)
 
     def _create_linear(self) -> None:
         spec = _write_linear_spec(self.tmp)

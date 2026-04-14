@@ -19,7 +19,7 @@
 - `templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl`：`/recall` 描述补充"含 BM25 兜底"
 - `tests/test_runtime_bin.py`：stdlib allow-list 新增 `math`（BM25 需要）
 
-**测试**：485 tests OK（+34）；`make check` 无警告；`harness skills lint` OK；`make dogfood` 无漂移。
+**测试**：486 tests OK（+34）；`make check` 无警告；`harness skills lint` OK；`make dogfood` 无漂移。
 
 ### Added — 12-Factor Agent Design 集成（Issue #28 / GitLab #12，2026-04-14）
 
@@ -307,7 +307,7 @@
 
 ### Infrastructure
 
-- 485 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
+- 486 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

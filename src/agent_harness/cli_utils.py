@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import argparse
+import subprocess
+from pathlib import Path
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from ._git_ops import git_identity_configured, format_missing_identity_hint
 from .models import (
     AssessmentResult, InitializationResult, ProjectProfile,
     UpgradeExecutionResult, UpgradePlanResult,
@@ -149,3 +154,38 @@ def print_assessment(result: AssessmentResult) -> None:
     if result.recommendations:
         for r in result.recommendations:
             console.print(f"  [yellow]>[/yellow] {r}")
+
+
+def maybe_git_commit(target: Path, args: argparse.Namespace, written_files: list[str] | None = None) -> None:
+    """Stage harness-written files and create an init commit if the user wants one.
+
+    Robust against missing git identity: if user.email/user.name unset, prints a
+    friendly hint (改动已 staged, 让用户自己 commit) instead of dying with
+    CalledProcessError.
+    """
+    if not (target / ".git").is_dir():
+        return
+    git_commit = getattr(args, "git_commit", None)
+    if git_commit is False:
+        return
+    if git_commit is None and (args.non_interactive or args.config):
+        return
+    if git_commit is None:
+        import questionary
+        answer = questionary.select("是否创建 git 初始提交", choices=["是", "否"], default="是").ask()
+        if answer != "是":
+            return
+    files_to_stage = written_files or ["."]
+    subprocess.run(["git", "-C", str(target), "add", "--"] + files_to_stage, check=True, capture_output=True)
+    if not git_identity_configured(target):
+        console.print(f"  [yellow]![/yellow] {format_missing_identity_hint(target)}")
+        return
+    try:
+        subprocess.run(
+            ["git", "-C", str(target), "commit", "-m", "chore: initialize agent harness"],
+            check=True, capture_output=True, text=True,
+        )
+    except subprocess.CalledProcessError as e:
+        console.print(f"  [yellow]![/yellow] git commit 失败，改动已 staged。stderr:\n    {e.stderr.strip()}")
+        return
+    console.print("  [green]已创建 git 提交[/green]: chore: initialize agent harness")

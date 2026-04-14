@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .assessment import assess_project
 from .cli_utils import (
-    console, print_assessment, print_init_result, print_profile,
+    console, maybe_git_commit, print_assessment, print_init_result, print_profile,
     print_upgrade_apply, print_upgrade_plan, print_verify_warnings,
 )
 from .discovery import discover_project
@@ -123,26 +123,7 @@ def _cmd_init(args: argparse.Namespace) -> None:
     print_init_result(result)
     if not result.dry_run:
         print_verify_warnings(_verify(target))
-        _maybe_git_commit(target, args, result.written_files)
-
-def _maybe_git_commit(target: Path, args: argparse.Namespace, written_files: list[str] | None = None) -> None:
-    import subprocess
-    if not (target / ".git").is_dir():
-        return
-    git_commit = getattr(args, "git_commit", None)
-    if git_commit is False:
-        return
-    if git_commit is None and (args.non_interactive or args.config):
-        return
-    if git_commit is None:
-        import questionary
-        answer = questionary.select("是否创建 git 初始提交", choices=["是", "否"], default="是").ask()
-        if answer != "是":
-            return
-    files_to_stage = written_files or ["."]
-    subprocess.run(["git", "-C", str(target), "add", "--"] + files_to_stage, check=True, capture_output=True)
-    subprocess.run(["git", "-C", str(target), "commit", "-m", "chore: initialize agent harness"], check=True, capture_output=True)
-    console.print("  [green]已创建 git 提交[/green]: chore: initialize agent harness")
+        maybe_git_commit(target, args, result.written_files)
 
 def _cmd_upgrade_plan(args: argparse.Namespace) -> None:
     target = Path(args.target).resolve()

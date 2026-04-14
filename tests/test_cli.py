@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -251,6 +252,31 @@ class GitCommitTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             log = subprocess.run(["git", "-C", str(target), "log", "--oneline"], capture_output=True, text=True)
             self.assertIn("initialize agent harness", log.stdout)
+
+    def test_git_commit_missing_identity_is_graceful(self) -> None:
+        """缺 git user.email/user.name 时应友好提示+跳过 commit，不抛 CalledProcessError。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            subprocess.run(["git", "init", str(target)], capture_output=True)
+            # 显式不设 user.email/name，并通过环境变量隔绝全局 config
+            cfg_path = target / "_test_config.json"
+            cfg_path.write_text(json.dumps(_TEST_CONFIG), encoding="utf-8")
+            env = {**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+            result = subprocess.run(
+                [sys.executable, "-m", "agent_harness", "init", str(target),
+                 "--config", str(cfg_path), "--non-interactive", "--git-commit"],
+                capture_output=True, text=True, env=env,
+                cwd=str(Path(__file__).resolve().parent.parent),
+            )
+            self.assertEqual(result.returncode, 0, f"stderr: {result.stderr}")
+            # 未创建 commit（log 为空或 git log 返回非 0）
+            log = subprocess.run(
+                ["git", "-C", str(target), "log", "--oneline"],
+                capture_output=True, text=True, env=env,
+            )
+            self.assertNotIn("initialize agent harness", log.stdout)
+            # 输出中含友好提示
+            self.assertIn("未配置 git user.email", result.stdout + result.stderr)
 
 
 class ScaffoldTests(unittest.TestCase):
