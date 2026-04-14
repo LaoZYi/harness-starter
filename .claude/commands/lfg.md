@@ -243,7 +243,7 @@ worker <name> 在 <具体问题> 上连续 3 次 RED / 进度停滞 >10min。
 - builder：<改动摘要 + 关键 commit SHA>
 - reviewer：review.md
 
-所有 worker done。准备合并各 worktree 到 ？
+所有 worker done。准备合并各 worktree 到 <base_branch>？
 回复 "合并" / "回退" / "让我先手动检查"
 ```
 

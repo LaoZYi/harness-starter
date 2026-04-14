@@ -78,35 +78,40 @@ class InitializeProjectTests(unittest.TestCase):
 
 
     def test_no_unfilled_placeholders_in_output(self) -> None:
+        import logging
         import re
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir) / "complete-check"
-            initialize_project(
-                root,
-                {
-                    "project_name": "Complete Check",
-                    "project_slug": "complete-check",
-                    "summary": "Verify all placeholders are filled.",
-                    "project_type": "backend-service",
-                    "language": "python",
-                    "package_manager": "pip",
-                    "run_command": "python -m app",
-                    "test_command": "pytest",
-                    "check_command": "ruff check .",
-                    "ci_command": "make ci",
-                    "deploy_target": "docker",
-                    "has_production": True,
-                    "sensitivity": "internal",
-                },
-                force=True,
-            )
-            pattern = re.compile(r"{{\s*[a-z0-9_]+\s*}}")
-            for path in root.rglob("*"):
-                if path.is_file():
-                    content = path.read_text(encoding="utf-8")
-                    matches = pattern.findall(content)
-                    self.assertFalse(matches, f"{path.relative_to(root)} 包含未填充的占位符: {matches}")
+        # 捕获 templating 模块的 WARNING —— 未知 key 被静默替换成空字符串，
+        # 会让静态扫 `{{xxx}}` 残留的断言漏掉（因为 `{{base_branch}}` 类未知 key
+        # 渲染后不留残骸）。捕获 WARNING 能真正锁定"context 与模板 key 匹配"。
+        with self.assertNoLogs("agent_harness.templating", level=logging.WARNING):
+            with tempfile.TemporaryDirectory() as tmpdir:
+                root = Path(tmpdir) / "complete-check"
+                initialize_project(
+                    root,
+                    {
+                        "project_name": "Complete Check",
+                        "project_slug": "complete-check",
+                        "summary": "Verify all placeholders are filled.",
+                        "project_type": "backend-service",
+                        "language": "python",
+                        "package_manager": "pip",
+                        "run_command": "python -m app",
+                        "test_command": "pytest",
+                        "check_command": "ruff check .",
+                        "ci_command": "make ci",
+                        "deploy_target": "docker",
+                        "has_production": True,
+                        "sensitivity": "internal",
+                    },
+                    force=True,
+                )
+                pattern = re.compile(r"{{\s*[a-z0-9_]+\s*}}")
+                for path in root.rglob("*"):
+                    if path.is_file():
+                        content = path.read_text(encoding="utf-8")
+                        matches = pattern.findall(content)
+                        self.assertFalse(matches, f"{path.relative_to(root)} 包含未填充的占位符: {matches}")
 
     def test_idempotent_init_with_force(self) -> None:
         answers = {
