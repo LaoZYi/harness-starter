@@ -74,12 +74,21 @@ class AgentRecord:
 
 
 @contextlib.contextmanager
-def _locked_append(path: Path) -> Iterator[Any]:
+def _locked_append(path: Path, header: str | None = None) -> Iterator[Any]:
+    """Append-only write protected by fcntl flock.
+
+    If `header` is given, it's written **inside the lock** when the file is
+    empty (first writer wins; subsequent writers see non-zero size and skip).
+    This avoids the init_agent check-then-write race that could lose lines
+    under concurrent diary_append calls.
+    """
     _require_fcntl()
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     try:
         _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
+        if header is not None and os.fstat(fd).st_size == 0:
+            os.write(fd, header.encode("utf-8"))
         with os.fdopen(fd, "a", encoding="utf-8", closefd=False) as f:
             yield f
             f.flush()
@@ -113,15 +122,23 @@ def _locked_write(path: Path) -> Iterator[Any]:
 
 
 def init_agent(project_root: Path, agent_id: str) -> Path:
-    """Idempotent: create `.agent-harness/agents/<id>/{diary.md, status.md}`."""
+    """Idempotent: create `.agent-harness/agents/<id>/{diary.md, status.md}`.
+
+    Both diary.md creation and header-writing go through `_locked_append`
+    (guarded by fcntl) so concurrent init_agent + diary_append calls can't
+    produce a check-then-write race where one writer's header truncates
+    another's already-appended line.
+    """
     d = agent_dir(project_root, agent_id)
     d.mkdir(parents=True, exist_ok=True)
-    diary = d / "diary.md"
     status = d / "status.md"
-    if not diary.exists():
-        diary.write_text(f"# Agent Diary — {agent_id}\n\n", encoding="utf-8")
     if not status.exists():
         status.write_text("", encoding="utf-8")
+    # Atomically ensure diary.md exists with a header. _locked_append writes
+    # the header inside the lock only when st_size == 0, so first caller wins.
+    header = f"# Agent Diary — {agent_id}\n\n"
+    with _locked_append(d / "diary.md", header=header):
+        pass
     return d
 
 
@@ -132,7 +149,8 @@ def diary_append(project_root: Path, agent_id: str, message: str, *, ts: str | N
         raise AgentError("diary 消息不能为空")
     init_agent(project_root, agent_id)  # idempotent
     line = f"- {ts or _now_iso()}  {message}\n"
-    with _locked_append(agent_dir(project_root, agent_id) / "diary.md") as f:
+    header = f"# Agent Diary — {agent_id}\n\n"
+    with _locked_append(agent_dir(project_root, agent_id) / "diary.md", header=header) as f:
         f.write(line)
     return line
 
