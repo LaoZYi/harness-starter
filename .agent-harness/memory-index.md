@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-13 Issue #27 Skills Registry SSOT 抽取
 - 2026-04-13 /lfg 复评后续润色（1 gap + 2 润色）
 - 2026-04-13 /lfg 能力发挥度评估 + 4 Gap 修复
 - 2026-04-13 Issue #26 — /lfg 整合 squad：5 档复杂度 + 6 介入点（#23 收官）
 - 2026-04-13 Issue #25 — squad 项目内嵌 + spec.yaml → spec.json（破坏性变更）
-- 2026-04-13 Issue #24 — audit / memory 项目内嵌（解除 AI 工作流对 harness CLI 的运行时依赖）
 
 ## 参考资料（.agent-harness/references/）
 
