@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Added — Context-Mode 方法论吸收（Issue #29 / GitLab #13，2026-04-14）
+
+吸收 [mksglu/context-mode](https://github.com/mksglu/context-mode)（7k+ ⭐，HN #1）的 3 层方法论——**Think in Code** + **BM25 兜底检索** + **Context Budget** 约束。**不吸收**其 MCP server 本体（Node/SQLite 违反零依赖原则），只吸收方法论为规则 + 纯 stdlib Python 工具。
+
+**新文件**：
+- `templates/common/.claude/rules/context-budget.md.tmpl`：Think in Code + 工具输出预算双约束（2k tokens 阈值触发 pipe 预处理）
+- `src/agent_harness/memory_search.py`：纯 stdlib Okapi BM25（k1=1.5, b=0.75）、中英混合分词（`\w+` + CJK 1-gram）
+- `tests/test_memory_search.py`：25 条契约（tokenize/segment/BM25/CLI E2E）
+
+**改动**：
+- `src/agent_harness/memory.py`：新增 `memory search` 子命令；BM25 拆到独立模块避免触发 280 行硬限
+- `src/agent_harness/runtime_install.py`：`memory_search.py` 加入 `_RUNTIME_MODULES`，`.agent-harness/bin/memory search` 项目内嵌即可用
+- `templates/common/.claude/commands/recall.md.tmpl`：Grep 未命中时自动串 BM25 兜底（第 5 步）
+- `templates/superpowers/.claude/commands/lfg.md.tmpl`：阶段 0.2 加入 Context Budget 约束 + BM25 兜底链路
+- `templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl`：`/recall` 描述补充"含 BM25 兜底"
+- `tests/test_runtime_bin.py`：stdlib allow-list 新增 `math`（BM25 需要）
+
+**测试**：476 tests OK（+25）；`make check` 无警告；`harness skills lint` OK；`make dogfood` 无漂移。
+
 ### Added — 12-Factor Agent Design 集成（Issue #28 / GitLab #12，2026-04-14）
 
 吸收 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)（19k+ ⭐）的方法论，裁剪为本项目真正适用的 4 条 Factor（F3/F5/F8/F10），落地为 1 个新技能 + 1 个新规则 + 2 处增量修改。技能总数 31 → 32 个工作流技能命令。
@@ -288,7 +307,7 @@
 
 ### Infrastructure
 
-- 451 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
+- 476 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ._shared import require_harness
+from .memory_search import BM25_DEFAULT_TOP, search_lessons
 
 MAX_LESSONS = 10
 MAX_TASKS = 5
@@ -214,8 +215,51 @@ def main(argv=None) -> int:
     rb = subs.add_parser("rebuild", help="从 lessons/task-log 重建 memory-index.md")
     rb.add_argument("target", nargs="?", default=".", help="项目根目录")
     rb.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
+
+    sr = subs.add_parser(
+        "search",
+        help="BM25 兜底检索 lessons/task-log（memory-index 未命中时用）",
+    )
+    sr.add_argument("query", help="查询关键词（中英混合）")
+    sr.add_argument("--target", default=".", help="项目根目录")
+    sr.add_argument(
+        "--scope",
+        choices=("all", "lessons", "history"),
+        default="all",
+        help="检索范围：all=两者，lessons=只搜 lessons.md，history=只搜 task-log.md",
+    )
+    sr.add_argument("--top", type=int, default=BM25_DEFAULT_TOP, help="Top-K（默认 5）")
+
     args = parser.parse_args(argv)
     target = Path(args.target).resolve()
-    result = rebuild_index(target, force=args.force)
-    print(f"[memory] {result.message}")
-    return 1 if result.status == "refused" else 0
+
+    if args.command == "rebuild":
+        result = rebuild_index(target, force=args.force)
+        print(f"[memory] {result.message}")
+        return 1 if result.status == "refused" else 0
+
+    if args.command == "search":
+        try:
+            results = search_lessons(
+                target, args.query, scope=args.scope, top=args.top
+            )
+        except (FileNotFoundError, ValueError, SystemExit) as exc:
+            print(f"[memory] search 失败：{exc}", file=sys.stderr)
+            return 2
+        header = f'[memory] 搜索 "{args.query}" (scope={args.scope}, top={args.top})'
+        print(header)
+        if not results:
+            print("  （无命中。可能 lessons/task-log 里还没这个话题；考虑先 grep 全文或放宽关键词）")
+            return 0
+        for i, (score, title, body) in enumerate(results, 1):
+            preview_lines = [ln for ln in body.splitlines() if ln.strip()][:2]
+            preview = "\n     ".join(preview_lines) if preview_lines else "（正文为空）"
+            print(f"  {i}. [{score:.3f}] {title}")
+            print(f"     {preview}")
+        return 0
+
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main())

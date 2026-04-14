@@ -55,7 +55,7 @@ CLI 工具重点技能：`/tdd`（命令行为测试）、`/write-plan`（子命
 | `/careful` | 危险命令安全拦截 |
 | `/lint-lessons` | 知识库健康检查（去重/矛盾/过时） |
 | `/evolve` | 自我进化（搜索新项目 → 评估 → 创建 Issue 提案） |
-| `/recall` | 按需检索 lessons / task-log / references/ 历史 |
+| `/recall` | 按需检索 lessons / task-log / references/ 历史（含 BM25 兜底） |
 | `/source-verify` | 从官方文档验证框架 API，防止凭记忆编 |
 
 ## 何时使用哪个技能

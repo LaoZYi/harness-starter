@@ -90,7 +90,7 @@ class RuntimeBinStdlibOnlyTests(unittest.TestCase):
         "datetime", "json", "os", "pathlib", "re", "sys", "time", "typing",
         "fcntl", "shutil", "subprocess", "tempfile", "uuid", "hashlib",
         "textwrap", "string", "itertools", "functools", "enum", "copy",
-        "sqlite3", "signal", "shlex",
+        "sqlite3", "signal", "shlex", "math",
     }
 
     def _collect_imports(self, py_file: Path) -> set[str]:

@@ -23,6 +23,7 @@ _RUNTIME_MODULES: tuple[str, ...] = (
     "audit.py",
     "audit_cli.py",
     "memory.py",
+    "memory_search.py",  # Issue #29: BM25 fallback used by /recall + memory search
     "security.py",  # Issue #25: squad.spec 用 NAME_PATTERN
 )
 

@@ -94,8 +94,11 @@
 7. 如果 memory-index 命中相关话题，或任务描述涉及历史踩坑 → 运行 `/recall <关键词>` 做定向检索（后台会搜 `lessons.md` + `task-log.md`）
 8. 如果任务涉及专业维度（安全 / 性能 / 无障碍 / 测试设计）→ 运行 `/recall --refs <关键词>` 加载对应 checklist（`.agent-harness/references/`）
 9. 如果 /recall 返回明确相关条目，**必须在计划中显式引用教训标题**，说明如何避免重蹈覆辙
+10. **BM25 兜底（二级检索）**：若 memory-index 未命中 + `/recall` 的 Grep 也返回空，`/recall` 技能会自动串 `.agent-harness/bin/memory search "<关键词>"` 做 BM25 相关性兜底（纯 stdlib，灵感自 [context-mode](https://github.com/mksglu/context-mode)）。这解决"关键词写错/用同义词"时 Grep 漏召的问题，是 /recall 的内置行为而非单独步骤
 
 > **禁止**：直接全文读 `lessons.md` 或 `task-log.md`。违反分层加载会挤占 AI 上下文，把热知识（L1）、温知识（L2）、冷知识（L3）变成一锅粥。见 `docs/decisions/0001-layered-memory-loading.md`。
+>
+> **Context Budget（context-mode 吸收，Issue #29）**：本阶段以及后续所有工具调用都受 `.claude/rules/context-budget.md` 约束——搜索/统计/过滤类任务优先写脚本只返回结果（Think in Code），单次工具输出 > 2k tokens 必须先 pipe 处理。
 
 ### 0.3 评估复杂度（自动，用户可覆盖）
 
