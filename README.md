@@ -7,16 +7,39 @@
 3. 生成第一版项目知识骨架
 4. 把协作约束落成文档和模板
 
-## 安装
+## 快速开始（clone 后第一次）
+
+仓库**不包含** `.venv/` 目录（Python 虚拟环境是本地产物，每人机器/架构不同，不纳入版本控制）。clone 后需自行创建环境，二选一：
+
+**A. 用 `uv`（推荐，仓库已提供 `uv.lock`）**
 
 ```bash
 cd agent-harness-starter
+uv sync         # 自动创建 .venv 并按锁文件安装全部依赖
+make test       # 跑测试验证环境就绪
+```
+
+**B. 用 pip + venv（Python 3.11+ 内置）**
+
+```bash
+cd agent-harness-starter
+python3 -m venv .venv
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
+pip install -e .
+make test
+```
+
+Makefile 自动优先用 `.venv/bin/python`；找不到时回退到系统 `python3`。
+
+## 安装（作为 CLI 使用）
+
+若想在任意目录调用 `harness` 命令，装成 editable package：
+
+```bash
 pip install -e .
 ```
 
-`-e` 是 editable mode（开发模式），安装一次即可。后续框架代码更新后**无需重新安装**，因为它直接指向源码目录，改了代码立刻生效。
-
-安装后即可在任意位置使用 `harness` 命令。
+`-e` 是 editable mode（开发模式），安装一次即可。后续框架代码更新**无需重新安装**，直接指向源码目录，改了立刻生效。
 
 > 不想安装？也可以通过 `PYTHONPATH=src python -m agent_harness` 或 `make` 目标来使用，功能完全一样。
 
