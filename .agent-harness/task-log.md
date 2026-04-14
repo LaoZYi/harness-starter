@@ -825,3 +825,31 @@
   7. ✅ R-007 PR 模板 checkbox
 - 质量变化：测试 438→451（+13）；check_repo 加 skills-lint 守卫；净代码 -48 行
 - 用户验证通过
+
+## 2026-04-14 12-Factor Agent Design 集成（Issue #28 / GitLab #12）
+
+- 需求：吸收 humanlayer/12-factor-agents（19k+ ⭐）方法论，裁剪为本项目适用部分
+- 做了什么：
+  - 新增 `/agent-design-check` 技能（4 维度：F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents）
+  - 新增 `common/rules/agent-design.md`（F8/F10 硬约束：worker 不得自持 retry/loop、单 worker ≤ 10 原子步骤）
+  - `task-lifecycle.md` 追加 "Context Ownership" 段（F3）
+  - `plan-check.md` 扩到 8+1 维度（第 9 维度 Agent 工程化条件触发）
+  - `lfg.md` 阶段 3 在 `/plan-check` 后自动串联 `/agent-design-check`（涉及 squad/dispatch/subagent-dev 时）
+  - skills-registry.json 注册新技能（第 35 个 skill）；`<<SKILL_COVERAGE_TABLE>>` 自动渲染
+  - CHANGELOG / docs/product.md / docs/usage-guide.md / superpowers-workflow.md / evolve.md 全部同步新技能清单
+- 关键决策：**裁剪策略**——12 条 Factor 中只吸收适用本项目的 4 条（F3/F5/F8/F10），F1/F2/F4/F6/F7/F9/F11/F12 预设自建 LLM 运行时不适用，在新技能附录列出作参考。命名避开 `/12-factor-check` 选用 `/agent-design-check`，避免暗示"完整 12 条"
+- 改了哪些文件：
+  - 新：`templates/superpowers/.claude/commands/agent-design-check.md.tmpl`、`templates/common/.claude/rules/agent-design.md.tmpl`、`docs/superpowers/specs/2026-04-14-12factor-agent-design-{spec,plan}.md`、dogfood 产物 `.claude/commands/agent-design-check.md` + `.claude/rules/agent-design.md`
+  - 改：`templates/common/.claude/rules/task-lifecycle.md.tmpl`、`templates/superpowers/.claude/commands/{plan-check,lfg,evolve}.md.tmpl`、`templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl`、`templates/superpowers/skills-registry.json`、`tests/test_skills_registry.py`、`CHANGELOG.md`、`docs/product.md`、`docs/usage-guide.md`、`.agent-harness/project.json`
+- 完成标准：
+  1. ✅ 新技能 agent-design-check.md.tmpl 存在并含 4 Factor checklist
+  2. ✅ 新规则 common/rules/agent-design.md.tmpl 存在（F8/F10 硬约束）
+  3. ✅ task-lifecycle.md.tmpl 追加 Context Ownership 段
+  4. ✅ plan-check.md.tmpl 含第 9 维度（条件触发）
+  5. ✅ skills-registry 注册 + lfg 覆盖清单自动渲染
+  6. ✅ make ci 通过（451 tests OK）+ harness skills lint OK
+  7. ✅ make dogfood 无漂移
+  8. ✅ Issue #28 + GitLab #12 关闭
+- 质量变化：测试 451→451（断言更新 skill_count 34→35）；技能数 31→32（--no-superpowers 口径）；registry 34→35
+- 沉淀：2 条新 lessons（外部方法论适用性裁剪、dogfood .claude gitignore force-add）
+- 用户验证通过
