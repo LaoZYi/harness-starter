@@ -253,5 +253,82 @@ class SquadBoundaryDocumentation(unittest.TestCase):
             self.assertFalse((root / ".agent-harness" / "agents" / "squad").exists())
 
 
+class ArtifactTests(unittest.TestCase):
+    """Knowledge artifacts — Issue #30，吸收自 multi-agent-coding-system 的 context store。
+
+    每个 sub-agent 完成时返回的"知识制品"，不只是日志，而是可被后续任务 refs 复用的结构化发现。
+    """
+
+    def test_append_artifact_basic(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _mk_root(Path(tmp))
+            agent.diary_append_artifact(
+                root, "agent-1",
+                artifact_type="exploration",
+                summary="发现 auth 模块走 JWT",
+                content="src/auth/jwt.py:42 使用 HS256",
+                refs=["src/auth/jwt.py"],
+            )
+            diary = (root / ".agent-harness" / "agents" / "agent-1" / "diary.md").read_text(encoding="utf-8")
+            self.assertIn("## artifact", diary)
+            self.assertIn("exploration", diary)
+            self.assertIn("发现 auth 模块走 JWT", diary)
+            self.assertIn("src/auth/jwt.py:42", diary)
+            self.assertIn("refs:", diary)
+
+    def test_artifact_empty_content_and_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _mk_root(Path(tmp))
+            agent.diary_append_artifact(
+                root, "agent-1",
+                artifact_type="decision",
+                summary="选 REST 不选 GraphQL",
+                content="",
+                refs=None,
+            )
+            diary = (root / ".agent-harness" / "agents" / "agent-1" / "diary.md").read_text(encoding="utf-8")
+            self.assertIn("decision", diary)
+            self.assertIn("选 REST 不选 GraphQL", diary)
+
+    def test_multiple_artifacts_preserve_order(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _mk_root(Path(tmp))
+            agent.diary_append_artifact(root, "a1", artifact_type="exploration", summary="first", content="")
+            agent.diary_append_artifact(root, "a1", artifact_type="decision", summary="second", content="")
+            arts = agent.extract_artifacts(root, "a1")
+            self.assertEqual(len(arts), 2)
+            self.assertEqual(arts[0]["summary"], "first")
+            self.assertEqual(arts[1]["summary"], "second")
+
+    def test_artifact_rejects_bad_type(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _mk_root(Path(tmp))
+            # Type must be safe (no shell metachars, reasonable length)
+            for bad in ["foo;rm", "foo\n", "foo bar", "", "a" * 100]:
+                with self.assertRaises(agent.AgentError, msg=f"must reject {bad!r}"):
+                    agent.diary_append_artifact(root, "a1", artifact_type=bad, summary="x", content="")
+
+    def test_artifact_rejects_bad_agent_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _mk_root(Path(tmp))
+            with self.assertRaises(agent.AgentError):
+                agent.diary_append_artifact(root, "BAD ID", artifact_type="exploration", summary="x", content="")
+
+    def test_aggregate_shows_artifacts_section(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _mk_root(Path(tmp))
+            agent.diary_append_artifact(
+                root, "scout-1",
+                artifact_type="exploration",
+                summary="auth module uses JWT HS256",
+                content="",
+                refs=["src/auth.py"],
+            )
+            digest = agent.aggregate(root)
+            self.assertIn("Artifacts", digest)
+            self.assertIn("exploration", digest)
+            self.assertIn("auth module uses JWT HS256", digest)
+
+
 if __name__ == "__main__":
     unittest.main()

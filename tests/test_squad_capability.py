@@ -51,9 +51,35 @@ class RenderSettingsTests(unittest.TestCase):
 
     def test_settings_is_json_serializable(self) -> None:
         import json
-        for cap in ("scout", "builder", "reviewer"):
+        for cap in ("scout", "builder", "reviewer", "orchestrator"):
             s = render_settings(cap)
             json.dumps(s)  # must not raise
+
+    # --- Orchestrator capability (Issue #30, 吸收自 multi-agent-coding-system) ---
+
+    def test_orchestrator_denies_all_write_tools(self) -> None:
+        """Orchestrator 是战略协调者，禁止直接改代码，只能派工 + 维护 context store。"""
+        s = render_settings("orchestrator")
+        deny = s["permissions"]["deny"]
+        self.assertIn("Write", deny)
+        self.assertIn("Edit", deny)
+        self.assertIn("MultiEdit", deny)
+        self.assertIn("NotebookEdit", deny)
+
+    def test_orchestrator_denies_destructive_bash(self) -> None:
+        s = render_settings("orchestrator")
+        deny_flat = " ".join(s["permissions"]["deny"])
+        self.assertIn("git push", deny_flat)
+        self.assertIn("rm -rf", deny_flat)
+
+    def test_orchestrator_allows_read_and_task_tools(self) -> None:
+        """允许 Read/Grep/Glob（读上下文）和 Task/TodoWrite（派工）。"""
+        deny = render_settings("orchestrator")["permissions"]["deny"]
+        self.assertNotIn("Read", deny)
+        self.assertNotIn("Grep", deny)
+        self.assertNotIn("Glob", deny)
+        self.assertNotIn("Task", deny)
+        self.assertNotIn("TodoWrite", deny)
 
 
 if __name__ == "__main__":

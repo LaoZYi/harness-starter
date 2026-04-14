@@ -79,13 +79,25 @@
 ### `.agent-harness/bin/squad stop <worker|task_id|all>`
 停止指定 worker（kill window）或整个 squad（kill session）。**不**自动删除 worktree — 留给 `/finish-branch` 处理合并。
 
-## Capability 权限（运行时强制）
+## Capability 权限（运行时强制，4 种角色）
+
+吸收自 [Danau5tin/multi-agent-coding-system](https://github.com/Danau5tin/multi-agent-coding-system)（TerminalBench #13）的严格角色分权设计。核心哲学：**能力/权限分层 + 知识复利**——让编排者的缺失写权限形成强约束，逼出"必须靠探查员探路、靠实现者落笔"的分工。
 
 | Capability | 允许 | 禁止（`permissions.deny`） | 用途 |
 |---|---|---|---|
-| `scout` | Read / Glob / Grep | Write, Edit, Bash(git:*), Bash(curl:*), rm -rf | 只读探索、产出报告 |
+| `orchestrator` | Read / Glob / Grep / Task / TodoWrite | Write, Edit, MultiEdit, NotebookEdit, Bash(git:*), Bash(curl:*), rm -rf | **战略协调**：派工 + 维护 context store，**禁止直接改代码** |
+| `scout` | Read / Glob / Grep | Write, Edit, MultiEdit, NotebookEdit, Bash(git:*), Bash(curl:*), rm -rf | 只读探索、产出报告 |
 | `builder` | Read / Write / Edit / Bash(开发) | Bash(git push:*), Bash(rm -rf:*), git remote/reset --hard | 常规实现 |
-| `reviewer` | Read / Glob / Grep | Write, Edit, Bash(git:*), 写操作 | 审查并产出评审报告 |
+| `reviewer` | Read / Glob / Grep | Write, Edit, MultiEdit, NotebookEdit, Bash(git:*), 写操作 | 审查并产出评审报告 |
+
+### 三标准角色卡（Orchestrator / Explorer / Coder）
+
+按源项目术语映射：`orchestrator` ↔ Orchestrator，`scout` ↔ Explorer，`builder` ↔ Coder。启动 squad 时按需组合：
+
+- **纯实现流**：`builder` + `reviewer`（小任务）
+- **探索驱动流**：`scout` → `builder` → `reviewer`（中任务，已有现成示例）
+- **编排者流**：`orchestrator` + N×`scout` + N×`builder` + `reviewer`（大任务）——orchestrator 只维护 context store，完全不触代码，所有改动走 builder
+- 只用 `scout` + `reviewer`：纯调研任务，不产出代码
 
 ## 硬规则（worker 必须遵守）
 
@@ -144,3 +156,22 @@ EOF
 - 执行前：用 `/spec` 明确每个 worker 的任务和验收标准
 - 启动后：用 `/recall` 查相关历史教训避免踩坑
 - 完成后：对每个 worker worktree 用 `/finish-branch` 合并，用 `/compound` 提炼经验
+
+## 知识制品（Context Store，Issue #30）
+
+worker 完成时应产出**结构化知识制品**而不仅是自由日志，让后续 worker 能通过 refs 复用前人的发现（compound intelligence）。
+
+scout 完成探索后应追加 artifact：
+
+```bash
+# 从 scout 的 worktree 或任意 agent 环境里
+harness agent artifact scout-auth \
+  --type exploration \
+  --summary "auth 模块走 JWT HS256，密钥从 env AUTH_SECRET 读取" \
+  --content "src/auth/jwt.py:42 调用 verify_jwt()，依赖环境变量" \
+  --refs "src/auth/jwt.py,src/auth/__init__.py"
+```
+
+builder 派工时读 `harness agent aggregate`（顶部 Artifacts 段），按 summary 选择需要复用的制品，在 prompt 中显式引用。
+
+artifact 类型建议：`exploration`（探索发现）、`decision`（设计决策）、`plan`（实施计划）、`blocker`（阻塞点）、`assumption`（假设）、`constraint`（约束）。

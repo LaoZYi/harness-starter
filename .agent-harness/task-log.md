@@ -881,3 +881,37 @@
 - 质量变化：测试 451 → 476（+25）；技能总数不变（新规则而非新技能）；lint 0 警告
 - 沉淀：1 条新 lesson（_runtime 模块清单是 dogfood 的一部分）
 - 用户验证通过
+
+## 2026-04-14 Issue #30 — Multi-Agent 角色分权 + Context Store 吸收
+
+- 需求：GitHub Issue #30（evolution 标签）吸收 Danau5tin/multi-agent-coding-system（TerminalBench #13）三大方法论到本框架
+- 做了什么：
+  1. `squad/capability.py` 新增 orchestrator capability（deny Edit/Write/MultiEdit/NotebookEdit + 危险 Bash），`spec.py` 白名单同步扩为 4 种
+  2. 新建 `agent_artifacts.py` 模块：`diary_append_artifact` / `extract_artifacts` / `render_artifacts_section`，供 sub-agent 把发现写成结构化知识制品
+  3. `agent_cli.py` 新增 `harness agent artifact <id> --type X --summary Y [--content | --content-file] [--refs a,b]` 子命令
+  4. `squad.md.tmpl` 升级文档：4 角色表 + 三标准角色卡映射（Orchestrator/Explorer/Coder）+ artifact 用例
+  5. `subagent-dev.md.tmpl` 追加"三角色模式"段，含能力矩阵 + context_refs 复用示例
+  6. `autonomy.md.tmpl` 追加 Trust Calibration 段（5 档复杂度 × 操作基线二维模型）
+  7. `docs/product.md` #21 条 + `docs/architecture.md` 同步新增能力
+- 关键决策：
+  - Orchestrator 作为新 capability 而非重构主 session 行为（最小破坏，复用现有运行时强制机制）
+  - Artifact 拆独立模块 `agent_artifacts.py`：合并到 agent.py 会破 280 行硬限（348 行），拆分后主模块 255 行，artifact 模块 130 行
+  - 项目内嵌 `bin/agent` 本期不扩（当前只含 audit/memory/squad），artifact 仅经 CLI 可用
+  - 不吸收源项目 Python LLM 运行时代码（独立框架，架构不兼容）
+  - 不吸收"Orchestrator 禁读代码"极端隔离（过激，会破坏主 session 规划能力）
+- 改了：
+  - `src/agent_harness/squad/capability.py`、`src/agent_harness/squad/spec.py`
+  - `src/agent_harness/agent.py`、`src/agent_harness/agent_artifacts.py`（新）、`src/agent_harness/agent_cli.py`
+  - `src/agent_harness/templates/superpowers/.claude/commands/squad.md.tmpl`、`subagent-dev.md.tmpl`
+  - `src/agent_harness/templates/common/.claude/rules/autonomy.md.tmpl`
+  - `tests/test_squad_capability.py`（+4 测试）、`tests/test_agent.py`（+6 测试）
+  - `docs/product.md`、`docs/architecture.md`、`CHANGELOG.md`、`docs/release.md`（测试数 476→485）
+  - dogfood 同步产物：`.claude/rules/autonomy.md`、`.claude/commands/squad.md`、`.claude/commands/subagent-dev.md`
+- 完成标准：
+  - [x] orchestrator capability 运行时强制生效 + 测试覆盖
+  - [x] artifact 三件套（write/read/aggregate）+ CLI 入口 + 测试
+  - [x] 三角色文档（squad + subagent-dev）落地
+  - [x] Trust Calibration 段落地
+  - [x] `make ci` EXIT=0，485 tests OK（+9）
+  - [x] `make dogfood` 无漂移
+  - [x] GitHub Issue #30 + GitLab 对应 Issue 同步关闭

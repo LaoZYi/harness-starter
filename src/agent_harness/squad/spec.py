@@ -13,7 +13,7 @@ from typing import Any
 from ..security import NAME_PATTERN
 
 
-_ALLOWED_CAPABILITIES = ("scout", "builder", "reviewer")
+_ALLOWED_CAPABILITIES = ("orchestrator", "scout", "builder", "reviewer")
 
 
 class SpecError(ValueError):

@@ -146,3 +146,31 @@ harness agent aggregate impl-task1 impl-task2   # 读指定实现者 diary
 ```
 
 **禁止**子 agent 直接写 current-task.md / task-log.md — 主 agent 基于 aggregate 决定哪些要归档进主档。
+
+## 三角色模式（Orchestrator / Explorer / Coder，Issue #30）
+
+复杂任务可采用更严格的**三角色分权模式**（吸收自 multi-agent-coding-system，TerminalBench #13）。与 `/squad` 的 capability 分权对齐：
+
+| 子代理角色 | 能做什么 | **禁止** |
+|---|---|---|
+| **Orchestrator**（父代理） | 理解需求、派工、维护 context store、审查 | 直接读写业务代码（角色纪律） |
+| **Explorer**（调查员子代理） | Read/Grep/Glob/Bash 只读探查 | Write/Edit/MultiEdit/NotebookEdit |
+| **Coder**（实现者子代理） | 聚焦任务的读写实现 | 不看全局、不做架构决策 |
+
+**何时采用**：任务涉及 5+ 文件、跨模块、或需要先探索后实现。简单任务仍用原"实现者 + 审查"双阶段即可。
+
+**知识制品（context store）**：子代理完成时返回**结构化 artifact**，而不是自由日志。父代理用 `harness agent aggregate` 读取顶部 Artifacts 段，在派下一个子代理时按 summary 挑选需要复用的制品，在 prompt 中显式引用（`context_refs: [explorer-auth/exploration-1]`）。
+
+```bash
+# Explorer 子代理完成探索后
+harness agent artifact explorer-auth \
+  --type exploration \
+  --summary "auth 模块走 JWT HS256，密钥从 env 读" \
+  --content "详细发现..." \
+  --refs "src/auth/jwt.py,src/auth/__init__.py"
+
+# Coder 子代理启动前，父代理回读并在 prompt 注入
+harness agent aggregate explorer-auth
+```
+
+这是"并行干活 → 累积智能"的关键：每个子代理的发现都可被后续子代理 refs 复用，不用重复 grep。

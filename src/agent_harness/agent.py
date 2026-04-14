@@ -209,6 +209,15 @@ def aggregate(project_root: Path, agent_ids: list[str] | None = None) -> str:
     if not records:
         return "_（当前没有活跃 agent）_\n"
     parts: list[str] = ["# Agent Diary Aggregate\n"]
+
+    # 顶部展示所有 artifacts（知识制品，Issue #30）
+    from . import agent_artifacts
+    art_section = agent_artifacts.render_artifacts_section(
+        project_root, [r.id for r in records]
+    )
+    if art_section:
+        parts.append(art_section)
+
     for r in records:
         parts.append(f"\n## {r.id}")
         if r.status:
@@ -223,11 +232,24 @@ def aggregate(project_root: Path, agent_ids: list[str] | None = None) -> str:
     return "\n".join(parts)
 
 
+def diary_append_artifact(*args, **kwargs):
+    """Thin shim to agent_artifacts.diary_append_artifact（向后兼容）。"""
+    from . import agent_artifacts
+    return agent_artifacts.diary_append_artifact(*args, **kwargs)
+
+
+def extract_artifacts(*args, **kwargs):
+    """Thin shim to agent_artifacts.extract_artifacts（向后兼容）。"""
+    from . import agent_artifacts
+    return agent_artifacts.extract_artifacts(*args, **kwargs)
+
+
 __all__ = [
     "AgentError", "AgentRecord",
     "agents_root", "agent_dir",
     "init_agent", "diary_append", "status_set", "status_read",
     "diary_read", "list_agents", "aggregate",
+    "diary_append_artifact", "extract_artifacts",
 ]
 
 _time = time  # tests may monkey-patch
