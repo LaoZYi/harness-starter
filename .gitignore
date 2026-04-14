@@ -6,7 +6,9 @@ __pycache__/
 dist/
 build/
 *.egg-info/
-.claude/
+# .claude/ 细粒度忽略：只屏蔽本地/运行时内容，项目规范（hooks/rules/commands/agents/settings.json）须跟踪
+.claude/settings.local.json
+.claude/.session/
 !src/agent_harness/templates/**/.claude/
 .superpowers-upstream/
 .agent-harness/backups/
