@@ -11,7 +11,7 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - **测试**: [文件锁顺序必须先锁再 truncate](#2026-04-12-测试-文件锁顺序必须先锁再-truncate)
 - **模板**: [模板中的文档占位符语法会被模板引擎吞掉](#2026-04-09-模板-模板中的文档占位符语法会被模板引擎吞掉), [命令重命名后模板文件也要全量扫描](#2026-04-09-模板-命令重命名后模板文件也要全量扫描)
 - **流程**: [进化去重必须覆盖已关闭 Issue](#2026-04-08-流程-进化去重必须覆盖已关闭-issue), [新增技能时文档散布计数需全量扫描](#2026-04-08-流程-新增技能时文档散布计数需全量扫描), [新任务覆盖前必须先关闭旧任务](#2026-04-09-流程-新任务覆盖前必须先关闭旧任务), [同一项目的增量吸收用 evolution-update 标签](#2026-04-12-流程-同一项目的增量吸收用-evolution-update-标签), [CLI flag 假设在 plan 阶段必须 source-verify](#2026-04-12-流程-cli-flag-假设在-plan-阶段必须-source-verify), [评估报告前必须先查合约测试](#2026-04-13-流程-评估报告前必须先查合约测试)
-- **工具脚本**: [dogfood 产物在 .claude 下默认 gitignore 需 force-add](#2026-04-14-工具脚本-dogfood-产物在-claude-下默认-gitignore-需-force-add), [dogfood 命令展平](#2026-04-08-工具脚本-dogfood-命令展平), [重复工具函数提取后必须删除原始定义](#2026-04-09-工具脚本-重复工具函数提取后必须删除原始定义), [shell 命令构造必须-shlex-quote-所有路径](#2026-04-12-工具脚本-shell-命令构造必须-shlex-quote-所有路径), [守卫禁用白名单改自动发现](#2026-04-13-工具脚本-守卫禁用白名单改自动发现)
+- **工具脚本**: [_runtime 模块清单是 dogfood 的一部分](#2026-04-14-工具脚本-runtime-模块清单是-dogfood-的一部分), [dogfood 产物在 .claude 下默认 gitignore 需 force-add](#2026-04-14-工具脚本-dogfood-产物在-claude-下默认-gitignore-需-force-add), [dogfood 命令展平](#2026-04-08-工具脚本-dogfood-命令展平), [重复工具函数提取后必须删除原始定义](#2026-04-09-工具脚本-重复工具函数提取后必须删除原始定义), [shell 命令构造必须-shlex-quote-所有路径](#2026-04-12-工具脚本-shell-命令构造必须-shlex-quote-所有路径), [守卫禁用白名单改自动发现](#2026-04-13-工具脚本-守卫禁用白名单改自动发现)
 - **架构设计**: [外部方法论吸收前必须做适用性裁剪](#2026-04-14-架构设计-外部方法论吸收前必须做适用性裁剪), [脚手架项目吸收外部思想要选最小实现](#2026-04-12-架构设计-脚手架项目吸收外部思想要选最小实现), [POSIX-only 模块要 try-except 软导入](#2026-04-12-架构设计-posix-only-模块要-try-except-软导入), [统一入口技能必须串起全量能力](#2026-04-13-架构设计-统一入口技能必须串起全量能力), [自回环 hook 必须有人工放行开关](#2026-04-13-架构设计-自回环-hook-必须有人工放行开关), [新异常类继承 ValueError 保向后兼容](#2026-04-13-架构设计-新异常类继承-valueerror-保向后兼容), [hook 依赖未公开 API 必须 source-verify 再决定降级](#2026-04-13-架构设计-hook-依赖未公开-api-必须-source-verify-再决定降级), [大 Issue 吸收要拆阶段 + atomic commit + step tag](#2026-04-13-流程-大-issue-吸收要拆阶段-atomic-commit-step-tag), [模块拆分前留好未来模块位置](#2026-04-13-架构设计-模块拆分前留好未来模块位置), [三源对账推导状态而非持久化 worker 状态](#2026-04-13-架构设计-三源对账推导状态而非持久化-worker-状态), [没 consumer 的基础设施重构是空转](#2026-04-13-流程-没-consumer-的基础设施重构是空转), [兼容层降低迁移成本](#2026-04-13-架构设计-兼容层降低迁移成本), [单入口技能能力接入完整](#2026-04-13-架构设计-单入口技能--能力接入完整), [Harness 反偷懒与协作记忆要解耦](#2026-04-13-架构设计-harness-中反偷懒与协作记忆模块要解耦), [抽 SSOT 时必须清单化所有下游消费方](#2026-04-13-架构设计-抽-ssot-时必须清单化所有下游消费方), [占位符层次必须显式区分](#2026-04-13-模板-占位符层次必须显式区分避免双重替换), [280 行硬限触发时连环效应](#2026-04-13-流程-280-行硬限触发时连环效应3-个文件同时超)
 - **集成API**: [GitLab Issue 搜索禁用 search 参数](#2026-04-08-集成api-gitlab-issue-搜索禁用-search-参数)
 
@@ -26,6 +26,12 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 ```
 
 ---
+
+## 2026-04-14 [工具脚本] _runtime 模块清单是 dogfood 的一部分
+
+- 错误：新增 `memory_search.py` 后，`src/agent_harness/memory.py` 通过 `from .memory_search import` 引用；dogfood 后 `.agent-harness/bin/_runtime/memory.py` 同步了，但 `_runtime/memory_search.py` 没同步 → 项目内嵌运行时 `.agent-harness/bin/memory search` 报 `ModuleNotFoundError: No module named '_runtime.memory_search'`
+- 根因：`src/agent_harness/runtime_install.py` 的 `_RUNTIME_MODULES` 是显式白名单（不是自动扫描），新增的运行时依赖模块必须手动加入
+- 规则：新增被 `.agent-harness/bin/*` 入口脚本（audit/memory/squad 等）间接依赖的 `src/agent_harness/*.py` 模块时，**同时**在 `runtime_install.py._RUNTIME_MODULES` 追加一行。检测手段：`test_runtime_only_imports_stdlib` 会捕获 stdlib 以外的导入；`test_memory_rebuild_creates_index` 类的 bin 端到端测试会捕获缺模块。两类测试二选一要过
 
 ## 2026-04-14 [架构设计] 外部方法论吸收前必须做适用性裁剪
 

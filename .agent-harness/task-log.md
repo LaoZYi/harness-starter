@@ -853,3 +853,31 @@
 - 质量变化：测试 451→451（断言更新 skill_count 34→35）；技能数 31→32（--no-superpowers 口径）；registry 34→35
 - 沉淀：2 条新 lessons（外部方法论适用性裁剪、dogfood .claude gitignore force-add）
 - 用户验证通过
+
+## 2026-04-14 Context-Mode 方法论吸收（Issue #29 / GitLab #13）
+
+- 需求：吸收 mksglu/context-mode（7k+ ⭐，HN #1）的 3 层方法论
+- 做了什么：
+  - 新增 `common/rules/context-budget.md`（Think in Code + 工具输出预算双约束）
+  - 新增 `memory_search.py`（纯 stdlib Okapi BM25，中英混合分词）
+  - `memory search <query>` CLI 子命令
+  - `/recall` 技能升级为两级兜底链路（Grep → BM25）
+  - `/lfg` 阶段 0.2 串入 Context Budget + BM25 兜底
+  - 25 条新单元测试（tokenize/segment/bm25/search_lessons/CLI E2E）
+- 关键决策：
+  - **不吸收** MCP server 本体（Node/SQLite 违反零依赖原则）
+  - BM25 拆独立模块（触发 280 行硬限教训的主动规避）
+  - 纯 stdlib 实现（项目零依赖约束），每次查询现场计算（lessons <1MB 性能够用）
+- 改了哪些文件：新增 `memory_search.py` + `context-budget.md.tmpl` + `test_memory_search.py` + 2 份 spec/plan；改 `memory.py`、`runtime_install.py`、`recall.md.tmpl`、`lfg.md.tmpl`、`superpowers-workflow.md.tmpl`、`test_runtime_bin.py`、CHANGELOG.md、docs/product.md + 同步 `.agent-harness/bin/_runtime/memory_search.py`
+- 完成标准：
+  1. ✅ context-budget 规则存在
+  2. ✅ memory search CLI 工作
+  3. ✅ /recall 含 BM25 兜底说明
+  4. ✅ skills-registry/workflow 清单更新
+  5. ✅ 25 新测试全过
+  6. ✅ make ci 通过（476 tests OK）
+  7. ✅ make dogfood 无漂移
+  8. ✅ Issue #29 + GitLab #13 关闭
+- 质量变化：测试 451 → 476（+25）；技能总数不变（新规则而非新技能）；lint 0 警告
+- 沉淀：1 条新 lesson（_runtime 模块清单是 dogfood 的一部分）
+- 用户验证通过
