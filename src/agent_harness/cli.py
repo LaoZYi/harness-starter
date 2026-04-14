@@ -178,6 +178,11 @@ def _cmd_memory_rebuild(args: argparse.Namespace) -> None:
     run_rebuild_cli(Path(args.target).resolve(), force=args.force)
 
 
+def _cmd_memory_search(args: argparse.Namespace) -> None:
+    from .memory import run_search_cli
+    run_search_cli(Path(args.target).resolve(), args.query, scope=args.scope, top=args.top)
+
+
 # ── parser ──
 
 def build_parser() -> argparse.ArgumentParser:
@@ -242,11 +247,20 @@ def build_parser() -> argparse.ArgumentParser:
     sync_p.add_argument("--dry-run", action="store_true", help="预演不写文件")
     sync_p.set_defaults(func=_cmd_sync)
 
-    mem_p = subs.add_parser("memory", help="分层记忆管理（memory-index.md 维护）")
-    rebuild_p = mem_p.add_subparsers(dest="memory_command").add_parser("rebuild", help="从 lessons/task-log 重建 memory-index.md")
+    mem_p = subs.add_parser("memory", help="分层记忆管理（memory-index.md 维护 + BM25 兜底检索）")
+    mem_subs = mem_p.add_subparsers(dest="memory_command")
+    rebuild_p = mem_subs.add_parser("rebuild", help="从 lessons/task-log 重建 memory-index.md")
     rebuild_p.add_argument("target", nargs="?", default=".", help="项目根目录（默认当前目录）")
     rebuild_p.add_argument("--force", action="store_true", help="覆盖已存在的 memory-index.md")
     rebuild_p.set_defaults(func=_cmd_memory_rebuild)
+    from .memory_search import BM25_DEFAULT_TOP as _BM25_TOP
+    search_p = mem_subs.add_parser("search", help="BM25 兜底检索 lessons/task-log（memory-index 未命中时用）")
+    search_p.add_argument("query", help="查询关键词（中英混合）")
+    search_p.add_argument("--target", default=".", help="项目根目录（默认当前目录）")
+    search_p.add_argument("--scope", choices=("all", "lessons", "history"), default="all",
+                          help="检索范围：all=两者，lessons=只搜 lessons.md，history=只搜 task-log.md")
+    search_p.add_argument("--top", type=int, default=_BM25_TOP, help=f"Top-K（默认 {_BM25_TOP}）")
+    search_p.set_defaults(func=_cmd_memory_search)
     from .skills_lint import register_subcommand as _reg_skills
     _reg_squad(subs); _reg_audit(subs); _reg_agent(subs); _reg_skills(subs)
     return root

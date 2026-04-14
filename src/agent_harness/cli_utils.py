@@ -156,6 +156,19 @@ def print_assessment(result: AssessmentResult) -> None:
             console.print(f"  [yellow]>[/yellow] {r}")
 
 
+def print_memory_search(query: str, scope: str, top: int, results: list) -> None:
+    """Rich-console formatting for `harness memory search` results."""
+    console.print(f'[memory] 搜索 "{query}" (scope={scope}, top={top})')
+    if not results:
+        console.print("  （无命中。可能 lessons/task-log 里还没这个话题；考虑放宽关键词）")
+        return
+    for i, (score, title, body) in enumerate(results, 1):
+        preview_lines = [ln for ln in body.splitlines() if ln.strip()][:2]
+        preview = "\n     ".join(preview_lines) if preview_lines else "（正文为空）"
+        console.print(f"  {i}. [{score:.3f}] {title}")
+        console.print(f"     {preview}")
+
+
 def maybe_git_commit(target: Path, args: argparse.Namespace, written_files: list[str] | None = None) -> None:
     """Stage harness-written files and create an init commit if the user wants one.
 

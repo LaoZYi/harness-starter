@@ -188,6 +188,31 @@ class BinMemoryEndToEndTests(unittest.TestCase):
             self.assertTrue(idx.is_file())
 
 
+class HarnessMemorySearchCliTests(unittest.TestCase):
+    """`harness memory search` 主 CLI 暴露回归（避免只在 bin/ 入口能用）。"""
+
+    def test_harness_memory_search_exposed(self):
+        import subprocess, sys as _sys
+        root_dir = Path(__file__).resolve().parents[1]
+        env = {**os.environ, "PYTHONPATH": str(root_dir / "src")}
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "target"
+            initialize_project(root, {**_BASE_ANSWERS})
+            # 追加一条可被命中的 lessons 条目
+            lessons = root / ".agent-harness" / "lessons.md"
+            lessons.write_text(
+                "## 2026-04-13 [测试] 并发写入\n\n- 规则：用 flock 保护\n",
+                encoding="utf-8",
+            )
+            r = subprocess.run(
+                [_sys.executable, "-m", "agent_harness", "memory", "search",
+                 "并发", "--target", str(root), "--top", "2"],
+                capture_output=True, text=True, env=env,
+            )
+            self.assertEqual(r.returncode, 0, f"stderr: {r.stderr}")
+            self.assertIn("并发", r.stdout)
+
+
 class RuntimeBinUpgradeTests(unittest.TestCase):
     """upgrade apply 必须同步更新 bin/_runtime/ 和 entry 脚本（视为运行时）。"""
 

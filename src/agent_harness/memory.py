@@ -205,6 +205,18 @@ def run_rebuild_cli(target: Path, *, force: bool) -> None:
         sys.exit(1)
 
 
+def run_search_cli(target: Path, query: str, *, scope: str, top: int) -> None:
+    """CLI entrypoint wrapper: rich-formatted BM25 search (uses cli_utils.console)."""
+    from .cli_utils import print_memory_search
+    try:
+        results = search_lessons(target, query, scope=scope, top=top)
+    except (FileNotFoundError, ValueError, SystemExit) as exc:
+        from .cli_utils import console
+        console.print(f"[red][memory][/red] search 失败：{exc}")
+        sys.exit(2)
+    print_memory_search(query, scope, top, results)
+
+
 def main(argv=None) -> int:
     """Standalone entry for `.agent-harness/bin/memory` (pure stdlib, no rich)."""
     import argparse
