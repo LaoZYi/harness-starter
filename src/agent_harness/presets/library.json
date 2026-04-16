@@ -13,6 +13,6 @@
     "有测试覆盖核心功能路径",
     "README 或 API 文档与实际行为一致"
   ],
-  "workflow_skills_summary": "库项目重点技能：`/tdd`（API 契约驱动）、`/write-plan`（API 设计）、`/cso`（公开 API 安全审计）、`/multi-review`（多角度评审）、`/doc-release`（发布文档同步）",
+  "workflow_skills_summary": "库项目重点技能：`/tdd`（API 契约驱动）、`/write-plan`（API 设计）、`/verify`（发布前验证）、`/cso`（公开 API 安全审计）、`/multi-review`（兼容性多角度评审）、`/doc-release`（发布文档同步）",
   "exclude_rules": ["api.md", "database.md"]
 }

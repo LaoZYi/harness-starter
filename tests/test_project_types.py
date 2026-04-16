@@ -81,6 +81,112 @@ class ProjectTypeDetectionTests(unittest.TestCase):
             profile = discover_project(root)
         self.assertNotEqual(profile.project_type, "meta")
 
+    # --- web-app detection ---
+
+    def test_web_app_from_next_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "next.config.js").write_text("module.exports = {}", encoding="utf-8")
+            (root / "package.json").write_text('{"name": "web"}', encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "web-app")
+
+    def test_web_app_from_vite_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "vite.config.ts").write_text("export default {}", encoding="utf-8")
+            (root / "package.json").write_text('{"name": "web"}', encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "web-app")
+
+    # --- cli-tool detection ---
+
+    def test_cli_tool_from_package_json_bin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            pkg = {"name": "my-cli", "bin": {"mycli": "./bin/cli.js"}}
+            (root / "package.json").write_text(json.dumps(pkg), encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "cli-tool")
+
+    def test_cli_tool_from_python_cli_module(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "requirements.txt").write_text("click\n", encoding="utf-8")
+            pkg = root / "src" / "myapp"
+            pkg.mkdir(parents=True)
+            (pkg / "__init__.py").write_text("", encoding="utf-8")
+            (pkg / "cli.py").write_text("import click", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "cli-tool")
+
+    # --- worker detection ---
+
+    def test_worker_from_wrangler_toml(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "wrangler.toml").write_text('name = "my-worker"', encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "worker")
+
+    def test_worker_from_celery_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "celeryconfig.py").write_text("broker_url = 'redis://localhost'", encoding="utf-8")
+            (root / "requirements.txt").write_text("celery\n", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "worker")
+
+    # --- library detection ---
+
+    def test_library_from_python_package(self) -> None:
+        """Python project with setup.cfg/pyproject.toml, no Dockerfile, no server framework."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "setup.cfg").write_text("[metadata]\nname = mylib\n", encoding="utf-8")
+            (root / "pyproject.toml").write_text('[build-system]\nrequires = ["setuptools"]\n[tool.setuptools]\npackages = ["mylib"]\n', encoding="utf-8")
+            pkg = root / "src" / "mylib"
+            pkg.mkdir(parents=True)
+            (pkg / "__init__.py").write_text("__version__ = '0.1.0'", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "library")
+
+    def test_library_from_js_package_with_main_no_bin(self) -> None:
+        """JS package with main/exports but no bin field → library, not cli-tool."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            pkg = {"name": "my-lib", "main": "dist/index.js", "module": "dist/index.mjs"}
+            (root / "package.json").write_text(json.dumps(pkg), encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "library")
+
+    def test_library_from_gemspec(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "mylib.gemspec").write_text("Gem::Specification.new do |s|\nend", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "library")
+
+    # --- backend-service detection (default fallback + positive signals) ---
+
+    def test_backend_service_from_dockerfile(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "Dockerfile").write_text("FROM python:3.11", encoding="utf-8")
+            (root / "requirements.txt").write_text("flask\n", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "backend-service")
+
+    def test_backend_service_as_default_fallback(self) -> None:
+        """Empty project with no signals falls back to backend-service."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "main.py").write_text("print('hello')", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "backend-service")
+
+    # --- priority tests ---
+
     def test_monorepo_priority_over_web_app(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
