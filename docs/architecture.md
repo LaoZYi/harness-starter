@@ -87,6 +87,41 @@ verify_upgrade() → 验证结果
 
 插件文件支持与内置模板相同的 `{{variable}}` 占位符。
 
+## 与 Anthropic Agent Skills 的关系
+
+Claude Code 支持三种技能形态，本项目使用第一种（Standalone Commands）：
+
+| 形态 | 目录 | 调用方式 | 适用场景 |
+|------|------|---------|---------|
+| **Standalone Commands** | `.claude/commands/<name>.md` | `/<name>`（用户主动触发） | 明确的工作流步骤，需要用户按需调用 |
+| **Agent Skills (SKILL.md)** | `.claude/skills/<name>/SKILL.md` | Claude 自动调用（model-invoked） | 后台辅助，模型判断何时激活 |
+| **Plugin** | `<plugin>/.claude-plugin/plugin.json` + `skills/` 或 `commands/` | `/<plugin>:<name>`（强制 namespace） | 跨项目分发、marketplace 注册 |
+
+**本项目选择 Standalone Commands 的原因**：
+
+- 32 个工作流技能（`/lfg`、`/tdd`、`/spec` 等）都是**用户主动触发**的——开发者明确知道自己想做什么（"开始全流程"、"测试驱动开发"），不需要模型自行猜测
+- 模板渲染时注入项目特定内容（`{{project_name}}`、`{{test_command}}` 等），通过 `harness init` 适配目标项目；这意味着同一技能在不同项目中的渲染结果不同，不适合以固定 plugin 形式跨项目分发
+- Standalone Commands 不需要 namespace 前缀，用户直接 `/lfg` 而非 `/harness:lfg`，更简洁
+
+**SKILL.md 规范参考**（[agentskills.io/specification](https://agentskills.io/specification)）：
+
+如果开发者想为目标项目创建 model-invoked 形式的技能（Claude 自动判断何时激活），应遵循 Agent Skills spec：
+
+```yaml
+# .claude/skills/<skill-name>/SKILL.md
+---
+name: <skill-name>          # 必填，1-64 字符，小写字母+数字+连字符，等于目录名
+description: <描述>          # 必填，1-1024 字符，说明做什么 + 何时使用
+license: <许可证>            # 可选
+compatibility: <环境要求>     # 可选
+allowed-tools: <工具白名单>   # 可选，实验性
+---
+
+<Markdown 正文：技能指引>
+```
+
+`/write-skill` 技能在创建新技能时提供 SKILL.md 格式选项。
+
 ## 推荐扩展方式
 
 - 想增加新项目类型：先加 `src/agent_harness/presets/*.json`，再补模板、评估逻辑和测试。

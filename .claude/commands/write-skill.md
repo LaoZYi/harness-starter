@@ -30,7 +30,14 @@
 
 ### GREEN 阶段：编写最小可行技能
 
-编写 SKILL.md 文件，结构如下：
+先选择技能形态（两种可混用，但多数工作流技能只需 Command）：
+
+| 形态 | 路径 | 调用方式 | 何时选 |
+|------|------|---------|--------|
+| **Command** | `.claude/commands/<name>.md` | `/<name>`（用户主动） | 工作流步骤、需要用户按需触发 |
+| **Agent Skill** | `.claude/skills/<name>/SKILL.md` | 模型自动调用 | 后台辅助、模型判断何时激活 |
+
+#### Command 格式（默认）
 
 ```markdown
 # <技能名称>
@@ -60,6 +67,21 @@
 <列出 3-5 个常见错误及正确做法。>
 ```
 
+#### Agent Skill 格式（遵循 agentskills.io/specification）
+
+当技能适合模型自动激活时，在 `.claude/skills/<name>/SKILL.md` 下创建：
+
+```markdown
+---
+name: <name>
+description: <做什么 + 何时使用，1-1024 字符，关键词要具体>
+---
+
+<Markdown 正文（建议 < 5000 tokens；详细参考移到 references/ 子目录）>
+```
+
+`name` 必须等于目录名，仅限小写字母、数字和连字符（不可双连字符、不可以连字符开头或结尾）。可选字段：`license`、`compatibility`、`metadata`、`allowed-tools`。
+
 关键写作原则：
 - **「使用时机」必须是触发条件**，不是流程摘要。对比：
   - 错误："本技能帮助你完成分支管理"
@@ -84,9 +106,11 @@
 
 ## 技能文件放置
 
-- 命令文件：`.claude/commands/<技能名>.md`
+- **Command 形态**（用户主动触发）：`.claude/commands/<技能名>.md`
+- **Agent Skill 形态**（模型自动调用）：`.claude/skills/<技能名>/SKILL.md`
 - 如果用了模板变量，扩展名为 `.md.tmpl`
-- 文件名用小写短横线格式（kebab-case）
+- 文件名 / 目录名用小写短横线格式（kebab-case）
+- 同一技能可以同时有 Command 和 Skill 两种入口，但要确保内容一致
 
 ## 质量检查清单
 
