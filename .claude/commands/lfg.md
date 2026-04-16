@@ -50,6 +50,15 @@
 - 自动设定验收标准：新技能模板存在、测试通过、文档数字同步、dogfood 无漂移
 - **通道选择**：evolution 模式自动走**完整通道**（含 /ideate + /brainstorm + /spec + /plan-check），跳过阶段 0.3 的复杂度评估询问。理由：吸收外部项目思想天然属于"大"复杂度，影响模板 + 测试 + 文档多个层面，需设计先行
 
+**如果输入是文件路径且指向 `notes/` 下的原始讨论记录**（路径以 `notes/` 开头，以 `.md` 或 `.txt` 结尾，且**不**在 `notes/digested/` 下；文件头也不含 `<!-- processed:` 标记）：
+
+→ **🔴 停下来告诉用户**：这看起来是未处理的原始讨论记录。建议先跑 `/digest-meeting` 做结构化摘要。它会根据项目文档状态自动分叉：
+
+- **init 模式**（docs/product.md 尚为占位）→ 产出 `notes/digested/meeting-<date>-<topic>.md`，再用 `/process-notes` 填充框架文档
+- **iterate 模式**（docs/product.md 已有实质内容）→ 直接写入 `.agent-harness/current-task.md`，然后你可以再次运行 `/lfg`
+
+退出 /lfg；不属于此情况 → 继续下一步。
+
 **如果输入是普通文本描述**：
 
 0. **先检查项目类型**——读 `.agent-harness/project.json` 的 `project_type` 字段：
@@ -874,7 +883,7 @@ fi
 | 9 沉淀 | `/compound`、`/lint-lessons` |
 | 10 收尾回滚 | `/careful` |
 | 10 收尾 | `/git-commit`、`/doc-release`、`/finish-branch` |
-| 元任务（非单任务流，不由 /lfg 驱动） | `/lfg`（self-reference would be infinite recursion）、`/use-superpowers`（meta skill-selector, peer to /lfg）、`/write-skill`（manually invoked when authoring new skills）、`/evolve`（periodic self-evolution, reverse-triggers /lfg via evolution Issues）、`/health`（periodic code-quality snapshot, not part of single-task flow）、`/retro`（periodic engineering retrospective）、`/process-notes`（product-notes processing, different domain） |
+| 元任务（非单任务流，不由 /lfg 驱动） | `/lfg`（self-reference would be infinite recursion）、`/use-superpowers`（meta skill-selector, peer to /lfg）、`/write-skill`（manually invoked when authoring new skills）、`/evolve`（periodic self-evolution, reverse-triggers /lfg via evolution Issues）、`/health`（periodic code-quality snapshot, not part of single-task flow）、`/retro`（periodic engineering retrospective）、`/process-notes`（product-notes processing, different domain）、`/digest-meeting`（meeting-transcript processing, upstream of /lfg (produces current-task.md as input, not a pipeline stage)） |
 
 > 如果用户问"某某能力在 /lfg 里怎么用"，查本表；找不到说明这个能力不走 /lfg，按上表最后一行处理或直接用 CLI（`harness init/upgrade/doctor/export/stats/sync/memory rebuild/squad`）。
 > 一致性由 `harness skills lint .` 在 CI 中强制保证。
