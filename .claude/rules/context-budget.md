@@ -8,6 +8,22 @@ description: 控制工具输出和上下文窗口流入的双约束（Think in C
 
 灵感自 [mksglu/context-mode](https://github.com/mksglu/context-mode)（HN #1，7k+ ⭐）的三层解决方案：Context Saving + Session Continuity + **Think in Code**。本项目不引入其 MCP server 本体（Node/SQLite 依赖违反零依赖原则），只吸收方法论为规则。
 
+## 与 Claude Code 内部压缩机制的关系
+
+Claude Code 内部有 **5 级渐进式压缩流水线**（源自 [how-claude-code-works](https://github.com/Windy3f3f3f3f/how-claude-code-works) 的源码分析，以官方实现为准）：
+
+| 级别 | 名称 | 机制 | 成本 |
+|------|------|------|------|
+| L1 | Tool Result Budget | 超过 ~50K 字符的工具结果写磁盘，上下文只保留预览 | 零（纯本地） |
+| L2 | History Snip | 剪裁历史消息冗余部分释放 Token | 零 |
+| L3 | Microcompact | 清理旧工具结果（5 分钟 TTL 冷缓存路径 / 缓存编辑路径） | 极低 |
+| L4 | Context Collapse | 投影式只读折叠视图，不修改原始消息 | 低 |
+| L5 | Autocompact | fork 子 Agent 生成摘要，**不可逆** | 高（API 调用） |
+
+**本规则与 L1 的关系**：规则 2 的"单次工具输出 ≤ 2k tokens"是**在 L1 之前的前置防线**——在 AI 决定调用工具时就控制输出规模，而不是等 Claude Code 内部的 L1 被动截断。提前控制比被动截断保留更多语义。
+
+**`/compact` 时机与 L3 的关系**：L3 Microcompact 在提示词缓存过期（5 分钟 TTL）后会清理旧工具结果。这意味着长时间暂停后恢复工作时，上下文已被部分清理——此时 `/compact` 的边际收益降低，不必重复操作。
+
 ## 规则 1：Think in Code — 搜索/统计/过滤用脚本，不拉原始数据
 
 以下场景**禁止**把原始数据读进上下文窗口，必须先写脚本，只返回处理后的结果：

@@ -1,0 +1,52 @@
+# Claude Code 内部机制参考
+
+> L2 参考文件。按需通过 `/recall --refs claude-code` 加载。
+>
+> 来源：[how-claude-code-works](https://github.com/Windy3f3f3f3f/how-claude-code-works)（50 万行 TypeScript 源码分析）。以 Claude Code 官方实现为准，本文件仅作方法论参考。
+
+## 5 级渐进式压缩流水线
+
+设计哲学：先用成本最低的手段释放空间，只在必要时动用重武器。
+
+| 级别 | 名称 | 触发条件 | 机制 | 成本 |
+|------|------|---------|------|------|
+| L1 | Tool Result Budget | 单工具结果 > ~50K 字符 | 大结果持久化到磁盘，上下文只保留预览摘要 | 零（纯本地） |
+| L2 | History Snip | Feature-gated 条件满足 | 剪裁历史消息冗余部分，释放量传递给后续阈值检查 | 零 |
+| L3 | Microcompact | 旧工具结果过期 | 两条路径：缓存冷（> 5 分钟 TTL）直接替换为占位符；缓存热时保守处理 | 极低 |
+| L4 | Context Collapse | Token 使用量仍高 | 创建消息的只读折叠视图，不修改原始数据 | 低 |
+| L5 | Autocompact | 前 4 级仍不够 | fork 子 Agent 调用 API 生成摘要，**不可逆**（原始消息被摘要替换） | 高 |
+
+**与本项目的对齐**：
+- `context-budget.md` 规则 2 的 ≤ 2k tokens 是 L1 之前的前置防线
+- `/compact` 对应 L5 Autocompact——是最后手段，不要频繁使用
+- context-monitor hook 的 50/100/150 工具调用阈值是 L5 的间接代理指标
+
+## 7 个 Continue Site（静默恢复）
+
+Claude Code 的 `query()` 循环有 7 个 continue site，每个对应一种可恢复失败：
+
+- **PTL 排水**：Prompt Too Long 时触发压缩后重试
+- **max_output_tokens 升级**：输出截断时从 4K → 16K → 64K 逐级升级重试
+- **反应式压缩**：API 返回上下文超限时触发一次 compact 重试
+- **权限拒绝恢复**：用户拒绝工具权限时的优雅处理
+- **孤儿权限修复**：工具执行后发现权限状态不一致的修复
+- **结构化输出重试**：JSON schema 验证失败时最多重试 5 次
+- **下一轮继续**：有 tool_use 时自动进入下一轮（正常流程）
+
+**与本项目的对齐**：
+- `task-lifecycle.md` L0 静默恢复对齐了前 4 种（瞬时失败自动重试 1 次）
+- L1 StuckDetector 对应"重试后仍失败"（同根因 3 次才停）
+
+## 工具预执行
+
+Claude Code 在模型**仍在生成输出**时就开始解析和执行工具调用。利用模型推理的 5-30 秒窗口，把 ~1 秒的工具执行延迟隐藏起来。
+
+**与本项目的对齐**：
+- `/dispatch-agents` 的并行派发设计与此同源——让独立任务的执行与后续任务的规划重叠
+- `/squad` 的依赖触发（`depends_on`）保证有序，但无依赖 worker 天然并行
+
+## 参考链接
+
+- 仓库：https://github.com/Windy3f3f3f3f/how-claude-code-works
+- 在线文档：https://windy3f3f3f3f.github.io/how-claude-code-works/
+- 配套复现项目：https://github.com/Windy3f3f3f3f/claude-code-from-scratch
