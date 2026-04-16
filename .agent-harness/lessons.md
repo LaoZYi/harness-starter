@@ -117,7 +117,7 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 
 - 错误：声称 /lfg 是"所有使用入口"但它只引用了 33 个技能中的 16 个，`/recall` `/use-worktrees` `/verify` `/finish-branch` `/careful` `/source-verify` `/request-review` `/receive-review` `/subagent-dev` `/todo` 全被遗漏；甚至违反自己项目的 task-lifecycle 分层记忆规则（/lfg 阶段 0.2 直接全文读 lessons.md，绕过 /recall）
 - 根因：技能是逐个迭代加入的，每个 PR 只改自己模板，没人系统回过头问"/lfg 还需要更新吗"。没有契约测试锁死"新技能必须被 /lfg 分类（接入 or 豁免）"
-- 规则：凡是宣称为"统一入口"的技能（/lfg、/use-superpowers 这类），必须有契约测试：EXPECTED_IN + EXPECTED_NOT_IN 两个集合，并集等于当前全部技能清单；新增技能时测试失败强制做分类决策。模板末尾应有"覆盖清单"表作为自检锚点
+- 规则：凡是宣称为"统一入口"的技能（/lfg、/which-skill 这类），必须有契约测试：EXPECTED_IN + EXPECTED_NOT_IN 两个集合，并集等于当前全部技能清单；新增技能时测试失败强制做分类决策。模板末尾应有"覆盖清单"表作为自检锚点
 
 ## 2026-04-13 [工具脚本] 守卫禁用白名单改自动发现
 

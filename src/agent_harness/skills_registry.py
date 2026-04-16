@@ -1,7 +1,7 @@
 """Skills registry — single source of truth for 34 skill metadata.
 
 Loaded from `templates/superpowers/skills-registry.json` and rendered into:
-- `use-superpowers.md.tmpl`  (decision tree + index by phase)
+- `which-skill.md.tmpl`  (decision tree + index by phase)
 - `lfg.md.tmpl`              (coverage table)
 - `tests/test_lfg_coverage.py` (EXPECTED_IN/NOT_IN_LFG)
 
@@ -82,7 +82,7 @@ def expected_not_in_lfg(registry: dict) -> dict[str, str]:
 
 
 def render_decision_tree(registry: dict) -> str:
-    """Render the use-superpowers decision tree text block."""
+    """Render the which-skill decision tree text block."""
     lines = ["```", "开始任务", "  |"]
     for skill in registry["skills"]:
         label = skill.get("decision_tree_label")
@@ -101,7 +101,7 @@ def render_decision_tree(registry: dict) -> str:
 
 
 def render_skill_index_by_phase(registry: dict) -> str:
-    """Render the three-section index used in use-superpowers.md.tmpl."""
+    """Render the three-section index used in which-skill.md.tmpl."""
     sections: list[str] = []
     for cat in CATEGORY_PHASE_ORDER:
         cat_skills = [s for s in registry["skills"] if s["category"] == cat]
@@ -159,7 +159,7 @@ def apply_to_rendered_dict(
         registry = load_registry(template_root)
     except (FileNotFoundError, ValueError):
         return
-    for path in (".claude/commands/use-superpowers.md", ".claude/commands/lfg.md"):
+    for path in (".claude/commands/which-skill.md", ".claude/commands/lfg.md"):
         if path in rendered:
             rendered[path] = render_all(rendered[path], registry)
 
@@ -170,7 +170,7 @@ def apply_to_target(
     """Post-process materialized templates: replace <<SKILL_*>> placeholders.
 
     Called from initializer / upgrade after materialize_templates so the
-    rendered .claude/commands/use-superpowers.md and lfg.md get their
+    rendered .claude/commands/which-skill.md and lfg.md get their
     skill blocks substituted from skills-registry.json.
 
     Returns list of files actually rewritten (empty in dry_run).
@@ -181,7 +181,7 @@ def apply_to_target(
         return []
 
     targets = [
-        target_root / ".claude" / "commands" / "use-superpowers.md",
+        target_root / ".claude" / "commands" / "which-skill.md",
         target_root / ".claude" / "commands" / "lfg.md",
     ]
     rewritten: list[str] = []

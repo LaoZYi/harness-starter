@@ -39,7 +39,7 @@
   - 渐进式披露（第三个吸收项）标记为后续工作，因为涉及现有技能文件结构重构，工作量大且风险高
   - 反合理化表每个技能统一 6 条，格式为"你想说的 | 为什么不行"
   - `/spec` 阶段在 LFG 中设为可选（需求已明确时可跳过），避免过度流程化
-- 改了：spec.md.tmpl(新建), tdd.md.tmpl, verify.md.tmpl, multi-review.md.tmpl, lfg.md.tmpl, use-superpowers.md.tmpl, superpowers-workflow.md.tmpl, evolve.md.tmpl, test_superpowers.py, CHANGELOG.md, README.md, docs/architecture.md, docs/product.md, docs/usage-guide.md, project.json, current-task.md
+- 改了：spec.md.tmpl(新建), tdd.md.tmpl, verify.md.tmpl, multi-review.md.tmpl, lfg.md.tmpl, which-skill.md.tmpl, superpowers-workflow.md.tmpl, evolve.md.tmpl, test_superpowers.py, CHANGELOG.md, README.md, docs/architecture.md, docs/product.md, docs/usage-guide.md, project.json, current-task.md
 - 完成标准：
   - [x] 3 个技能有反合理化表
   - [x] /spec 模板存在且占位符完整
@@ -80,7 +80,7 @@
   - ADR 目录放在 superpowers 模板下而非 common，保持 `--no-superpowers` 能完全关闭
   - MADR 模板简化（去掉 Links 段），聚焦决策核心四要素
   - LFG 集成点选择 Phase 0/3/9 而非单独阶段，避免流程膨胀
-- 改了：adr.md.tmpl(新建), .gitkeep.tmpl(新建), lfg.md.tmpl, superpowers-workflow.md.tmpl, use-superpowers.md.tmpl, evolve.md.tmpl, test_superpowers.py, README.md, CHANGELOG.md, docs/product.md, docs/architecture.md, docs/usage-guide.md, .agent-harness/project.json
+- 改了：adr.md.tmpl(新建), .gitkeep.tmpl(新建), lfg.md.tmpl, superpowers-workflow.md.tmpl, which-skill.md.tmpl, evolve.md.tmpl, test_superpowers.py, README.md, CHANGELOG.md, docs/product.md, docs/architecture.md, docs/usage-guide.md, .agent-harness/project.json
 - 完成标准：
   - [x] adr.md.tmpl 存在且占位符完整
   - [x] LFG 阶段 0/3/9 含 ADR 集成点
@@ -139,7 +139,7 @@
   - 不吸收 3 个 subagent、hook 增强、code-simplification 等（已有覆盖或延后）
 - 改了（commit 范围 327873c..55a6ea7，共 12 commit）：
   - 新建：source-verify.md.tmpl、4 个 references/*.md.tmpl、test_references.py、spec、plan
-  - 修改：upgrade.py、cli.py 无改动但 memory.py +60 行、recall.md.tmpl、compound.md.tmpl（已在 #10 改）、task-lifecycle.md.tmpl、use-superpowers.md.tmpl、superpowers-workflow.md.tmpl、backend-service.md.tmpl、web-app.md.tmpl、check_repo.py、test_memory.py、test_superpowers.py、memory-index.md.tmpl
+  - 修改：upgrade.py、cli.py 无改动但 memory.py +60 行、recall.md.tmpl、compound.md.tmpl（已在 #10 改）、task-lifecycle.md.tmpl、which-skill.md.tmpl、superpowers-workflow.md.tmpl、backend-service.md.tmpl、web-app.md.tmpl、check_repo.py、test_memory.py、test_superpowers.py、memory-index.md.tmpl
   - 文档：product.md、architecture.md、runbook.md、AGENTS.md、CHANGELOG.md、workflow.md、release.md、CONTRIBUTING.md、lessons.md
 - 完成标准：
   - [x] /source-verify 技能存在，反合理化表 6 条
@@ -292,7 +292,7 @@
   - 渲染产物：`.agent-harness/squad/<task_id>/{manifest.json, status.jsonl, workers/}` + 每个 worker 的 `.claude/{settings.local.json, squad-context.md}` + `task-prompt.md`
   - worker 启动方式：`claude --append-system-prompt "$(cat ctx)" "$(cat task)"` 经 shlex.quote 处理路径
   - 28 个 squad 测试（spec 解析 7 + capability 渲染 7 + tmux mock 8 + integration dry-run 6）
-  - `/squad` 进入 use-superpowers 决策树、superpowers-workflow 技能表、lfg 实施阶段、evolve 比较表、usage-guide
+  - `/squad` 进入 which-skill 决策树、superpowers-workflow 技能表、lfg 实施阶段、evolve 比较表、usage-guide
   - 全量文档同步：product/architecture/runbook/AGENTS/CHANGELOG/README/usage-guide/release/workflow/CONTRIBUTING/project.json
 - 关键决策：
   - 自研 MVP（不包 claude-squad）；JSONL + fcntl（不引入 SQLite）
@@ -302,10 +302,10 @@
   - depends_on 触发 + 自动合并划为阶段 2/3，单独 Issue 追踪
 - 改了哪些文件：38 个文件 / +2027 insertions / -41 deletions
   - src/agent_harness/squad/ (6) + src/agent_harness/cli.py
-  - src/agent_harness/templates/superpowers/.claude/commands/{squad,lfg,use-superpowers,evolve}.md.tmpl
+  - src/agent_harness/templates/superpowers/.claude/commands/{squad,lfg,which-skill,evolve}.md.tmpl
   - src/agent_harness/templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl
   - tests/test_squad_{spec_parse,capability,tmux_mock,integration}.py
-  - dogfood: .claude/commands/{squad,lfg,use-superpowers,evolve}.md + .claude/rules/superpowers-workflow.md
+  - dogfood: .claude/commands/{squad,lfg,which-skill,evolve}.md + .claude/rules/superpowers-workflow.md
   - docs/ (6) + AGENTS.md + CHANGELOG.md + README.md + CONTRIBUTING.md + .agent-harness/project.json
   - docs/superpowers/specs/2026-04-12-squad-mvp-{spec,plan}.md
   - .agent-harness/lessons.md (+4 条) + memory-index.md
@@ -319,7 +319,7 @@
   - [x] 测试数 ≥ 210，实际 206 → 234（+28）
   - [x] docs/product + architecture + runbook + AGENTS + CHANGELOG 同步
   - [x] dogfood 无漂移（make check 的 drift 检测通过）
-  - [x] /squad 出现在 use-superpowers 决策树 + lfg 流水线
+  - [x] /squad 出现在 which-skill 决策树 + lfg 流水线
   - [x] /dispatch-agents vs /squad 选择标准清晰（多处对比表）
 - 用户验证通过
 
@@ -372,7 +372,7 @@
   - lessons.md + memory-index.md 新增"统一入口技能必须串起全量能力"（架构设计类）
 - 关键决策：
   - **契约测试而非口头约束**：新增技能时，test_every_shipped_skill_is_classified 会失败，强迫开发者做"进 lfg 还是豁免"决策。这是本次修复的根因防御
-  - **豁免分两类**：(a) /lfg /use-superpowers 自递归 / 平级；(b) /health /retro /lint-lessons 完整版 /evolve /write-skill /process-notes 是元技能或周期任务，不属单任务流
+  - **豁免分两类**：(a) /lfg /which-skill 自递归 / 平级；(b) /health /retro /lint-lessons 完整版 /evolve /write-skill /process-notes 是元技能或周期任务，不属单任务流
   - **CLI 入口显式提示**：/lfg 用户经常被误用于"初始化新项目"，新加的分流表直接告诉用户走 harness init。降低用户记忆负担的正确方式是 /lfg 主动指路，不是假装能做一切
   - 未修改 lfg 核心阶段编号（0/1/2/2.5/3-10），只在既有阶段内追加技能调用——保向后兼容
 - 改了哪些文件：
@@ -524,7 +524,7 @@
   - **B StuckDetector**：task-lifecycle.md 新增"卡死检测"章节（4 类触发条件 + 3 步强制停下）；/tdd 和 /debug 技能文档同步
   - **C 矛盾检测**：/lint-lessons 2.2 节从简单描述升级为 3 矛盾 + 2 张力模式 + 4 选 1 裁决建议（不自动合并）
   - **D 需求 ID 三元映射**：/spec 加 1.4 需求矩阵（R-ID 连续编号 + 可识别测试信号）；/write-plan 要求每 task 标 R-ID + 末尾覆盖表；/verify 加 5.5 R-ID 覆盖硬检查（satisfied/out-of-scope/missed 三态，missed 阻断）；新增 references/requirement-mapping-checklist.md
-  - **E /plan-check 新技能**：8 维度（需求覆盖 / 任务原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环；workflow 规则 + /lfg 阶段 3 + use-superpowers 决策树 + evolve 对比表 + usage-guide 均同步；技能计数 30→31
+  - **E /plan-check 新技能**：8 维度（需求覆盖 / 任务原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环；workflow 规则 + /lfg 阶段 3 + which-skill 决策树 + evolve 对比表 + usage-guide 均同步；技能计数 30→31
   - **F 上下文监控 Hook**：先 source-verify 发现 Claude Code statusline 不暴露 remaining_percentage → 降级为 PostToolUse 工具调用计数（50/100/150 三级阈值）；纯 shell 跨平台；.context-monitor-skip sentinel 可关；session-start.sh 重置计数器
   - **G+H 测试 + 文档**：test_gsd_absorb.py 新增 18 条契约测试；product.md 新增功能 17；architecture.md hooks 段 + 测试层更新；测试数 329→347 同步
 - 关键决策：
@@ -534,7 +534,7 @@
   - **契约测试覆盖六个子系统**：不测"怎么调用技能"（技能是 AI 读的提示），测"模板文件里是否存在关键字和结构"——模板不被改漏就对了
 - 改了：
   - 新增：`src/agent_harness/templates/superpowers/.claude/commands/plan-check.md.tmpl`、`src/agent_harness/templates/common/.agent-harness/references/requirement-mapping-checklist.md.tmpl`、`src/agent_harness/templates/common/.claude/hooks/context-monitor.sh.tmpl`、`tests/test_gsd_absorb.py`
-  - 修改（技能模板）：`tdd.md.tmpl`、`debug.md.tmpl`、`lint-lessons.md.tmpl`、`spec.md.tmpl`、`write-plan.md.tmpl`、`verify.md.tmpl`、`use-superpowers.md.tmpl`、`evolve.md.tmpl`、`lfg.md.tmpl`
+  - 修改（技能模板）：`tdd.md.tmpl`、`debug.md.tmpl`、`lint-lessons.md.tmpl`、`spec.md.tmpl`、`write-plan.md.tmpl`、`verify.md.tmpl`、`which-skill.md.tmpl`、`evolve.md.tmpl`、`lfg.md.tmpl`
   - 修改（规则）：`common/.claude/rules/task-lifecycle.md.tmpl`、`superpowers/.claude/rules/superpowers-workflow.md.tmpl`
   - 修改（hook/配置）：`session-start.sh.tmpl`、`settings.json.tmpl`
   - 修改（dogfood）：`.claude/rules/task-lifecycle.md`、`.claude/commands/*`、`.claude/hooks/*`、`.claude/settings.json`
@@ -794,10 +794,10 @@
 
 ## 2026-04-13 Issue #27 Skills Registry SSOT 抽取
 
-- 需求：把 34 个 skill 元数据抽到 skills-registry.json 单一真相源，消除 use-superpowers.md.tmpl / lfg.md.tmpl / test_lfg_coverage.py 三处漂移风险
+- 需求：把 34 个 skill 元数据抽到 skills-registry.json 单一真相源，消除 which-skill.md.tmpl / lfg.md.tmpl / test_lfg_coverage.py 三处漂移风险
 - 做了什么：15 步实施全部落地
   - 新增 4 文件：skills-registry.json / skills_registry.py / skills_lint.py / test_skills_registry.py
-  - 改造 3 模板/测试：use-superpowers.md.tmpl（`<<SKILL_DECISION_TREE>> + <<SKILL_INDEX_BY_PHASE>>`）、lfg.md.tmpl（`<<SKILL_COVERAGE_TABLE>>`）、test_lfg_coverage.py（从 registry 读）
+  - 改造 3 模板/测试：which-skill.md.tmpl（`<<SKILL_DECISION_TREE>> + <<SKILL_INDEX_BY_PHASE>>`）、lfg.md.tmpl（`<<SKILL_COVERAGE_TABLE>>`）、test_lfg_coverage.py（从 registry 读）
   - 钩子接入 5 处 consumer：initializer.py / upgrade.py / scripts/dogfood.py / scripts/check_repo.py / test_gsd_absorb.py
   - CLI：`harness skills lint <target>` 子命令（skills_lint.register_subcommand 模式，与 audit/agent/squad 一致）
   - Makefile：`make skills-lint` + `make ci` 串入
@@ -809,15 +809,15 @@
   - check_repo 的"决策树覆盖"检查从读 .tmpl 改为读渲染后内容，兼顾未来 skill 元数据都移到 registry
 - 改了哪些文件（19 个）：
   - 新：skills-registry.json / skills_registry.py / skills_lint.py / test_skills_registry.py / specs/2026-04-13-skills-registry-plan.md
-  - 改模板：use-superpowers.md.tmpl / lfg.md.tmpl
+  - 改模板：which-skill.md.tmpl / lfg.md.tmpl
   - 改核心：cli.py / initializer.py / upgrade.py / templating 钩子
   - 改脚本：scripts/dogfood.py / scripts/check_repo.py / Makefile
   - 改测试：test_lfg_coverage.py / test_gsd_absorb.py
   - 改文档：CHANGELOG.md / docs/architecture.md / docs/product.md / docs/release.md / .github/PULL_REQUEST_TEMPLATE.md
-  - dogfood 同步：.claude/commands/{use-superpowers,lfg}.md
+  - dogfood 同步：.claude/commands/{which-skill,lfg}.md
 - 完成标准（7/7）：
   1. ✅ R-001 registry.json 含 34 skill（27 in_lfg + 7 excluded）
-  2. ✅ R-002 use-superpowers 决策树 + 三段索引改渲染
+  2. ✅ R-002 which-skill 决策树 + 三段索引改渲染
   3. ✅ R-003 lfg 阶段覆盖表改渲染
   4. ✅ R-004 test_lfg_coverage 改读 registry
   5. ✅ R-005 harness skills lint + CI 串入
@@ -959,3 +959,56 @@
   - [x] R10 `make ci` 全绿（499 tests OK）+ `make dogfood` 同步无漂移
   - [x] R11 关键变更全部有 WAL 审计
   - [x] 端到端演练验证：模拟飞书妙记讨论记录（6:55 时长、3 人、3 处分歧→决策、1 个开放问题）→ 6 类信号全部正确提取 + 分歧过程保留
+
+## 2026-04-16 — `/use-superpowers` 重命名为 `/which-skill`
+
+- 需求：消除与上游 obra/superpowers 开源项目的命名歧义。多个用户反馈 `/use-superpowers` 让人误以为在调用 superpowers 项目本身，实际功能只是「技能选择引导」。
+- 根因：原命名抄自上游 obra/superpowers 的 `using-superpowers.md`，本地化时直接保留旧名，未考虑歧义。
+- 做了什么：
+  - 重命名模板：`templates/superpowers/.claude/commands/use-superpowers.md.tmpl` → `which-skill.md.tmpl`
+  - 重命名生成产物：`.claude/commands/use-superpowers.md` → `which-skill.md`
+  - 全量替换 30 个文件中的 `use-superpowers` 引用（源码、模板、测试、文档、CHANGELOG、历史归档）
+  - skills-registry.json：id 从 `use-superpowers` 改为 `which-skill`，name 从「使用 Superpowers 技能系统」改为「技能选择引导」
+  - 模板/生成文件标题同步更新为「技能选择引导」
+  - 3 个测试函数名从 `test_use_superpowers_*` 改为 `test_which_skill_*`（test_superpowers.py × 2 + test_gsd_absorb.py × 1）
+- 关键决策：
+  - 上游映射保留旧名：`scripts/sync_superpowers.py` 中的 `"using-superpowers": "which-skill.md.tmpl"` 是「上游名 → 本地名」映射，必须保留上游名以确保 sync 工具能正确识别
+  - 历史归档文件（task-log/lessons/CHANGELOG/specs）也参与替换：用户明确要求「这个命名歧义太大了，已经误导了很多用户」
+- 改了哪些文件：30 个（含 2 处文件重命名）
+  - 重命名：`use-superpowers.md.tmpl` / `use-superpowers.md`
+  - 源码：`skills_registry.py`、`check_repo.py`、`sync_superpowers.py`
+  - 模板：`skills-registry.json`、`which-skill.md.tmpl`、`superpowers-workflow.md.tmpl`、`AGENTS.md.tmpl`、`evolve.md.tmpl`、`lfg.md.tmpl`
+  - 测试：`test_superpowers.py`、`test_skills_registry.py`、`test_lfg_coverage.py`、`test_gsd_absorb.py`
+  - 文档：`README.md`、`CHANGELOG.md`、`docs/product.md`、`docs/usage-guide.md`、`docs/quickstart.md`、`docs/usage-manual.md`、4 个历史 spec 文档
+  - 生成产物：`.claude/commands/{which-skill,lfg,evolve}.md`、`.claude/rules/superpowers-workflow.md`
+  - 配置：`.github/PULL_REQUEST_TEMPLATE.md`
+- 完成标准：
+  - [x] 字面替换零残留（grep `use.superpowers|use_superpowers` 均无结果）
+  - [x] 测试函数名同步更新
+  - [x] 语义描述对齐新名（标题/registry name）
+  - [x] make ci 全绿（499/499）
+  - [x] CHANGELOG 记录
+  - [x] task-log 归档
+
+## 2026-04-16 — 新增使用手册（usage-manual + quickstart）
+
+- 需求：用户问「给我一个详细的使用手册」+「能给我一个省时间版本吗」
+- 做了什么：
+  - 新增 `docs/usage-manual.md`：19 章节完整版，覆盖安装、CLI、技能、记忆系统、多 agent、审计、hooks、插件、项目类型、meta、运维、故障排查、配置参考
+  - 新增 `docs/quickstart.md`：一页纸速查版，5 个最常用命令 + 10 个最常用技能 + 急救表
+- 改了哪些文件：2 个新文件
+- 完成标准：
+  - [x] 完整版覆盖全部功能
+  - [x] 速查版可一页扫读
+
+## 2026-04-16 — 添加内网 GitLab 远端 + 合并推送
+
+- 需求：把 `http://192.168.4.102/ai-x/zjaf-harness` 加为远端，并配合一键推送到双远端
+- 做了什么：
+  - 添加 `zjaf` 远端（先 HTTP 后改 SSH 解决凭据问题）
+  - 创建 `all` 复合远端，push URL 同时挂 GitHub + GitLab
+  - 拉取 zjaf/master 14 个新提交，本地快进合并
+  - 配置 GitHub SSH 公钥 + 添加 GitHub host key
+- 关键决策：
+  - 用复合远端 `all` 而非给 origin 挂多个 push URL：保持 origin/zjaf 单职，all 专做合并推送
+  - 「以远端为主」：本地 0 commits ahead，直接快进 zjaf/master，无需 rebase

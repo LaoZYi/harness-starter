@@ -205,7 +205,7 @@ project/
 │   │   ├── tdd.md                         # 测试驱动开发
 │   │   ├── debug.md                       # 系统性排障
 │   │   ├── ... (共 32 个技能命令)
-│   │   └── use-superpowers.md             # 技能选择引导
+│   │   └── which-skill.md             # 技能选择引导
 │   └── rules/
 │       ├── safety.md                      # 安全规则
 │       ├── testing.md                     # 测试要求
@@ -340,7 +340,7 @@ project/
 |------|------|------|
 | `/lfg` | 全自主流水线：plan → implement → review → fix → verify → compound → lint | compound |
 | `/evolve` | 自动搜索新项目 → 评估独特性 → 创建 Issue 提案 | 本地原创 |
-| `/use-superpowers` | 技能选择引导，1% 法则决策树 | superpowers |
+| `/which-skill` | 技能选择引导，1% 法则决策树 | superpowers |
 | `/write-skill` | 用 TDD 方法论编写新技能 | superpowers |
 
 ---
@@ -472,7 +472,7 @@ project/
 
 如果你不想记 32 个命令，**只记两个**：
 
-- **`/use-superpowers`** — 告诉 AI 你要做什么，它会自动推荐合适的技能
+- **`/which-skill`** — 告诉 AI 你要做什么，它会自动推荐合适的技能
 - **`/lfg`** — 一键全自动完成（spec → plan → implement → review → fix → verify → compound）
 
 下面的决策指南帮你理解每个阶段多个命令之间的关系，但日常使用不需要背诵。
@@ -601,7 +601,7 @@ project/
 ### 一图看懂完整流程
 
 ```
- ┌─────────── 不确定用什么？ → /use-superpowers ───────────┐
+ ┌─────────── 不确定用什么？ → /which-skill ───────────┐
  │                                                          │
  │  ┌──────────── 想全自动？ → /lfg ──────────────────┐    │
  │  │                                                  │    │
@@ -630,7 +630,7 @@ project/
 | **小** — 修一个 bug、加一个字段 | 5-30 分钟 | `/tdd` → `/verify` → `/git-commit` |
 | **中** — 新增一个功能模块 | 30 分钟-2 小时 | `/brainstorm` → `/spec` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound` → `/finish-branch` |
 | **大** — 重构、新系统、多模块联动 | 半天以上 | `/ideate` → `/brainstorm` → `/spec` → `/write-plan` → `/lfg`（或手动走全流程） |
-| **不确定** | ? | `/use-superpowers` 让 AI 推荐 |
+| **不确定** | ? | `/which-skill` 让 AI 推荐 |
 
 ### Meta 项目工作流
 

@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Changed — `/use-superpowers` 更名为 `/which-skill`（2026-04-16）
+
+消除与上游 obra/superpowers 开源项目的命名歧义。`/use-superpowers` 容易让用户误以为在调用 superpowers 项目本身，实际功能是「技能选择引导」。
+
+**改动范围**：
+- 重命名模板 `use-superpowers.md.tmpl` → `which-skill.md.tmpl`
+- 重命名生成产物 `.claude/commands/use-superpowers.md` → `which-skill.md`
+- `skills-registry.json` 中 id 和 name 同步更新（`"技能选择引导"`）
+- 模板/生成文件标题从「使用 Superpowers 技能系统」改为「技能选择引导」
+- 全量替换 30 个文件中的引用（源码、测试、文档、历史归档）
+- 3 处测试函数名从 `test_use_superpowers_*` 改为 `test_which_skill_*`
+
+### Added — 使用手册（2026-04-16）
+
+新增 `docs/usage-manual.md`（完整版，19 章节）和 `docs/quickstart.md`（速查版，一页纸）。
+
 ### Added — Context-Mode 方法论吸收（Issue #29 / GitLab #13，2026-04-14）
 
 吸收 [mksglu/context-mode](https://github.com/mksglu/context-mode)（7k+ ⭐，HN #1）的 3 层方法论——**Think in Code** + **BM25 兜底检索** + **Context Budget** 约束。**不吸收**其 MCP server 本体（Node/SQLite 违反零依赖原则），只吸收方法论为规则 + 纯 stdlib Python 工具。
@@ -45,7 +61,7 @@
 
 ### Added — Skills Registry SSOT（Issue #27 / GitLab #11，2026-04-13）
 
-把 34 个 skill 的元数据抽到 `templates/superpowers/skills-registry.json` 单一真相源，消除三处文档（use-superpowers.md.tmpl / lfg.md.tmpl / test_lfg_coverage.py）的同步漂移风险。
+把 34 个 skill 的元数据抽到 `templates/superpowers/skills-registry.json` 单一真相源，消除三处文档（which-skill.md.tmpl / lfg.md.tmpl / test_lfg_coverage.py）的同步漂移风险。
 
 **新文件**：
 - `src/agent_harness/templates/superpowers/skills-registry.json`：34 skill 元数据（id / category / one_line / triggers / lfg_stage / expected_in_lfg / exclusion_reason / decision_tree_label）
@@ -54,7 +70,7 @@
 - `tests/test_skills_registry.py`：13 条契约（registry 加载 / 渲染 / lint）
 
 **改造**：
-- `use-superpowers.md.tmpl`：手写决策树和三段索引替换为 `<<SKILL_DECISION_TREE>>` 和 `<<SKILL_INDEX_BY_PHASE>>` 占位符
+- `which-skill.md.tmpl`：手写决策树和三段索引替换为 `<<SKILL_DECISION_TREE>>` 和 `<<SKILL_INDEX_BY_PHASE>>` 占位符
 - `lfg.md.tmpl`：手写阶段覆盖表替换为 `<<SKILL_COVERAGE_TABLE>>` 占位符
 - `tests/test_lfg_coverage.py`：EXPECTED_IN_LFG / EXPECTED_NOT_IN_LFG 改为从 registry 读取（消除硬编码 set）
 - `initializer.py` / `upgrade.py` / `scripts/dogfood.py`：材化 superpowers 模板后调用 `apply_to_target` 替换 `<<SKILL_*>>`
@@ -223,7 +239,7 @@
 - **Worker 启动方式**：`claude --append-system-prompt "$(cat squad-context.md)" "$(cat task-prompt.md)"` — system prompt 装 squad 约束（含 5 条硬规则），positional arg 装任务
 - **安全约束**：worker 名 / task_id 强制 `^[a-z0-9][a-z0-9-]{0,30}$` 防 shell 注入；禁止嵌套 squad；禁止写共享 lessons.md
 - **与 `/dispatch-agents` 并存**：dispatch 适合 3+ 短独立子任务（一次性 map-reduce）；squad 适合长任务、需实时观察、需角色分权
-- **技能文档 + 决策树**：`/squad` 进入 use-superpowers 决策树、superpowers-workflow 技能表、lfg 实施阶段选项
+- **技能文档 + 决策树**：`/squad` 进入 which-skill 决策树、superpowers-workflow 技能表、lfg 实施阶段选项
 - **阶段 1 限制**：tmux 硬依赖（Windows 用 WSL）；无依赖触发（`depends_on` 仅做循环校验，所有 worker 同时启动）；无自动合并（走 `/finish-branch`）；SQLite mailbox/FIFO 合并队列等留给阶段 2/3
 - **测试**：206 → 226（+20）覆盖 YAML 解析 / 依赖环检测 / 名称注入防护 / 3 种 capability 权限渲染 / JSON 可序列化 / tmux 命令构造 / shell 元字符防护 / tmux 可用性探测
 - **源验证纠偏**：`/source-verify` 发现 Claude Code CLI **没有** `--prompt-file` flag，改用 `--append-system-prompt` + positional argument（plan 原假设已纠正，附录记录）
@@ -246,7 +262,7 @@
 - **memory-index 升级**：自动扫描 references/ 输出"## 参考资料"段
 - **类型规则引用清单**：backend-service → security + performance（Backend 段）；web-app → accessibility + performance
 - **upgrade 策略**：references/* 列为 `three_way`（允许用户定制 + 保留上游更新）
-- **决策树/workflow 更新**：`/source-verify` 和 `/recall` 进入 use-superpowers 决策树和 superpowers-workflow 技能表
+- **决策树/workflow 更新**：`/source-verify` 和 `/recall` 进入 which-skill 决策树和 superpowers-workflow 技能表
 - **测试**：192 → 203（+11）覆盖 references 生成/升级保留/英文术语、/source-verify 存在性+反合理化表、memory rebuild 扫描 references、Context Hierarchy 章节、/recall --refs 文档
 
 ## [1.1.1] - 2026-04-12
@@ -281,7 +297,7 @@
 ### Added
 
 - **31 项工作流技能命令**（当时基线，后续增量见顶部条目），融合 3 个开源项目 + 2 个吸收项目 + 2 个本地原创：
-  - 来自 [obra/superpowers](https://github.com/obra/superpowers)（14 个）：brainstorm, write-plan, tdd, debug, execute-plan, subagent-dev, dispatch-agents, request-review, receive-review, use-worktrees, finish-branch, write-skill, verify, use-superpowers
+  - 来自 [obra/superpowers](https://github.com/obra/superpowers)（14 个）：brainstorm, write-plan, tdd, debug, execute-plan, subagent-dev, dispatch-agents, request-review, receive-review, use-worktrees, finish-branch, write-skill, verify, which-skill
   - 来自 [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)（6 个）：ideate, compound, multi-review, lfg, git-commit, todo
   - 来自 [garrytan/gstack](https://github.com/garrytan/gstack)（5 个）：cso, health, retro, doc-release, careful
   - 吸收自 [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)（1 个）：spec（规格驱动开发）+ 反合理化机制增强

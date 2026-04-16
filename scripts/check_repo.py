@@ -301,7 +301,7 @@ def check_skill_documentation_coverage() -> None:
     # README is excluded — it's a summary that groups skills by category
     must_mention_all = {
         "workflow rule": PKG / "templates" / "superpowers" / ".claude" / "rules" / "superpowers-workflow.md.tmpl",
-        "decision tree": PKG / "templates" / "superpowers" / ".claude" / "commands" / "use-superpowers.md.tmpl",
+        "decision tree": PKG / "templates" / "superpowers" / ".claude" / "commands" / "which-skill.md.tmpl",
         "evolve comparison": PKG / "templates" / "superpowers" / ".claude" / "commands" / "evolve.md.tmpl",
         "usage-guide": ROOT / "docs" / "usage-guide.md",
     }
@@ -311,7 +311,7 @@ def check_skill_documentation_coverage() -> None:
         if not path.exists():
             continue
         content = path.read_text(encoding="utf-8")
-        # Issue #27: use-superpowers.md.tmpl uses <<SKILL_*>> placeholders.
+        # Issue #27: which-skill.md.tmpl uses <<SKILL_*>> placeholders.
         # Render via skills_registry so the decision-tree check sees actual skill names.
         if label == "decision tree":
             from agent_harness.skills_registry import load_registry, render_all
@@ -320,7 +320,7 @@ def check_skill_documentation_coverage() -> None:
             except (FileNotFoundError, ValueError):
                 pass
         for skill in skills:
-            if skill == "/use-superpowers" and label == "decision tree":
+            if skill == "/which-skill" and label == "decision tree":
                 continue
             if skill not in content:
                 errors.append(f"  {label}: 缺少 {skill}")

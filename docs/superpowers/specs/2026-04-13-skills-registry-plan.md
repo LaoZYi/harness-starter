@@ -5,7 +5,7 @@
 ## 设计概要
 
 `skills-registry.json` 作为 34 个 skill 元数据的单一真相源，下游消费方：
-- `use-superpowers.md.tmpl` — 决策树 + 三段式索引
+- `which-skill.md.tmpl` — 决策树 + 三段式索引
 - `lfg.md.tmpl` — 阶段覆盖表
 - `test_lfg_coverage.py` — 合约测试 EXPECTED_IN/NOT_IN_LFG
 - `harness skills lint` — 一致性检查（CI 强制）
@@ -15,7 +15,7 @@
 | R-ID | 实施步骤 | 文件 |
 |---|---|---|
 | R-001 | Step 1, 2 | skills-registry.json |
-| R-002 | Step 5 | use-superpowers.md.tmpl |
+| R-002 | Step 5 | which-skill.md.tmpl |
 | R-003 | Step 6 | lfg.md.tmpl |
 | R-004 | Step 7 | test_lfg_coverage.py |
 | R-005 | Step 3, 4, 9 | skills_registry.py / skills_lint.py / cli.py / Makefile |
@@ -33,15 +33,15 @@
 
 ### Step 2：填充 34 个 skill 元数据（R-001 2/2）
 **文件**：`skills-registry.json`（同上）
-- 按现有 `use-superpowers.md.tmpl` 决策树顺序填入
+- 按现有 `which-skill.md.tmpl` 决策树顺序填入
 - 字段：`id` / `name` / `category` / `one_line` / `triggers` / `lfg_stage`（数组）/ `expected_in_lfg` / `decision_tree_label` / `exclusion_reason`（仅 false 时）
-- 7 个 EXPECTED_NOT_IN_LFG（lfg/use-superpowers/write-skill/evolve/health/retro/process-notes）填 `exclusion_reason`
+- 7 个 EXPECTED_NOT_IN_LFG（lfg/which-skill/write-skill/evolve/health/retro/process-notes）填 `exclusion_reason`
 **验证**：`python3 -c "d=__import__('json').load(open('src/agent_harness/templates/superpowers/skills-registry.json')); assert len(d['skills'])==34; print('OK', len(d['skills']))"`
 
 ### Step 3：写 skills_registry.py 加载器 + 渲染器
 **文件**：`src/agent_harness/skills_registry.py`（新建，~80 行）
 - `load_registry(template_root: Path) -> dict` — 读 JSON + schema 校验
-- `render_decision_tree(registry) -> str` — 生成 use-superpowers 决策树文本
+- `render_decision_tree(registry) -> str` — 生成 which-skill 决策树文本
 - `render_skill_index_by_phase(registry) -> str` — 三段式索引（流程类/实现类/收尾类）
 - `render_lfg_coverage_table(registry) -> str` — lfg 阶段覆盖表（按 lfg_stage 分组）
 - `expected_in_lfg(registry) -> set[str]` / `expected_not_in_lfg(registry) -> dict[str,str]`
@@ -55,8 +55,8 @@
 - 返回 `(ok: bool, errors: list[str])`
 **验证**：本地 import 跑通
 
-### Step 5：use-superpowers.md.tmpl 加占位符（R-002）
-**文件**：`src/agent_harness/templates/superpowers/.claude/commands/use-superpowers.md.tmpl`
+### Step 5：which-skill.md.tmpl 加占位符（R-002）
+**文件**：`src/agent_harness/templates/superpowers/.claude/commands/which-skill.md.tmpl`
 - 把"技能调用顺序"三段（流程类/实现类/收尾类）替换为 `<<SKILL_INDEX_BY_PHASE>>`
 - 把"决策树"区块替换为 `<<SKILL_DECISION_TREE>>`
 - 保留：1% 法则、指令优先级、组合使用示例、常见错误、技能不存在时
@@ -77,9 +77,9 @@
 
 ### Step 8：渲染钩子接入 initializer / upgrade
 **文件**：`src/agent_harness/initializer.py` 和 `src/agent_harness/upgrade.py`
-- 在写出 `.claude/commands/use-superpowers.md` 和 `lfg.md` 后，调用 `skills_registry.render_*` 替换占位符
+- 在写出 `.claude/commands/which-skill.md` 和 `lfg.md` 后，调用 `skills_registry.render_*` 替换占位符
 - 优先级：渲染发生在 jinja 占位符（`{{var}}`）替换之前，避免冲突
-**验证**：`make dogfood` 后 `.claude/commands/use-superpowers.md` 和 `lfg.md` 不含 `<<SKILL_` 残留
+**验证**：`make dogfood` 后 `.claude/commands/which-skill.md` 和 `lfg.md` 不含 `<<SKILL_` 残留
 
 ### Step 9：harness skills lint 子命令（R-005）
 **文件**：`src/agent_harness/cli.py`
@@ -112,7 +112,7 @@
 
 ### Step 13：PR 模板（R-007）
 **文件**：`.github/PULL_REQUEST_TEMPLATE.md`
-- 加 checkbox："新增 skill 时只改 `skills-registry.json`，不要直接编辑 use-superpowers.md.tmpl 或 lfg.md.tmpl"
+- 加 checkbox："新增 skill 时只改 `skills-registry.json`，不要直接编辑 which-skill.md.tmpl 或 lfg.md.tmpl"
 **验证**：grep "skills-registry" 出现
 
 ### Step 14：CHANGELOG
@@ -121,10 +121,10 @@
 **验证**：grep "skills-registry" 在 [Unreleased] 段内
 
 ### Step 15：dogfood + 全量验证
-- `make dogfood` 同步 `.claude/commands/{use-superpowers,lfg}.md`
+- `make dogfood` 同步 `.claude/commands/{which-skill,lfg}.md`
 - `make ci` 全绿（必须）
 - `harness skills lint .` 单独跑通
-- 抽样人工查 dogfood 产物：`.claude/commands/use-superpowers.md` 决策树和原版差异要可解释（顺序/排版微调可接受，内容无遗漏）
+- 抽样人工查 dogfood 产物：`.claude/commands/which-skill.md` 决策树和原版差异要可解释（顺序/排版微调可接受，内容无遗漏）
 
 ## 边界情况
 
@@ -133,7 +133,7 @@
 | registry skill 数 < 34 | skills lint 报错（`expected: 34, found: N`） |
 | `commands/` 出现 registry 没有的 .md.tmpl | lint 报"orphan skill" |
 | 一个 skill 的 lfg_stage 是空数组但 expected_in_lfg=true | lint 报"contradiction" |
-| 现有 use-superpowers/lfg 用户已自定义内容 | upgrade 三方合并保留，新占位符冲突时插标记 |
+| 现有 which-skill/lfg 用户已自定义内容 | upgrade 三方合并保留，新占位符冲突时插标记 |
 
 ## 历史教训引用
 

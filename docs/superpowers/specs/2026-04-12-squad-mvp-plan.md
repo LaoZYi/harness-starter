@@ -20,9 +20,9 @@
 ## 历史教训引用
 
 - **2026-04-12「脚手架项目吸收外部思想要选最小实现」**：不包 claude-squad、不引入 SQLite，只做最轻验证层
-- **2026-04-12「新增技能时文档散布计数需全量扫描」**：docs/product、architecture、runbook、AGENTS、CHANGELOG、use-superpowers 决策树、lfg 流水线必须同步
+- **2026-04-12「新增技能时文档散布计数需全量扫描」**：docs/product、architecture、runbook、AGENTS、CHANGELOG、which-skill 决策树、lfg 流水线必须同步
 - **2026-04-09「命令重命名后模板文件也要全量扫描」**：squad.md.tmpl 改动后必须 dogfood 同步到 `.claude/commands/squad.md`
-- **memory: LFG must integrate new skills**：`/squad` 必须出现在 `/lfg` 和 `/use-superpowers` 的决策路径里
+- **memory: LFG must integrate new skills**：`/squad` 必须出现在 `/lfg` 和 `/which-skill` 的决策路径里
 - **memory: 测试必须一次性穷举**：tests 覆盖规格解析、依赖循环、capability 渲染、tmux 命令构造
 
 ## 依赖与前置验证
@@ -108,7 +108,7 @@ state.py      # manifest.json / status.jsonl 读写（fcntl.flock）
 
 ### 步骤 5：更新决策树和 LFG 流水线
 文件：
-- `src/agent_harness/templates/superpowers/.claude/commands/use-superpowers.md.tmpl` — 加入 `/squad` 条目，明确与 `/dispatch-agents` 的选择标准
+- `src/agent_harness/templates/superpowers/.claude/commands/which-skill.md.tmpl` — 加入 `/squad` 条目，明确与 `/dispatch-agents` 的选择标准
 - `src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl` — 在"实施阶段"章节加入：复杂任务可启动 `/squad` 分权并行
 - `.claude/rules/superpowers-workflow.md`（模板：`src/agent_harness/templates/common/.claude/rules/superpowers-workflow.md.tmpl`）— 技能表新增 `/squad` 行
 
@@ -202,7 +202,7 @@ python scripts/squad/squad.py stop all
 - [ ] 测试数 ≥ 210，新增 ≥ 6 个，`make ci` 全过
 - [ ] docs/product + architecture + runbook + AGENTS + CHANGELOG 同步
 - [ ] dogfood 无漂移（`scripts/dogfood.py --check` 通过）
-- [ ] `/squad` 出现在 use-superpowers 决策树 + lfg 流水线
+- [ ] `/squad` 出现在 which-skill 决策树 + lfg 流水线
 - [ ] spec 文档中 `/dispatch-agents` vs `/squad` 的选择标准清晰
 
 ## 附录：待步骤 0 填入

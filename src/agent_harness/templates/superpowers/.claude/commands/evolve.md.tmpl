@@ -200,7 +200,7 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/retro` — 工程回顾 | ? |
 | `/lfg` — 全自主流水线 | ? |
 | `/write-skill` — 编写新技能 | ? |
-| `/use-superpowers` — 技能选择引导 | ? |
+| `/which-skill` — 技能选择引导 | ? |
 | `/evolve` — 自我进化 | ? |
 | `/squad` — 多 agent 常驻协作（tmux + worktree + capability 分权） | ? |
 

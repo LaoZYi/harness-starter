@@ -23,7 +23,7 @@ COMMON_DIR = ROOT / "src" / "agent_harness" / "templates" / "common" / ".claude"
 
 
 # Skills classification is now sourced from skills-registry.json (Issue #27).
-# This avoids drift between use-superpowers.md.tmpl, lfg.md.tmpl, and the contract test.
+# This avoids drift between which-skill.md.tmpl, lfg.md.tmpl, and the contract test.
 # To add/remove skills: edit src/agent_harness/templates/superpowers/skills-registry.json
 # and run `harness skills lint .`.
 import sys as _sys

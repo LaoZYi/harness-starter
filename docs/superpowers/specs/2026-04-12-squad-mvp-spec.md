@@ -154,7 +154,7 @@ reviewer-auth     | reviewer   | ⏸ waiting  | (depends_on)       | (not create
 6. ✅ 现有 203 测试全通过 + 新增至少 3 个测试
 7. ✅ docs/product + runbook + CHANGELOG + AGENTS.md 同步更新
 8. ✅ dogfood（项目自身）保持无漂移
-9. ✅ `/squad` 在 `use-superpowers.md.tmpl` 决策树里出现
+9. ✅ `/squad` 在 `which-skill.md.tmpl` 决策树里出现
 10. ✅ `/dispatch-agents` 和 `/squad` 各自的适用场景在文档中说清楚
 
 ## 关键决策

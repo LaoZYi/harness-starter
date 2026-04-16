@@ -30,7 +30,7 @@ _EXPECTED_COMMANDS = [
     "brainstorm.md", "write-plan.md", "tdd.md", "debug.md",
     "execute-plan.md", "subagent-dev.md", "dispatch-agents.md",
     "request-review.md", "receive-review.md", "use-worktrees.md",
-    "finish-branch.md", "write-skill.md", "verify.md", "use-superpowers.md",
+    "finish-branch.md", "write-skill.md", "verify.md", "which-skill.md",
     # compound-engineering additions
     "ideate.md", "compound.md", "multi-review.md", "lfg.md",
     "git-commit.md", "todo.md",
@@ -335,11 +335,11 @@ class SourceVerifyTests(unittest.TestCase):
             # 6 rows expected (minimum) — match header row count indirectly via 'API' keyword occurrences
             self.assertIn("Stack Overflow", body)
 
-    def test_use_superpowers_references_source_verify(self) -> None:
+    def test_which_skill_references_source_verify(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "project"
             initialize_project(root, {**_BASE_ANSWERS})
-            content = (root / ".claude" / "commands" / "use-superpowers.md").read_text(encoding="utf-8")
+            content = (root / ".claude" / "commands" / "which-skill.md").read_text(encoding="utf-8")
             self.assertIn("/source-verify", content)
 
 
@@ -405,19 +405,19 @@ class LayeredMemoryTests(unittest.TestCase):
 
 
 class DecisionTreeCompletenessTests(unittest.TestCase):
-    def test_use_superpowers_references_all_commands(self) -> None:
-        """Every command (except use-superpowers itself) should appear in the decision tree."""
+    def test_which_skill_references_all_commands(self) -> None:
+        """Every command (except which-skill itself) should appear in the decision tree."""
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "project"
             initialize_project(root, {**_BASE_ANSWERS})
-            content = (root / ".claude" / "commands" / "use-superpowers.md").read_text(encoding="utf-8")
+            content = (root / ".claude" / "commands" / "which-skill.md").read_text(encoding="utf-8")
             for cmd in _EXPECTED_COMMANDS:
                 skill_name = "/" + cmd.removesuffix(".md")
-                if skill_name == "/use-superpowers":
+                if skill_name == "/which-skill":
                     continue  # doesn't need to reference itself
                 self.assertIn(
                     skill_name, content,
-                    f"use-superpowers.md does not reference {skill_name}",
+                    f"which-skill.md does not reference {skill_name}",
                 )
 
 

@@ -77,7 +77,7 @@
 
 ### 8. 更新决策树引用
 
-`src/agent_harness/templates/superpowers/.claude/commands/use-superpowers.md.tmpl`：
+`src/agent_harness/templates/superpowers/.claude/commands/which-skill.md.tmpl`：
 - 决策树新增 `/source-verify` 触发条件（写框架代码、跨迁移前）
 - 命令表新增 `/source-verify`
 

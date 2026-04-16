@@ -41,7 +41,7 @@ SKILL_MAP: dict[str, str] = {
     "finishing-a-development-branch": "finish-branch.md.tmpl",
     "writing-skills": "write-skill.md.tmpl",
     "verification-before-completion": "verify.md.tmpl",
-    "using-superpowers": "use-superpowers.md.tmpl",
+    "using-superpowers": "which-skill.md.tmpl",
 }
 
 # compound-engineering upstream skill -> local template filename

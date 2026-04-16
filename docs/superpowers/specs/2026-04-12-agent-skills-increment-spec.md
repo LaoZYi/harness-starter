@@ -34,7 +34,7 @@ DETECT（识别 stack+版本）→ FETCH（抓官方文档）→ IMPLEMENT（按
 - 集成点：LFG Phase 4 实施、/tdd 写实现前、跨语言/跨框架迁移时
 
 ### 决策树更新
-- `use-superpowers.md.tmpl` 加入 `/source-verify`
+- `which-skill.md.tmpl` 加入 `/source-verify`
 - workflow rules 加入 `/source-verify`
 
 ## 2. `.agent-harness/references/` 四个 checklist
@@ -111,7 +111,7 @@ DETECT（识别 stack+版本）→ FETCH（抓官方文档）→ IMPLEMENT（按
 ### `tests/test_superpowers.py` 追加
 5. `test_source_verify_skill_present`
 6. `test_source_verify_has_anti_rationalization_table`
-7. `test_use_superpowers_references_source_verify`
+7. `test_which_skill_references_source_verify`
 
 ### `tests/test_memory.py` 追加
 8. `test_rebuild_includes_references_section_when_dir_exists`

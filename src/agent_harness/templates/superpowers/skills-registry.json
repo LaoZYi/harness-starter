@@ -299,8 +299,8 @@
       "exclusion_reason": "self-reference would be infinite recursion"
     },
     {
-      "id": "use-superpowers",
-      "name": "使用 Superpowers 技能系统",
+      "id": "which-skill",
+      "name": "技能选择引导",
       "category": "meta",
       "one_line": "技能选择器和决策树（与 /lfg 平级的 meta 入口）",
       "triggers": ["不确定用哪个 skill", "需要技能路由"],

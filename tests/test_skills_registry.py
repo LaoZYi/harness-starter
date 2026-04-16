@@ -1,7 +1,7 @@
 """Contract tests for skills-registry.json + skills_registry.py + skills_lint.py.
 
 Issue #27: skills-registry.json is the SSOT for all skills; downstream
-consumers (use-superpowers.md.tmpl, lfg.md.tmpl, test_lfg_coverage.py,
+consumers (which-skill.md.tmpl, lfg.md.tmpl, test_lfg_coverage.py,
 harness skills lint) must stay in sync.
 """
 from __future__ import annotations
@@ -179,7 +179,7 @@ class ApplyToTargetTests(unittest.TestCase):
             target = Path(tmp)
             cmds = target / ".claude" / "commands"
             cmds.mkdir(parents=True)
-            (cmds / "use-superpowers.md").write_text(
+            (cmds / "which-skill.md").write_text(
                 f"X{PLACEHOLDER_DECISION_TREE}Y", encoding="utf-8"
             )
             (cmds / "lfg.md").write_text(
@@ -187,10 +187,10 @@ class ApplyToTargetTests(unittest.TestCase):
             )
             written = apply_to_target(SP_TEMPLATE, target)
             self.assertEqual(set(written), {
-                ".claude/commands/use-superpowers.md",
+                ".claude/commands/which-skill.md",
                 ".claude/commands/lfg.md",
             })
-            usp = (cmds / "use-superpowers.md").read_text(encoding="utf-8")
+            usp = (cmds / "which-skill.md").read_text(encoding="utf-8")
             lfg = (cmds / "lfg.md").read_text(encoding="utf-8")
             self.assertNotIn(PLACEHOLDER_DECISION_TREE, usp)
             self.assertNotIn(PLACEHOLDER_COVERAGE_TABLE, lfg)

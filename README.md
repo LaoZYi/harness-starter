@@ -214,7 +214,7 @@ harness stats /path/to/repo
 | 文档 | `/doc-release` | 发布后文档同步 |
 | 知识 | `/lint-lessons` | 知识库健康检查（去重/矛盾/过时检测） |
 | 进化 | `/evolve` | 自动搜索新项目 → 评估 → 创建 Issue 提案 |
-| 管理 | `/todo`, `/use-superpowers` | 任务拆分管理、技能选择引导 |
+| 管理 | `/todo`, `/which-skill` | 任务拆分管理、技能选择引导 |
 
 推荐工作流：`/ideate` → `/brainstorm` → `/spec` → `/adr` → `/write-plan` → `/tdd` → `/verify` → `/multi-review` → `/compound`
 
