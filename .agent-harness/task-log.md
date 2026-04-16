@@ -915,3 +915,47 @@
   - [x] `make ci` EXIT=0，485 tests OK（+9）
   - [x] `make dogfood` 无漂移
   - [x] GitHub Issue #30 + GitLab 对应 Issue 同步关闭
+
+## 2026-04-16 新增 /digest-meeting 技能：讨论记录→框架可消费产物
+
+- 需求：研发流程缺"多人讨论原始语音转文字记录"的入口。用户希望把 idea 讨论或需求迭代评审的原始记录转为框架可消费的产物（init 模式填产品文档 / iterate 模式写 current-task 给 /lfg）
+- 做了什么：
+  - common 层新增 `/digest-meeting` 命令模板（202 行），7 步执行流程、兼容 4 种输入格式（飞书妙记/带说话人/带时间戳/纯文本）、提取 6 类信号（决策/需求/约束/待办/开放问题/参与者）、meta 项目自动委托 `/meta-create-task`、产物放 `notes/digested/`（原始文件不动）
+  - skills-registry 注册 digest-meeting（category=meta，expected_in_lfg=false，作为 lfg 前置源头）
+  - `/lfg` 阶段 0.1 加 notes/ 原始文件输入检测（提示先跑 /digest-meeting）
+  - `/process-notes` 开头加引导（多人对话场景先用 /digest-meeting 过滤噪音）
+  - `superpowers-workflow` 规则技能清单 + 使用场景段更新
+  - 文档同步：product.md + architecture.md + AGENTS.md common 命令计数 3→4
+  - 新测试：`tests/test_digest_meeting.py` 12 个用例（模板结构 + init 生成 + registry 契约）
+- 关键决策：
+  - **放 common 层而非 superpowers**：定位"原材料处理"不是"结构化工作流"，不应被 `--no-superpowers` 关掉
+  - **category=meta（对标 process-notes）**：是 /lfg 的**前置源头**（产出 current-task 作为 lfg 输入），不是 lfg 流水线阶段
+  - **不直接串 /spec**：iterate 模式只写 current-task.md，由 /lfg 自己决定是否需要 /spec，避免与 /lfg 阶段 2.5 的触发逻辑重复判断
+  - **自动检测模式（init/iterate）不强制用户传 flag**：通过 product.md 功能列表是否有实质内容判定，减少心智负担
+  - **产物放 notes/digested/，原始文件永不动**：一手资料需要长期保留以备回溯，只在头部插 `<!-- processed: YYYY-MM-DD -->` 标记
+  - **meta 项目自动委托 /meta-create-task**：meta 已有跨服务任务生成能力，不重复造轮子
+  - **格式兼容用启发式检测而非硬编码 parser**：四种格式宽进严出，不确定就展示解析结果让用户校对
+- 改了：
+  - `src/agent_harness/templates/common/.claude/commands/digest-meeting.md.tmpl`（新，202 行）
+  - `src/agent_harness/templates/superpowers/skills-registry.json`（+1 条目）
+  - `src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`（阶段 0.1 加检测）
+  - `src/agent_harness/templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl`（清单 + 场景）
+  - `src/agent_harness/templates/common/.claude/commands/process-notes.md.tmpl`(开头引导)
+  - `tests/test_digest_meeting.py`（新，12 条）、`tests/test_skills_registry.py`(35→36)
+  - `docs/product.md`、`docs/architecture.md`、`AGENTS.md`、`CHANGELOG.md`、`docs/release.md`（测试计数 487→499）
+  - `docs/superpowers/specs/2026-04-16-digest-meeting-spec.md`（规格）
+  - `docs/superpowers/specs/2026-04-16-digest-meeting-plan.md`（计划）
+  - dogfood 同步产物：`.claude/commands/digest-meeting.md`（新）、`.claude/commands/lfg.md`、`.claude/commands/process-notes.md`、`.claude/rules/superpowers-workflow.md`
+  - `.agent-harness/lessons.md`（+2 条教训）
+- 完成标准：
+  - [x] R1 新模板文件存在且 7 步结构完整
+  - [x] R2 skills-registry.json 正确注册（category=meta）+ skills lint OK
+  - [x] R3 superpowers-workflow 技能清单 + 使用场景段更新
+  - [x] R4 /process-notes 开头加引导
+  - [x] R5 /lfg 阶段 0.1 加 notes/ 原始文件检测
+  - [x] R6+R7 docs/product.md + architecture.md + AGENTS.md common 命令计数 3→4
+  - [x] R8 新测试 test_digest_meeting.py 12/12 GREEN
+  - [x] R9 test_skills_registry 硬编码 35→36 同步（原 out-of-scope 升级为 satisfied）
+  - [x] R10 `make ci` 全绿（499 tests OK）+ `make dogfood` 同步无漂移
+  - [x] R11 关键变更全部有 WAL 审计
+  - [x] 端到端演练验证：模拟飞书妙记讨论记录（6:55 时长、3 人、3 处分歧→决策、1 个开放问题）→ 6 类信号全部正确提取 + 分歧过程保留

@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-16 新增 /digest-meeting 技能：讨论记录→框架可消费产物
 - 2026-04-14 Issue #30 — Multi-Agent 角色分权 + Context Store 吸收
 - 2026-04-14 Context-Mode 方法论吸收（Issue #29 / GitLab #13）
 - 2026-04-14 12-Factor Agent Design 集成（Issue #28 / GitLab #12）
 - 2026-04-13 Issue #27 Skills Registry SSOT 抽取
-- 2026-04-13 /lfg 复评后续润色（1 gap + 2 润色）
 
 ## 参考资料（.agent-harness/references/）
 
