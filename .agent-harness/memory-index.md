@@ -35,6 +35,7 @@
 
 - `accessibility-checklist.md` — 无障碍检查清单（Accessibility）
 - `performance-checklist.md` — 性能检查清单（Performance）
+- `requirement-mapping-checklist.md` — 需求 ↔ 测试 ↔ Plan Step 三元映射检查清单
 - `security-checklist.md` — 安全检查清单
 - `testing-patterns.md` — 测试模式参考（Testing Patterns）
 
