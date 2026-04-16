@@ -85,11 +85,41 @@ find . -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*"
 
 将需要确认的变更列出，等待用户逐条批准或驳回。
 
-## 第 5 步：CHANGELOG 润色
+## 第 5 步：CHANGELOG 草稿生成 + 润色
+
+### 5.0 自动草稿（git-cliff 软依赖）
+
+先检测 `git-cliff` 是否可用：
+
+```bash
+command -v git-cliff >/dev/null 2>&1
+```
+
+**如果 git-cliff 可用**：
+
+```bash
+# 生成自上次 tag 以来的未发布变更草稿
+git-cliff --unreleased --strip header > /tmp/changelog-draft.md
+```
+
+读取 `/tmp/changelog-draft.md`，作为下一步润色的输入基础。git-cliff 会自动按 conventional commit 类型（feat / fix / docs / refactor / test / chore）分组。
+
+**如果 git-cliff 不可用**：
+
+告知用户：
+```
+git-cliff 未安装。CHANGELOG 草稿将由 AI 从 git log 手动整理。
+如需自动化，可安装：brew install git-cliff（或 cargo install git-cliff）
+详见 docs/runbook.md「changelog 生成」章节。
+```
+
+然后从 `git log --oneline` 手动提取变更条目作为草稿基础。
+
+### 5.1 润色
 
 **铁律：绝不删除或替换已有的 CHANGELOG 条目。**
 
-润色规则：
+在草稿（无论来自 git-cliff 还是手动整理）的基础上润色：
 - 以用户视角撰写，用"你现在可以..."开头
 - 好的例子："你现在可以通过 `--format json` 导出 JSON 格式的报告"
 - 坏的例子："Added JSON export functionality"
