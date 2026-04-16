@@ -263,7 +263,7 @@ def check_count_consistency() -> None:
         ROOT / "AGENTS.md", ROOT / "CONTRIBUTING.md", ROOT / "README.md",
         ROOT / "CHANGELOG.md",
         ROOT / "docs" / "product.md", ROOT / "docs" / "architecture.md",
-        ROOT / "docs" / "usage-guide.md", ROOT / "docs" / "runbook.md",
+        ROOT / "docs" / "usage-manual.md", ROOT / "docs" / "runbook.md",
         ROOT / "docs" / "release.md", ROOT / "docs" / "workflow.md",
         ROOT / ".agent-harness" / "project.json",
     ]
@@ -303,7 +303,7 @@ def check_skill_documentation_coverage() -> None:
         "workflow rule": PKG / "templates" / "superpowers" / ".claude" / "rules" / "superpowers-workflow.md.tmpl",
         "decision tree": PKG / "templates" / "superpowers" / ".claude" / "commands" / "which-skill.md.tmpl",
         "evolve comparison": PKG / "templates" / "superpowers" / ".claude" / "commands" / "evolve.md.tmpl",
-        "usage-guide": ROOT / "docs" / "usage-guide.md",
+        "usage-manual": ROOT / "docs" / "usage-manual.md",
     }
 
     errors: list[str] = []
@@ -325,7 +325,7 @@ def check_skill_documentation_coverage() -> None:
             if skill not in content:
                 errors.append(f"  {label}: 缺少 {skill}")
 
-    # Check that every directory created by superpowers templates is documented in usage-guide file tree
+    # Check that every directory created by superpowers templates is documented in usage-manual file tree
     superpowers_tmpl = PKG / "templates" / "superpowers"
     gitkeep_dirs = set()
     for gk in superpowers_tmpl.rglob(".gitkeep.tmpl"):
@@ -333,14 +333,14 @@ def check_skill_documentation_coverage() -> None:
         gitkeep_dirs.add(rel)
 
     if gitkeep_dirs:
-        usage_guide = ROOT / "docs" / "usage-guide.md"
-        if usage_guide.exists():
-            ug_content = usage_guide.read_text(encoding="utf-8")
+        usage_manual = ROOT / "docs" / "usage-manual.md"
+        if usage_manual.exists():
+            um_content = usage_manual.read_text(encoding="utf-8")
             for d in sorted(gitkeep_dirs):
                 # Check the last component of the path appears in the file tree
                 dirname = d.split("/")[-1]
-                if dirname not in ug_content:
-                    errors.append(f"  usage-guide 文件树: 缺少目录 {d}")
+                if dirname not in um_content:
+                    errors.append(f"  usage-manual 文件树: 缺少目录 {d}")
 
     if errors:
         detail = "\n".join(errors[:15])
