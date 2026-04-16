@@ -363,6 +363,17 @@
       "lfg_stage": [],
       "expected_in_lfg": false,
       "exclusion_reason": "product-notes processing, different domain"
+    },
+    {
+      "id": "digest-meeting",
+      "name": "需求讨论摘要",
+      "category": "meta",
+      "one_line": "把多人讨论的原始语音转文字记录转为结构化产物",
+      "triggers": ["讨论记录转任务", "会议纪要处理", "语音转文字后续处理"],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "meeting-transcript processing, upstream of /lfg (produces current-task.md as input, not a pipeline stage)"
     }
   ]
 }
