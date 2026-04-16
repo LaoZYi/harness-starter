@@ -1,18 +1,19 @@
 {
-  "behavior_change_definition": "任何会影响公开 API、默认值、错误行为或兼容性的改动，都算行为变化。",
-  "architecture_focus": "优先描述公开 API、内部实现、兼容性边界和测试契约。",
+  "behavior_change_definition": "任何会改变公开 API 签名、默认参数值、返回类型、异常类型或 deprecation 状态的改动都算行为变化；非 major 版本禁止删除或重命名公开符号（SemVer：breaking → major，新增 → minor，修复 → patch）。",
+  "architecture_focus": "优先描述公开 API 层（导出符号与类型签名）、内部实现层（不对外暴露）、适配层（对接不同运行时或框架）和测试契约层（公开行为的回归守护）。",
   "release_checks": [
-    "确认对外 API 变化已记录",
-    "确认兼容性或迁移说明已经准备",
-    "确认版本发布说明准确"
+    "确认 CHANGELOG 已按 SemVer 记录 breaking / feature / fix",
+    "确认类型定义（.d.ts / py.typed）与运行时行为一致",
+    "确认 deprecated API 有迁移路径且至少保留一个 minor 周期"
   ],
-  "workflow_notes": "如果存在破坏性变更，务必在 release 文档和 PR 里显式写出迁移路径。",
+  "workflow_notes": "新增公开 API 前先写类型签名和使用示例，再写实现；破坏性变更必须在 PR 描述和 CHANGELOG 中写明迁移步骤，评审重点看向后兼容性。",
   "default_done_criteria": [
-    "所有公开 API 能正常调用，返回值符合文档",
-    "边界条件和错误场景有合理处理",
-    "有测试覆盖核心功能路径",
-    "README 或 API 文档与实际行为一致"
+    "所有公开 API 可调用，返回值与类型签名一致",
+    "边界输入（空值、极值、错误类型）有明确的错误或降级行为",
+    "测试覆盖公开 API 的正常路径、边界和错误路径",
+    "README 或 API 文档中的示例代码可直接运行且结果正确",
+    "无意外的 breaking change：现有调用方升级后行为不变"
   ],
-  "workflow_skills_summary": "库项目重点技能：`/tdd`（API 契约驱动）、`/write-plan`（API 设计）、`/verify`（发布前验证）、`/cso`（公开 API 安全审计）、`/multi-review`（兼容性多角度评审）、`/doc-release`（发布文档同步）",
+  "workflow_skills_summary": "库项目重点技能：`/tdd`（API 契约先行，签名驱动测试）、`/write-plan`（公开 API 设计与版本规划）、`/verify`（发布前全量回归）、`/cso`（公开接口输入校验审计）、`/multi-review`（向后兼容性多角度评审）、`/doc-release`（CHANGELOG 与 API 文档同步）",
   "exclude_rules": ["api.md", "database.md"]
 }

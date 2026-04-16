@@ -49,3 +49,16 @@ paths:
 
 - 依赖版本限制要宽松（`>=X.Y, <Z.0`）而不是锁死（`==X.Y.Z`），否则会与消费者的依赖产生不必要的冲突。
 - 新增运行时依赖前三思：每个依赖都会传染给所有消费者。开发依赖（test/lint/build）则不受此限制。
+- 框架级依赖（React、Vue、Angular）声明为 peerDependencies 而非 dependencies。避免消费者打包出两份框架。
+
+## Tree-Shaking 友好
+
+- 发布格式同时提供 ESM（`module` / `exports`）和 CJS（`main`）。ESM 是 tree-shaking 的前提。
+- 避免顶层副作用（模块加载即执行的代码）。在 `package.json` 中标注 `"sideEffects": false` 或列出有副作用的文件。
+- 导出粒度要细：消费者应能只导入需要的函数，而非被迫引入整个库。
+
+## 类型定义
+
+- TypeScript 库必须附带 `.d.ts` 声明文件，Python 库标注 `py.typed` marker。因为消费者在 IDE 中的补全和类型检查依赖此。
+- 类型定义必须与运行时行为一致。类型声明函数返回 `string` 但运行时可能返回 `null` 是最隐蔽的 bug。
+- 每次发版前跑一次类型兼容性检查（如 `api-extractor` / `pyright --verifytypes`）。

@@ -41,6 +41,23 @@ paths:
 - CSS 和 JS 的目标浏览器范围在构建配置中显式声明（browserslist / target）。禁止假设"现代浏览器都支持"。
 - 使用新 API 前检查 Can I Use，必要时加 polyfill 或降级方案。
 
+## 错误边界
+
+- 组件树中必须有错误边界（React ErrorBoundary / Vue errorCaptured），防止单个组件崩溃导致整页白屏。
+- 错误边界捕获后展示友好的降级 UI（「出了点问题，请刷新」），同时上报错误到监控。
+- 异步操作（数据获取、表单提交）的失败状态必须有对应的 UI 反馈，不能静默吞掉。
+
+## 包体积预算
+
+- 设定 JS bundle 体积预算（如首屏 < 200KB gzip）。CI 中集成 bundlesize 或类似工具自动卡线。
+- 新增依赖前用 bundlephobia 评估体积影响。超过 50KB 的依赖需要说明必要性。
+- 使用 tree-shaking 友好的 ESM 导入。禁止 `import _ from 'lodash'`，改用 `import debounce from 'lodash/debounce'`。
+
+## SSR / SSG 考量
+
+- 服务端渲染的组件中禁止直接访问 `window`/`document`/`localStorage`。浏览器 API 必须在 `useEffect`/`onMounted` 中使用或做 SSR 安全检查。
+- 需要 SEO 的页面使用 SSR 或 SSG。纯交互页面可以用 CSR。在路由配置中标注渲染策略。
+
 ## 检查清单（按需参考）
 
 - 新增 UI 组件或交互前，查阅 `.agent-harness/references/accessibility-checklist.md`（键盘导航、屏幕阅读、ARIA、WCAG 2.1 AA）

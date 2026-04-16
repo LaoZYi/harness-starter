@@ -11,8 +11,9 @@
     "应用能正常启动，无崩溃或白屏",
     "所有导航路径可达，返回逻辑正确",
     "交互响应流畅，无明显卡顿",
-    "权限请求在需要时触发，拒绝后有合理降级"
+    "权限请求在需要时触发，拒绝后有合理降级",
+    "平台差异行为已分别验证（如适用 iOS / Android）"
   ],
-  "workflow_skills_summary": "移动应用重点技能：`/ideate`（交互创意探索）、`/brainstorm`（交互设计）、`/tdd`（UI 组件测试）、`/use-worktrees`（多特性并行开发）",
+  "workflow_skills_summary": "移动应用重点技能：`/ideate`（交互创意探索）、`/brainstorm`（交互与导航设计）、`/tdd`（UI 组件与导航测试）、`/use-worktrees`（多特性并行开发）、`/verify`（多平台构建验证）、`/multi-review`（平台差异多角度评审）",
   "exclude_rules": ["database.md"]
 }

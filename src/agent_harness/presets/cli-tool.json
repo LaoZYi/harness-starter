@@ -1,18 +1,20 @@
 {
-  "behavior_change_definition": "任何会影响命令参数、输出格式、退出码或默认行为的改动，都算行为变化。",
-  "architecture_focus": "优先区分参数解析、核心逻辑和输出层，不要把规则散落在命令入口里。",
+  "behavior_change_definition": "任何会改变命令名称、参数签名、输出格式（含 JSON/CSV 结构）、退出码语义或默认值的改动都算行为变化；脚本和管道可能依赖这些契约，改动等同于 API breaking change。",
+  "architecture_focus": "优先描述参数解析层（命令注册与校验）、核心逻辑层（不依赖 I/O 的业务规则）、输出格式化层（human-readable vs machine-readable）和配置层（配置文件 / 环境变量 / 默认值优先级）。",
   "release_checks": [
-    "确认命令帮助文本和 runbook 已同步",
-    "确认关键参数和退出码已有测试覆盖",
-    "确认对外用法没有隐式变化"
+    "确认 --help 输出和 runbook 中的用法示例与实际行为一致",
+    "确认所有退出码有文档说明且有测试覆盖",
+    "确认 JSON/CSV 等机器可读输出格式的字段未发生隐式变化",
+    "确认跨平台行为一致（路径分隔符、换行符、编码）"
   ],
-  "workflow_notes": "对 CLI 项目，运行手册和帮助信息同样是 API，需要和代码一起维护。",
+  "workflow_notes": "CLI 的帮助文本和退出码等同于 API 契约，需要和代码一起维护；新增子命令前先写 --help 文本和用法示例，评审以用户视角验证命令的可发现性和一致性。",
   "default_done_criteria": [
-    "主命令能正常运行，--help 输出完整且准确",
-    "正常输入产出正确结果，异常输入有清晰的错误提示",
-    "退出码正确：成功返回 0，错误返回非 0",
-    "输出格式稳定可解析（如适用 JSON/CSV 输出）"
+    "主命令和子命令能正常运行，--help 输出完整且准确",
+    "正常输入产出正确结果，异常输入有清晰的错误提示和非零退出码",
+    "退出码语义正确：成功 0，用户错误 1，系统错误 2（或项目约定）",
+    "机器可读输出格式（JSON/CSV）结构稳定，可被管道消费",
+    "配置优先级正确：命令行参数 > 环境变量 > 配置文件 > 默认值"
   ],
-  "workflow_skills_summary": "CLI 工具重点技能：`/tdd`（命令行为测试）、`/write-plan`（子命令规划）、`/verify`（跨平台验证）、`/git-commit`（结构化提交）",
+  "workflow_skills_summary": "CLI 工具重点技能：`/tdd`（命令行为与退出码契约测试）、`/write-plan`（子命令与参数体系规划）、`/verify`（跨平台行为验证）、`/git-commit`（结构化提交）、`/debug`（管道集成排障）、`/multi-review`（用户视角可用性评审）",
   "exclude_rules": ["api.md", "database.md"]
 }

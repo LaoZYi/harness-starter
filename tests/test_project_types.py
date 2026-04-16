@@ -196,6 +196,57 @@ class ProjectTypeDetectionTests(unittest.TestCase):
             profile = discover_project(root)
         self.assertEqual(profile.project_type, "monorepo")
 
+    # --- new detection signal tests ---
+
+    def test_web_app_from_webpack_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "webpack.config.js").write_text("module.exports = {}", encoding="utf-8")
+            (root / "package.json").write_text('{"name": "web"}', encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "web-app")
+
+    def test_web_app_from_angular_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "angular.json").write_text('{"version": 1}', encoding="utf-8")
+            (root / "package.json").write_text('{"name": "web"}', encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "web-app")
+
+    def test_mobile_app_from_expo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            pkg = {"name": "app", "dependencies": {"expo": "~49.0.0"}}
+            (root / "package.json").write_text(json.dumps(pkg), encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "mobile-app")
+
+    def test_data_pipeline_from_prefect(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "prefect.yaml").write_text("name: my-flow\n", encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "data-pipeline")
+
+    def test_monorepo_priority_over_library(self) -> None:
+        """Package.json with both main and workspaces should be monorepo, not library."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            pkg = {"name": "mono-lib", "main": "dist/index.js", "workspaces": ["packages/*"]}
+            (root / "package.json").write_text(json.dumps(pkg), encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "monorepo")
+
+    def test_cli_tool_priority_over_library(self) -> None:
+        """Package.json with both bin and main should be cli-tool, not library."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            pkg = {"name": "my-tool", "main": "dist/index.js", "bin": {"mytool": "./bin/cli.js"}}
+            (root / "package.json").write_text(json.dumps(pkg), encoding="utf-8")
+            profile = discover_project(root)
+        self.assertEqual(profile.project_type, "cli-tool")
+
 
 if __name__ == "__main__":
     unittest.main()

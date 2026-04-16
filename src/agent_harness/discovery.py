@@ -121,9 +121,11 @@ def _detect_project_type(root: Path, language: str) -> str:  # noqa: C901
         return "mobile-app"
     if (root / "ios").is_dir() and (root / "android").is_dir():
         return "mobile-app"
-    if (root / "dbt_project.yml").exists() or (root / "dagster.yaml").exists() or (root / "dags").is_dir():
+    if "expo" in js_deps or any((root / n).exists() for n in ("capacitor.config.ts", "capacitor.config.json")):
+        return "mobile-app"
+    if (root / "dbt_project.yml").exists() or (root / "dagster.yaml").exists() or (root / "dags").is_dir() or (root / "prefect.yaml").exists() or (root / "luigi.cfg").exists() or (root / "pipeline.py").exists() or (root / "Kedrofile").exists() or (root / "kedro_cli.py").exists():
         return "data-pipeline"
-    if any((root / n).exists() for n in ("next.config.js", "next.config.mjs", "vite.config.ts", "vite.config.js")):
+    if any((root / n).exists() for n in ("next.config.js", "next.config.mjs", "vite.config.ts", "vite.config.js", "webpack.config.js", "angular.json", "nuxt.config.ts", "nuxt.config.js", "svelte.config.js", "astro.config.mjs")):
         return "web-app"
     # --- worker (expanded) --------------------------------------------------
     if (root / "worker.toml").exists() or (root / "wrangler.toml").exists():

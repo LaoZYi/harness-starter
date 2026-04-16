@@ -200,9 +200,9 @@ def _score_type_specific(root: Path, project_type: str) -> tuple[int, list[str],
         ),
         "meta": (
             [("services/registry.yaml", "services/registry.yml"),
-             ("services/dependency-graph.yaml", "services/dependency-graph.yml")],
+             ("services/dependency-graph.yaml", "services/dependency-graph.yml"), ("business/", "shared-plugins/")],
             ["建议创建 services/registry.yaml，注册所有服务信息。",
-             "建议创建 services/dependency-graph.yaml，描述服务间依赖。"],
+             "建议创建 services/dependency-graph.yaml，描述服务间依赖。", "建议创建 business/ 或 shared-plugins/ 目录，集中组织元知识。"],
         ),
     }
     signal_groups, recs = checkers.get(project_type, ([], []))

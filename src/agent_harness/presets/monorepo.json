@@ -1,17 +1,20 @@
 {
-  "behavior_change_definition": "任何会影响跨包接口契约、共享配置或 workspace 依赖关系的改动，都算行为变化。",
-  "architecture_focus": "优先描述包依赖关系图、workspace 配置、共享工具链和选择性 CI 策略。",
+  "behavior_change_definition": "任何会改变跨包导出接口、workspace 依赖版本约束、共享构建配置或包发布范围的改动都算行为变化；纯包内部重构若不改导出签名则不算。",
+  "architecture_focus": "优先描述包依赖关系图（谁依赖谁、禁止循环）、workspace 配置与版本策略（lockstep vs independent）、共享工具链（lint / build / test 配置）和选择性 CI 策略（变更检测 → 按需构建）。",
   "release_checks": [
-    "确认受影响包的范围已明确标注",
-    "确认跨包接口兼容性不受破坏",
-    "确认选择性 CI 正确覆盖了变更涉及的所有包"
+    "确认受影响包的变更范围已在 PR 中明确标注",
+    "确认跨包接口的类型兼容性未被破坏（导出签名不变或有迁移）",
+    "确认选择性 CI 正确覆盖了变更涉及的所有包及其下游消费方",
+    "确认各包版本号按版本策略正确更新"
   ],
-  "workflow_notes": "提交前确认变更影响范围，避免遗漏下游包的回归验证。",
+  "workflow_notes": "提交前用依赖分析工具确认变更的完整影响范围，避免遗漏下游包的回归验证；跨包 breaking change 需在同一 PR 内同步更新所有消费方。",
   "default_done_criteria": [
-    "所有受影响的包能独立构建通过",
-    "跨包接口调用正常，无类型或版本不兼容",
-    "共享配置变更对所有消费方生效"
+    "所有受影响的包能独立构建通过，无编译或类型错误",
+    "跨包接口调用正常，导出类型与消费方期望一致",
+    "共享配置变更对所有消费方生效且无副作用",
+    "CI 选择性触发覆盖了变更包及其全部下游依赖",
+    "workspace lockfile 与各包声明的版本约束一致"
   ],
-  "workflow_skills_summary": "Monorepo 重点技能：`/dispatch-agents`（多包并行任务）、`/write-plan`（跨包协调规划）、`/verify`（全包集成验证）、`/lfg`（全自主流水线）",
+  "workflow_skills_summary": "Monorepo 重点技能：`/dispatch-agents`（多包并行独立任务）、`/write-plan`（跨包变更协调规划）、`/verify`（全包集成与选择性 CI 验证）、`/tdd`（跨包接口契约测试）、`/lfg`（全自主多包流水线）、`/compound`（跨包协作经验沉淀）",
   "exclude_rules": ["api.md", "database.md"]
 }
