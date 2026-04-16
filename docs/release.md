@@ -4,7 +4,7 @@
 
 ## 发布前检查
 
-1. `make ci` 是否通过（当前 487 个测试）。
+1. `make ci` 是否通过（当前 499 个测试）。
 2. `VERSION` 文件是否已 bump。
 3. `README.md` 是否准确描述所有命令。
 4. `docs/runbook.md` 是否覆盖最新命令。

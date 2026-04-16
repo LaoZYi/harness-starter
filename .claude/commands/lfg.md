@@ -55,7 +55,7 @@
 → **🔴 停下来告诉用户**：这看起来是未处理的原始讨论记录。建议先跑 `/digest-meeting` 做结构化摘要。它会根据项目文档状态自动分叉：
 
 - **init 模式**（docs/product.md 尚为占位）→ 产出 `notes/digested/meeting-<date>-<topic>.md`，再用 `/process-notes` 填充框架文档
-- **iterate 模式**（docs/product.md 已有实质内容）→ 直接写入 `.agent-harness/current-task.md`，然后你可以再次运行 `/lfg`
+- **iterate 模式**（docs/product.md 已有实质内容）→ 直接写入 `.agent-harness/current-task.md`，然后你可以再次调用 `/lfg`
 
 退出 /lfg；不属于此情况 → 继续下一步。
 

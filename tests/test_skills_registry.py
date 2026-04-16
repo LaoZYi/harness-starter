@@ -1,6 +1,6 @@
 """Contract tests for skills-registry.json + skills_registry.py + skills_lint.py.
 
-Issue #27: skills-registry.json is the SSOT for 35 skills; downstream
+Issue #27: skills-registry.json is the SSOT for all skills; downstream
 consumers (use-superpowers.md.tmpl, lfg.md.tmpl, test_lfg_coverage.py,
 harness skills lint) must stay in sync.
 """
@@ -41,14 +41,15 @@ class RegistryLoadTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.registry = load_registry(SP_TEMPLATE)
 
-    def test_skill_count_is_35(self) -> None:
-        self.assertEqual(len(self.registry["skills"]), 35)
+    def test_skill_count_is_36(self) -> None:
+        # +1 for digest-meeting (2026-04-16)
+        self.assertEqual(len(self.registry["skills"]), 36)
 
     def test_in_lfg_count_matches_excluded(self) -> None:
         in_lfg = expected_in_lfg(self.registry)
         not_in = expected_not_in_lfg(self.registry)
-        self.assertEqual(len(in_lfg) + len(not_in), 35)
-        self.assertEqual(len(not_in), 7)  # 7 meta-excluded skills
+        self.assertEqual(len(in_lfg) + len(not_in), 36)
+        self.assertEqual(len(not_in), 8)  # 8 meta-excluded skills (+digest-meeting)
 
     def test_excluded_skills_have_reason(self) -> None:
         for skill in self.registry["skills"]:
