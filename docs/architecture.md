@@ -1,5 +1,19 @@
 # 架构约束
 
+## 设计哲学：Environment Engineering
+
+本项目的核心论点与 [holaboss-ai/holaOS](https://github.com/holaboss-ai/holaOS) 的 "Environment Engineering" 同源：**与其优化 prompt，不如优化 Agent 运行的环境**（文件系统、工具集、记忆机制、规则约束）。
+
+具体而言：
+- **32 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
+- **5 层规则**（safety / testing / autonomy / context-budget / task-lifecycle）= Agent 的行为约束
+- **三层记忆**（memory-index L1 / lessons+references L2 / task-log L3）= Agent 的持久化状态
+- **hooks**（session-start / stop / pre-compact / context-monitor）= Agent 的生命周期感知
+
+本项目与 holaOS 的区别：holaOS 自建 Electron 运行时 + workspace 模型，本项目**不自建运行时**，而是为已有的 Coding Agent（Claude Code、Cursor 等）提供 workflow 模板——通过 `harness init` 生成到目标项目的 `.claude/` 配置。两者解决同一问题（让 Agent 从"一次性任务执行"升级为"持续进化的协作者"），但技术路径不同。
+
+> 关于 "Agent Harness" 一词：在 holaOS 中它指 runtime 内的 executor 插入边界；在本项目中它指**生成到目标项目的知识骨架和工作流模板**。两者语义不同，使用时注意上下文区分。
+
 ## 模块职责
 
 ### CLI 层
