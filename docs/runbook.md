@@ -257,3 +257,53 @@ harness sync /path/to/service
    先到 `.agent-harness/backups/<timestamp>/` 找回旧文件。注意：升级默认使用三方合并保留用户内容，只有无基准版本的老项目首次升级时才会覆盖（有备份）。
 6. `make check` 报告"技能/规则模板已变更但生成产物未同步"
    运行 `make dogfood` 同步框架自身的 `.claude/commands/` 和 `.claude/rules/`，然后重新提交。
+
+## changelog 生成（可选）
+
+`/doc-release` 技能在第 5 步会自动检测 `git-cliff`。未装时降级到手动整理，不阻断流程。
+
+### 安装
+
+```bash
+brew install git-cliff      # macOS（推荐）
+cargo install git-cliff      # 或通过 Rust 工具链
+```
+
+### 基本用法
+
+```bash
+git-cliff --unreleased                    # 输出自上次 tag 以来的变更
+git-cliff --unreleased --tag v1.2.0       # 指定即将发布的版本号
+git-cliff --unreleased --strip header     # 去掉文件头，只输出条目
+git-cliff -o CHANGELOG.md                 # 生成完整 CHANGELOG 文件
+```
+
+### 自定义分组（可选）
+
+git-cliff 内置 conventional commits 解析，默认按 feat / fix / docs 等类型分组。如需自定义，在项目根创建 `cliff.toml`：
+
+```toml
+[changelog]
+header = "# Changelog\n"
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+## {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message }}
+{% endfor %}
+{% endfor %}
+"""
+
+[git]
+conventional_commits = true
+commit_parsers = [
+    { message = "^feat", group = "Features" },
+    { message = "^fix", group = "Bug Fixes" },
+    { message = "^docs", group = "Documentation" },
+    { message = "^refactor", group = "Refactoring" },
+    { message = "^test", group = "Testing" },
+    { message = "^chore", group = "Miscellaneous" },
+]
+```
+
+详见 [git-cliff 官方文档](https://git-cliff.org/docs)。
