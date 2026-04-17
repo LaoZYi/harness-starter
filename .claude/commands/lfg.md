@@ -2,6 +2,8 @@
 
 铁律：**先有计划，再动手。没有例外。**
 
+> **/lfg 是 Environment Engineering 的主入口（Issue #34）**：本项目的设计哲学是优化 Agent 的**运行环境**而非 prompt——`.claude/rules/`（行为约束）+ `.claude/commands/`（工具集）+ `.agent-harness/`（记忆 + 审计）+ `.claude/hooks/`（生命周期感知）共同组成 Agent 的 habitat。跑一次 /lfg = 用全套环境完成一轮完整工作；缺任何一层，流水线威力会打折。
+>
 > **与 task-lifecycle 规则的关系**：当通过 /lfg 执行任务时，/lfg 的阶段替代 task-lifecycle 的对应步骤：
 > - Phase 0.1 替代 task-lifecycle 第 0 步（读取项目知识）和第 1 步（写 current-task.md）
 > - Phase 0.3 替代 task-lifecycle 第 2 步（展示并等待用户确认）和第 3 步（判断是否需要 /spec）
@@ -25,6 +27,8 @@
 - 如果存在未完成任务（有 checkbox 未勾选或标记为"待验证"），**🔴 停下来询问用户**：继续未完成任务还是替换为新任务？
 - 如果未完成任务已处于"待验证"且所有 checkbox 已完成，先将其写入 `task-log.md` 归档，再继续新任务
 - 如果为空或无进行中任务，继续
+
+> **与 session-start hook 对齐（Issue #13）**：`.claude/hooks/session-start.sh` 在会话启动时已自动展示过未完成任务。/lfg 这里是再次保险——session-start 只提示，/lfg 做决策。若发现 `.agent-harness/.stop-hook-skip` sentinel 存在（之前人工放行过 Stop hook），**告知用户该 sentinel 仍在生效**，询问是否删除——sentinel 残留会让后续任务完成时不再被 Stop hook 守护（current-task 有未勾 checkbox 也能直接停）。
 
 然后判断输入类型：
 
@@ -242,6 +246,8 @@
 
 ### 介入点 2：scout 完成，builder 可否继续（🔴 必须 + 强制 compact）
 
+> **PreCompact hook 自动化（Issue #13）**：本节以及介入点 5、阶段 5/9/10 调用 `/compact` 时，`.claude/hooks/pre-compact.sh` 会**自动**写一条 audit 检查点 + stderr 提示 AI 把关键决策持久化。你不需要手动追加审计——hook 已经做了。/lfg 的配合动作：调 `/compact` 前把待存的决策写进 current-task 或 lessons，让 hook 的"持久化提醒"有内容可捞。
+
 scout 写 `done` 事件后：
 1. **优先读结构化知识制品（Issue #30）**：运行 `harness agent aggregate scout` 看顶部 `## artifact` 段。`diary_append_artifact` 写入的制品包含 `type/summary/refs/content` 字段，比散落在 diary 里的自由日志更精炼。无 artifact 时再退回读 `report.md` 全文
 2. 告知用户："scout 完成。制品要点：<3 条摘要，优先展示 artifacts>。builder 可以照这个实现吗？"
@@ -397,14 +403,15 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 #### 3.1 生成计划
 
-1. 检查 `docs/superpowers/specs/` 是否已有适用的计划或规格
-2. **如果没有**：运行 `/write-plan` 生成计划
-3. **如果有**：阅读已有计划/规格，评估是否仍然适用
-4. **如果计划涉及架构选择**（技术选型、模式选择、关键设计决策）：运行 `/adr` 记录决策，ADR 存入 `docs/decisions/`
-5. **如果计划引用了框架/库的具体 API、CLI flag、配置项**（如 "使用 React useState"、"传 --foo flag"）：运行 `/source-verify` 从官方文档验证，防止凭训练数据编 API。教训来自 lessons.md 的"CLI flag 假设在 plan 阶段必须 source-verify"
-6. **如果任务可拆成多个 2-5 分钟粒度的子步骤**：在计划中生成对应的 `/todo` 清单，写到 current-task.md 的 Progress 段；执行阶段逐项勾选
-7. **标准/完整通道下**：计划生成后立即运行 `/plan-check` 做 8 维度结构化校验（需求覆盖 / 原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环。**快速/轻量通道跳过此步**
-8. **如果计划涉及多 agent 协作**（`/squad`、`/dispatch-agents`、`/subagent-dev`、自定义 worker prompt 或 capability 分权）：在 `/plan-check` 通过后额外运行 `/agent-design-check` 做 4 维度体检（F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents），对应 `plan-check` 的第 9 维度。来源：[12-factor-agents](https://github.com/humanlayer/12-factor-agents)。**非多 agent 场景跳过此步**
+1. **生产项目预警**：读 `.agent-harness/project.json`，若 `has_production=true` 或 `sensitivity=high`，在写计划前**先跑 `/cso` 快速扫**——识别本次任务涉及的潜在高风险区（认证/授权/SQL/文件读写/外部 API），把结论作为计划约束写进 Non-goals 或专门的「安全约束」段。阶段 7.4 的 `/cso` 完整审计作为兜底，但生产项目在计划期就把风险内化成步骤约束，比事后补救便宜。非生产项目跳过此步
+2. 检查 `docs/superpowers/specs/` 是否已有适用的计划或规格
+3. **如果没有**：运行 `/write-plan` 生成计划
+4. **如果有**：阅读已有计划/规格，评估是否仍然适用
+5. **如果计划涉及架构选择**（技术选型、模式选择、关键设计决策）：运行 `/adr` 记录决策，ADR 存入 `docs/decisions/`
+6. **如果计划引用了框架/库的具体 API、CLI flag、配置项**（如 "使用 React useState"、"传 --foo flag"）：运行 `/source-verify` 从官方文档验证，防止凭训练数据编 API。教训来自 lessons.md 的"CLI flag 假设在 plan 阶段必须 source-verify"
+7. **如果任务可拆成多个 2-5 分钟粒度的子步骤**：在计划中生成对应的 `/todo` 清单，写到 current-task.md 的 Progress 段；执行阶段逐项勾选
+8. **标准/完整通道下**：计划生成后立即运行 `/plan-check` 做 8 维度结构化校验（需求覆盖 / 原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环。**快速/轻量通道跳过此步**
+9. **如果计划涉及多 agent 协作**（`/squad`、`/dispatch-agents`、`/subagent-dev`、自定义 worker prompt 或 capability 分权）：在 `/plan-check` 通过后额外运行 `/agent-design-check` 做 4 维度体检（F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents），对应 `plan-check` 的第 9 维度。来源：[12-factor-agents](https://github.com/humanlayer/12-factor-agents)。**非多 agent 场景跳过此步**
 
 #### 3.2 计划质量检查（必须通过才能继续）
 
@@ -445,6 +452,8 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 ### 阶段 4：实施（⚙️ 自动，遇阻停下）
 
 **通过门：所有计划步骤完成 + 测试通过**
+
+> **Stop hook 守护（Issue #13）**：阶段 4 期间若 AI 试图停止但 `current-task.md` 仍有未勾选 checkbox，`.claude/hooks/stop.sh` 会 block 并要求先更新进度。若发现 `.agent-harness/.stop-hook-skip` sentinel 存在，**先询问用户**是否允许跳过——sentinel 残留会让守护机制失效。完成任务后务必删除 sentinel（`rm -f .agent-harness/.stop-hook-skip`），让下次任务重新受保护。
 
 #### 4.1 按步执行
 
@@ -717,6 +726,11 @@ Lint：<之前> → <之后>（<变化>）
 
 ### 历史参考（本次引用的经验教训）
 - <引用的 lessons.md 条目，或"无">
+
+### 环境工程备注
+本次跑完 /lfg = 用了整套 Agent 运行环境（rules + commands + hooks + 分层记忆 + 审计 WAL）。
+下一次任务会自动继承本次沉淀的教训（memory-index 已刷新）和变更审计（audit.jsonl 新增 N 条）。
+— Environment Engineering 视角（Issue #34 / holaOS）
 ```
 
 #### 10.4 待验证（🔴 需确认）

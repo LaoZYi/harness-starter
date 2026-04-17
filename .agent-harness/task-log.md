@@ -1140,3 +1140,23 @@
   - lfg 从 874 → 906 行（+32 行），占比 <4%，可控
 - **改了哪些文件**：`src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`、`.claude/commands/lfg.md`（dogfood 同步）
 - **质量**：516 tests + lint + typecheck + skills-lint 全绿；威力分预计 7.5 → 9+
+
+## 2026-04-17 — /lfg 威力终补（3 处收官）
+
+- **需求**：用户要求从 8.75 继续推到 9.75/10——补 Hooks 协作、Environment Engineering signal、/cso 前置
+- **做了什么**：
+  - **Hooks 协作三处**：
+    1. 阶段 0.1 加 session-start hook 对齐说明 + `.stop-hook-skip` sentinel 残留检查
+    2. 阶段 4 开头加 Stop hook 守护说明（sentinel 残留警告 + 完成后删除提醒）
+    3. 介入点 2 顶部加 PreCompact hook 自动化说明（/compact 前 hook 自动写 audit + stderr 提示）
+  - **Environment Engineering signal**：
+    1. 文档开头加 Issue #34 注释：/lfg 是 Environment Engineering 哲学的主入口，rules/commands/hooks/memory 共同构成 Agent habitat
+    2. 完成报告末尾加「环境工程备注」段，点题下一次任务自动继承沉淀
+  - **/cso 前置**：阶段 3.1 加第 1 步——生产项目（`has_production=true` 或 `sensitivity=high`）在写计划前先跑 `/cso` 快速扫，把风险作为计划约束内化
+- **关键决策**：
+  - Stop hook 守护说明放在阶段 4 开头而非介入点——阶段 4 是"停下前"最常发生的时刻
+  - PreCompact 说明放在介入点 2（而非所有 compact 点）+ 明确"本节以及介入点 5、阶段 5/9/10"适用——避免重复标注
+  - /cso 前置是计划期，阶段 7.4 作为兜底——生产项目"风险内化比事后补救便宜"
+  - lfg 从 906 → 920 行（+14 行）
+- **改了哪些文件**：`src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`、dogfood `.claude/commands/lfg.md`
+- **质量**：516 tests + lint + typecheck + skills-lint 全绿；威力分预期 8.75 → 9.75
