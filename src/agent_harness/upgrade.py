@@ -199,33 +199,34 @@ def execute_upgrade(
         except (UnicodeDecodeError, OSError):
             base_content = ""
 
-        if cat == "overwrite":
-            output_path.write_text(new_content, encoding="utf-8")
-            updated.append(rp)
-        elif cat == "three_way":
-            if not base_path.exists():
+        match cat:
+            case "overwrite":
                 output_path.write_text(new_content, encoding="utf-8")
                 updated.append(rp)
-                conflicts[rp] = ["无基准版本，已用框架版本覆盖（备份至 backups/）"]
-            elif not base_content:
-                output_path.write_text(new_content, encoding="utf-8")
-                updated.append(rp)
-                conflicts[rp] = ["基准文件损坏或为空，已用框架版本覆盖（备份至 backups/）"]
-            else:
-                result_text, conflict_list = merge3(base_content, current, new_content)
+            case "three_way":
+                if not base_path.exists():
+                    output_path.write_text(new_content, encoding="utf-8")
+                    updated.append(rp)
+                    conflicts[rp] = ["无基准版本，已用框架版本覆盖（备份至 backups/）"]
+                elif not base_content:
+                    output_path.write_text(new_content, encoding="utf-8")
+                    updated.append(rp)
+                    conflicts[rp] = ["基准文件损坏或为空，已用框架版本覆盖（备份至 backups/）"]
+                else:
+                    result_text, conflict_list = merge3(base_content, current, new_content)
+                    output_path.write_text(result_text, encoding="utf-8")
+                    if conflict_list:
+                        conflicts[rp] = conflict_list
+                    merged.append(rp)
+            case "json_merge":
+                result_text, warnings = json_merge(
+                    base_content, current, new_content,
+                    framework_keys=PROJECT_JSON_FW_KEYS,
+                )
                 output_path.write_text(result_text, encoding="utf-8")
-                if conflict_list:
-                    conflicts[rp] = conflict_list
+                if warnings:
+                    conflicts[rp] = warnings
                 merged.append(rp)
-        elif cat == "json_merge":
-            result_text, warnings = json_merge(
-                base_content, current, new_content,
-                framework_keys=PROJECT_JSON_FW_KEYS,
-            )
-            output_path.write_text(result_text, encoding="utf-8")
-            if warnings:
-                conflicts[rp] = warnings
-            merged.append(rp)
 
     for rp in rendered:
         if get_category(rp) == "skip" and (target_root / rp).exists() and rp not in plan.create_files:

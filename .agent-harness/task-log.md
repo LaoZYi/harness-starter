@@ -1112,3 +1112,14 @@
 - **关键决策**：rich 14→15 没阻塞——代码里只用 `rich.console.Console` + `rich.panel.Panel` + `rich.table.Table`，rich 15 的 breaking changes 不影响这些；保守做法是维持 `>=15.0` 下界而不是 `>=14.0`，因为用户新装时会拿到 15，统一源头比跨版本兼容更划算
 - **改了哪些文件**：`pyproject.toml`、`uv.lock`
 - **质量**：516 tests + lint + typecheck 全绿
+
+## 2026-04-17 — Python 现代化（C：match/case 重构）
+
+- **需求**：用户要求把剩余 `elif == "string"` 链改为 3.11+ match/case
+- **做了什么**：改造 3 处 elif 链到 match/case
+  - `_merge3.py:91-98` 的 `tag == "insert"/"replace"/"delete"`（3 分支）
+  - `upgrade.py:202-228` 的 `cat == "overwrite"/"three_way"/"json_merge"`（3 分支）
+  - `init_flow.py` 两处向导的 `step == 0..4`（各 5 分支）
+- **关键决策**：只做 match 语法替换，不改业务逻辑；Optional/Union/List/Dict 等 typing 老式用法项目中已 0 处，现代化已完成
+- **改了哪些文件**：`src/agent_harness/_merge3.py`、`upgrade.py`、`init_flow.py`
+- **质量**：516 tests + lint + typecheck 全绿；行数无超标

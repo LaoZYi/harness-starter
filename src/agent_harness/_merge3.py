@@ -89,13 +89,14 @@ def _build_edit_maps(base, target, opcodes):
     delete_set: set[int] = set()
 
     for tag, b1, b2, t1, t2 in opcodes:
-        if tag == "insert":
-            pre_map.setdefault(b1, []).extend(target[t1:t2])
-        elif tag == "replace":
-            replace_map[b1] = {"end": b2, "lines": target[t1:t2]}
-        elif tag == "delete":
-            for j in range(b1, b2):
-                delete_set.add(j)
+        match tag:
+            case "insert":
+                pre_map.setdefault(b1, []).extend(target[t1:t2])
+            case "replace":
+                replace_map[b1] = {"end": b2, "lines": target[t1:t2]}
+            case "delete":
+                for j in range(b1, b2):
+                    delete_set.add(j)
 
     return pre_map, replace_map, delete_set
 
