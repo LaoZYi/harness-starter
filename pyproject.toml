@@ -9,13 +9,13 @@ description = "A framework that discovers project context and initializes Codex/
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "OpenAI Codex" }]
-dependencies = ["questionary>=2.0", "rich>=13.0", "pyyaml>=6.0"]
+dependencies = ["questionary>=2.1", "rich>=15.0", "pyyaml>=6.0"]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.6",
-    "mypy>=1.8",
-    "vulture>=2.10",
+    "ruff>=0.15",
+    "mypy>=1.20",
+    "vulture>=2.16",
     "types-PyYAML>=6.0",
 ]
 

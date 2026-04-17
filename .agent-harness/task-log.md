@@ -1104,3 +1104,11 @@
   - 文档：`AGENTS.md`、`docs/product.md`、`docs/architecture.md`、`docs/runbook.md`、`docs/workflow.md`、`docs/release.md`
 - **质量跃迁**：ruff 49→0 错误；mypy 21→0 错误；vulture 1→0；测试 516 全过保持
 - **完成标准**：全部 9 项 ✅（见 current-task.md 存档）
+
+## 2026-04-17 — 依赖升级（D 接续：upgrade dependencies）
+
+- **需求**：把所有依赖升到最新稳定版，抬高 `pyproject.toml` 下界
+- **做了什么**：`uv lock --upgrade` → 只有 `rich 14.3.3 → 15.0.0`（大版本跳跃，测试兜住无回归）；抬高下界：`questionary>=2.0→2.1` / `rich>=13.0→15.0` / `ruff>=0.6→0.15` / `mypy>=1.8→1.20` / `vulture>=2.10→2.16`；`pyyaml>=6.0` 和 `types-PyYAML>=6.0` 保留（已是最新主版本）
+- **关键决策**：rich 14→15 没阻塞——代码里只用 `rich.console.Console` + `rich.panel.Panel` + `rich.table.Table`，rich 15 的 breaking changes 不影响这些；保守做法是维持 `>=15.0` 下界而不是 `>=14.0`，因为用户新装时会拿到 15，统一源头比跨版本兼容更划算
+- **改了哪些文件**：`pyproject.toml`、`uv.lock`
+- **质量**：516 tests + lint + typecheck 全绿
