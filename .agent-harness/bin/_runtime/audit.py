@@ -96,14 +96,14 @@ def _locked_append(path: Path) -> Iterator[Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     try:
-        _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
+        _fcntl.flock(fd, _fcntl.LOCK_EX)
         with os.fdopen(fd, "a", encoding="utf-8", closefd=False) as f:
             yield f
             f.flush()
             os.fsync(fd)
     finally:
         try:
-            _fcntl.flock(fd, _fcntl.LOCK_UN)  # type: ignore[union-attr]
+            _fcntl.flock(fd, _fcntl.LOCK_UN)
         finally:
             os.close(fd)
 

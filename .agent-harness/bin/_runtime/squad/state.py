@@ -4,7 +4,6 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
@@ -143,7 +142,7 @@ def _locked_write(path: Path) -> Iterator[Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT, 0o644)
     try:
-        _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
+        _fcntl.flock(fd, _fcntl.LOCK_EX)
         # Safe to truncate: exclusive lock held.
         os.ftruncate(fd, 0)
         os.lseek(fd, 0, os.SEEK_SET)
@@ -153,7 +152,7 @@ def _locked_write(path: Path) -> Iterator[Any]:
             os.fsync(fd)
     finally:
         try:
-            _fcntl.flock(fd, _fcntl.LOCK_UN)  # type: ignore[union-attr]
+            _fcntl.flock(fd, _fcntl.LOCK_UN)
         finally:
             os.close(fd)
 
@@ -164,13 +163,13 @@ def _locked_append(path: Path) -> Iterator[Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     try:
-        _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
+        _fcntl.flock(fd, _fcntl.LOCK_EX)
         with os.fdopen(fd, "a", encoding="utf-8", closefd=False) as f:
             yield f
             f.flush()
             os.fsync(fd)
     finally:
         try:
-            _fcntl.flock(fd, _fcntl.LOCK_UN)  # type: ignore[union-attr]
+            _fcntl.flock(fd, _fcntl.LOCK_UN)
         finally:
             os.close(fd)

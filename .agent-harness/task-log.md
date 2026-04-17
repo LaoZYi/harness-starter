@@ -1123,3 +1123,20 @@
 - **关键决策**：只做 match 语法替换，不改业务逻辑；Optional/Union/List/Dict 等 typing 老式用法项目中已 0 处，现代化已完成
 - **改了哪些文件**：`src/agent_harness/_merge3.py`、`upgrade.py`、`init_flow.py`
 - **质量**：516 tests + lint + typecheck 全绿；行数无超标
+
+## 2026-04-17 — /lfg 威力补强（5 处新特性集成）
+
+- **需求**：用户要求全做 5 项补强——Trust Calibration 联动 / requirement-mapping 挂钩 / claude-code-internals 挂钩 / Orchestrator 拓扑示例 / Knowledge Artifacts 解析
+- **做了什么**：
+  - **阶段 0.3 Trust Calibration 联动**：在复杂度表后加段落说明 lfg 的 5 档复杂度直接驱动 `autonomy.md` 的「任务复杂度 × 操作基线」二维模型，且"连续 3 次小任务成功自动降档"
+  - **阶段 0.2 claude-code-internals 挂钩**：新增第 11 条——context 告急时 `/recall --refs claude-code-internals` 展开 5 级压缩 + 7 continue site 参考，主动规避 L1 被动截断
+  - **阶段 2.5 + 7.2 requirement-mapping 挂钩**：规格阶段先加载 checklist 把验收标准打 R-ID，验证阶段用 satisfied / out-of-scope / missed 三元检查每条
+  - **squad 通道四角色拓扑**：加 Issue #30 吸收的 orchestrator + scout + builder + reviewer 四角色 JSON 示例，说明 orchestrator capability 运行时 deny Edit/Write（编排者不写代码）
+  - **介入点 2 + 阶段 9.1 Knowledge Artifacts 解析**：scout done 后优先读 `harness agent aggregate` 顶部 artifacts（结构化制品 type/summary/refs/content）而非散落 diary；沉淀阶段专门提取 `tension`/`incident`/`decision` 类型
+- **关键决策**：
+  - 所有补强写在 `lfg.md.tmpl` 单一文件，不改骨架（阶段号/通道数不变），保持 `test_lfg_coverage` / `test_lfg_gap_fixes` 合约通过
+  - Trust Calibration 不单独加阶段，作为阶段 0.3 表的"联动说明"段——lfg 判复杂度是源头，autonomy 规则是消费方
+  - Artifacts 解析放在介入点 2 scout 完成处，最先受益（scout 天然产出最多探索发现）
+  - lfg 从 874 → 906 行（+32 行），占比 <4%，可控
+- **改了哪些文件**：`src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`、`.claude/commands/lfg.md`（dogfood 同步）
+- **质量**：516 tests + lint + typecheck + skills-lint 全绿；威力分预计 7.5 → 9+

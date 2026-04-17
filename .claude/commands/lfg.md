@@ -104,6 +104,7 @@
 8. 如果任务涉及专业维度（安全 / 性能 / 无障碍 / 测试设计）→ 运行 `/recall --refs <关键词>` 加载对应 checklist（`.agent-harness/references/`）
 9. 如果 /recall 返回明确相关条目，**必须在计划中显式引用教训标题**，说明如何避免重蹈覆辙
 10. **BM25 兜底（二级检索）**：若 memory-index 未命中 + `/recall` 的 Grep 也返回空，`/recall` 技能会自动串 `.agent-harness/bin/memory search "<关键词>"` 做 BM25 相关性兜底（纯 stdlib，灵感自 [context-mode](https://github.com/mksglu/context-mode)）。这解决"关键词写错/用同义词"时 Grep 漏召的问题，是 /recall 的内置行为而非单独步骤
+11. **上下文预算告急时（Issue #33）**：若 context-monitor hook 提示工具调用计数接近阈值（50/100/150），或任务本身涉及大量工具输出，**运行 `/recall --refs claude-code-internals`** 展开 `.agent-harness/references/claude-code-internals.md`——了解 Claude Code 的 5 级渐进式压缩机制（L1 Tool Result Budget → L5 Autocompact）和 7 个 continue site，能让你提前用 Think in Code 规避 L1 被动截断，而不是等 L5 `/compact` 兜底丢失上下文
 
 > **禁止**：直接全文读 `lessons.md` 或 `task-log.md`。违反分层加载会挤占 AI 上下文，把热知识（L1）、温知识（L2）、冷知识（L3）变成一锅粥。见 `docs/decisions/0001-layered-memory-loading.md`。
 >
@@ -128,6 +129,15 @@
 | **中** | 改 3+ 个文件，需要设计（新功能、新接口） | 标准通道 |
 | **大** | 跨模块、需要架构决策、影响面广 | 完整通道 |
 | **超大-可并行** | 含「并行类」关键词 **或** 可拆 3+ 互不强依赖子任务 **或** 经典「调研→实现→评审」三段 **或** 单 agent 估时 > 4 小时 | **squad 通道**（自动起 tmux 多 worker） |
+
+**与 Trust Calibration 联动（Issue #30，`.claude/rules/autonomy.md`）**：复杂度判定结果直接驱动 autonomy 的「任务复杂度 × 操作基线」二维模型——
+
+- **微小/小**：跳过 `/spec`、`/plan-check`、多轮评审；谨慎级操作完全自主、不每步汇报
+- **中**：谨慎级操作"完全自主但每步汇报"；改业务代码**前必须**先让 Explorer（`/dispatch-agents` 派只读子代理或 squad 的 scout）读相关模块
+- **大**：首次改动前汇报方向；Explorer 强制
+- **超大-可并行**：orchestrator/scout/builder/reviewer 按 capability 运行时强制（`settings.local.json` 的 `permissions.deny`），编排者连代码都不碰
+
+**连续 3 次小任务成功后，同类任务的「谨慎操作」阈值自动下调到「自由」**（同一会话有效）。这让简单任务不被流程绊脚，复杂任务必须先探路。
 
 输出格式：
 ```
@@ -189,6 +199,21 @@
 - **多端点并行实现**：N 个 builder 各做一个端点，1 个 reviewer 统一审查（N+1 worker）
 - **重构 + 迁移**：scout 做调研 → 2 个 builder 分头改前端/后端（无强依赖）→ reviewer 审
 - **独立模块各自迁移**：N 个 builder，互不依赖
+- **四角色重型任务（Issue #30 吸收自 Danau5tin/multi-agent-coding-system）**：orchestrator + scout + builder + reviewer。`orchestrator` capability 在运行时 **完全 deny Edit/Write/MultiEdit/NotebookEdit**——只能用 Read/Grep/Glob/Task/TodoWrite 派工，连代码都不碰，专职战略协调。适用于：跨 3+ 模块且需要持续调度决策的任务（实施过程中 scout 发现新子方向需要动态派新 builder）。`capability.py` 运行时强制，不是软约束
+
+```json
+{
+  "task_id": "large-refactor",
+  "base_branch": "master",
+  "workers": [
+    { "name": "orchestrator", "capability": "orchestrator", "prompt": "读 spec 和 scout 产出，决定后续派发；发现新子任务时用 Task 派给 builder；自己不写代码" },
+    { "name": "scout-a", "capability": "scout", "prompt": "探索模块 A" },
+    { "name": "scout-b", "capability": "scout", "prompt": "探索模块 B" },
+    { "name": "builder-1", "capability": "builder", "depends_on": ["scout-a"], "prompt": "按 orchestrator 指令实现模块 A" },
+    { "name": "reviewer", "capability": "reviewer", "depends_on": ["builder-1"], "prompt": "多视角评审" }
+  ]
+}
+```
 
 ### 介入点 1：拓扑确认（🔴 必须）
 
@@ -218,8 +243,8 @@
 ### 介入点 2：scout 完成，builder 可否继续（🔴 必须 + 强制 compact）
 
 scout 写 `done` 事件后：
-1. 读 scout 产出的 `report.md` 摘要
-2. 告知用户："scout 完成。报告要点：<3 条摘要>。builder 可以照这个实现吗？"
+1. **优先读结构化知识制品（Issue #30）**：运行 `harness agent aggregate scout` 看顶部 `## artifact` 段。`diary_append_artifact` 写入的制品包含 `type/summary/refs/content` 字段，比散落在 diary 里的自由日志更精炼。无 artifact 时再退回读 `report.md` 全文
+2. 告知用户："scout 完成。制品要点：<3 条摘要，优先展示 artifacts>。builder 可以照这个实现吗？"
 3. 用户确认后 `/compact`（控制 context 爆掉）继续
 4. watchdog + advance 会自动启动 builder
 
@@ -355,11 +380,12 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 - 包含模糊词（"优化"、"改进"、"支持"、"更好"等无明确标准的词）
 - 涉及新模块或新架构模式
 
-1. 运行 `/spec` — 规格驱动开发流程
-2. 产出结构化规格文档：目标、命令、项目结构、代码风格、测试策略、边界
-3. 将模糊需求转化为可测试的验收标准
-4. 规格文档写入 `docs/superpowers/specs/YYYY-MM-DD-<topic>-spec.md`
-5. **🔴 展示规格，等待用户确认**
+1. **先加载需求映射清单**：运行 `/recall --refs requirement-mapping` 展开 `.agent-harness/references/requirement-mapping-checklist.md`（GSD Issue #17 吸收）。了解 R-ID 三元映射规则（每条需求最终必须是 `satisfied` / `out-of-scope` / `missed` 三态之一，missed 阻断完成），在写规格时就把每条验收标准打上 R-ID，不要等到阶段 7 验证才发现漏项
+2. 运行 `/spec` — 规格驱动开发流程
+3. 产出结构化规格文档：目标、命令、项目结构、代码风格、测试策略、边界
+4. 将模糊需求转化为可测试的验收标准
+5. 规格文档写入 `docs/superpowers/specs/YYYY-MM-DD-<topic>-spec.md`（含 R-ID 列表）
+6. **🔴 展示规格，等待用户确认**
 
 > 如果任务已有明确的验收标准（如 Issue 中已详细列出），可跳过此阶段。
 
@@ -545,17 +571,20 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 #### 7.2 验收标准核验
 
-逐条核验阶段 0 定义的验收标准：
+**先加载需求映射清单**：运行 `/recall --refs requirement-mapping` 复习 R-ID 三元映射硬规则（若阶段 2.5 已加载过可跳过）——每条规格 R-ID **必须**落到 `satisfied` / `out-of-scope` / `missed` 之一，不允许"差不多"。`missed` 状态阻断完成。
+
+逐条核验阶段 0 定义的验收标准 + 阶段 2.5 打上的 R-ID：
 
 ```
 ## 验收标准核验
 
-- [x] 标准 1：<描述> — ✅ 通过（证据：测试 test_xxx 覆盖）
-- [x] 标准 2：<描述> — ✅ 通过（证据：手动验证输出正确）
-- [ ] 标准 3：<描述> — ❌ 未通过（原因：<说明>）
+- [x] R-001 标准 1：<描述> — ✅ satisfied（证据：测试 test_xxx 覆盖）
+- [x] R-002 标准 2：<描述> — ✅ satisfied（证据：手动验证输出正确）
+- [ ] R-003 标准 3：<描述> — ❌ missed（原因：<说明>）→ 回阶段 4
+- [—] R-004 标准 4：<描述> — ⊘ out-of-scope（原因：<说明>，用户确认后放行）
 ```
 
-有未通过的验收标准 → 回到阶段 4 补充实施。
+有 `missed` 的 R-ID → 回到阶段 4 补充实施；有 `out-of-scope` 的 → 🔴 展示给用户确认。
 
 #### 7.3 穷举验证（关键路径）
 
@@ -603,10 +632,13 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 #### 9.1 提炼经验
 
+**若本次任务走 squad 或 /dispatch-agents/subagent-dev**：先运行 `harness agent aggregate` 汇总所有 sub-agent 的 artifacts + diary（Issue #30 结构化知识制品会集中显示在顶部），把值得沉淀的发现作为 `/compound` 的输入——比只看 current-task.md 能捕获更多 sub-agent 遇到过的坑。
+
 运行 `/compound` 提炼经验教训：
 - 评审中被发现的问题（说明下次如何在实施阶段就避免）
 - 实施中走过的弯路（说明下次的更优路径）
 - 修复循环中反复出现的模式（说明根因和预防方法）
+- sub-agent artifacts 里标记为 `tension` / `incident` / `decision` 类型的制品（优先沉淀）
 - 写入 `.agent-harness/lessons.md`
 
 `/compound` 完成后**必须**两步闭环（不做的话下次 /lfg 读到的 L1 热索引是过时的、WAL 也缺一条）：
