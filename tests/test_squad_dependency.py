@@ -30,7 +30,7 @@ from agent_harness.squad.coordinator import (
 )
 from agent_harness.squad.state import (
     append_status, done_workers, pending_worker_info,
-    read_all_status, read_manifest,
+    read_manifest,
 )
 
 

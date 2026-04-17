@@ -86,7 +86,7 @@ def _locked_append(path: Path, header: str | None = None) -> Iterator[Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     try:
-        _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
+        _fcntl.flock(fd, _fcntl.LOCK_EX)
         if header is not None and os.fstat(fd).st_size == 0:
             os.write(fd, header.encode("utf-8"))
         with os.fdopen(fd, "a", encoding="utf-8", closefd=False) as f:
@@ -95,7 +95,7 @@ def _locked_append(path: Path, header: str | None = None) -> Iterator[Any]:
             os.fsync(fd)
     finally:
         try:
-            _fcntl.flock(fd, _fcntl.LOCK_UN)  # type: ignore[union-attr]
+            _fcntl.flock(fd, _fcntl.LOCK_UN)
         finally:
             os.close(fd)
 
@@ -107,7 +107,7 @@ def _locked_write(path: Path) -> Iterator[Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT, 0o644)
     try:
-        _fcntl.flock(fd, _fcntl.LOCK_EX)  # type: ignore[union-attr]
+        _fcntl.flock(fd, _fcntl.LOCK_EX)
         os.ftruncate(fd, 0)
         os.lseek(fd, 0, os.SEEK_SET)
         with os.fdopen(fd, "w", encoding="utf-8", closefd=False) as f:
@@ -116,7 +116,7 @@ def _locked_write(path: Path) -> Iterator[Any]:
             os.fsync(fd)
     finally:
         try:
-            _fcntl.flock(fd, _fcntl.LOCK_UN)  # type: ignore[union-attr]
+            _fcntl.flock(fd, _fcntl.LOCK_UN)
         finally:
             os.close(fd)
 

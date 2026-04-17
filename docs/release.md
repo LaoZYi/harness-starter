@@ -4,15 +4,17 @@
 
 ## 发布前检查
 
-1. `make ci` 是否通过（当前 516 个测试）。
-2. `VERSION` 文件是否已 bump。
-3. `README.md` 是否准确描述所有命令。
-4. `docs/runbook.md` 是否覆盖最新命令。
-5. `docs/product.md` 是否反映最新功能清单。
-6. `docs/architecture.md` 是否反映最新模块结构。
-7. `src/agent_harness/templates/common/` 是否仍然通用，没有带入样例业务。
-8. `src/agent_harness/presets/` 是否覆盖当前支持的 9 种项目类型。
-9. 在临时目录里跑一次完整的 init + doctor + export + stats 验证。
+1. `make ci` 是否通过（含 `check` + `lint` + `typecheck` + `skills-lint` + `test`，当前 516 个测试）。
+2. `make lint` 无残余 ruff 错误。
+3. `make typecheck` 无残余 mypy 错误。
+4. `VERSION` 文件是否已 bump。
+5. `README.md` 是否准确描述所有命令。
+6. `docs/runbook.md` 是否覆盖最新命令。
+7. `docs/product.md` 是否反映最新功能清单。
+8. `docs/architecture.md` 是否反映最新模块结构。
+9. `src/agent_harness/templates/common/` 是否仍然通用，没有带入样例业务。
+10. `src/agent_harness/presets/` 是否覆盖当前支持的 9 种项目类型。
+11. 在临时目录里跑一次完整的 init + doctor + export + stats 验证。
 
 ## 发布动作
 

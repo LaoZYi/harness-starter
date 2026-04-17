@@ -14,7 +14,6 @@ from agent_harness.sync_context import (
     generate_microservice_rule,
     generate_service_context_md,
     load_meta,
-    resolve_meta,
     run_sync,
     run_sync_all,
 )
@@ -305,7 +304,7 @@ class SyncRelativePathTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             payment = _make_git_repo(root / "payment-service")
-            order = _make_git_repo(root / "order-service")
+            _make_git_repo(root / "order-service")
             meta = root / "meta"
             (meta / "services").mkdir(parents=True)
             reg = _REGISTRY_YAML.format(

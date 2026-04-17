@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import ast
-import json
 import os
 import subprocess
 import sys
@@ -192,7 +191,8 @@ class HarnessMemorySearchCliTests(unittest.TestCase):
     """`harness memory search` 主 CLI 暴露回归（避免只在 bin/ 入口能用）。"""
 
     def test_harness_memory_search_exposed(self):
-        import subprocess, sys as _sys
+        import subprocess
+        import sys as _sys
         root_dir = Path(__file__).resolve().parents[1]
         env = {**os.environ, "PYTHONPATH": str(root_dir / "src")}
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -13,14 +13,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
-import os
-import signal
-import subprocess
-import sys
 import tempfile
-import textwrap
-import threading
-import time
 import unittest
 from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
@@ -28,10 +21,9 @@ from unittest.mock import patch
 
 from agent_harness.squad import cli as squad_cli
 from agent_harness.squad import mailbox as mb
-from agent_harness.squad.coordinator import cmd_dump, cmd_watch, find_squad
+from agent_harness.squad.coordinator import cmd_dump, cmd_watch
 from agent_harness.squad.state import (
     append_status, done_workers, pending_worker_info, read_all_status,
-    squad_dir,
 )
 
 

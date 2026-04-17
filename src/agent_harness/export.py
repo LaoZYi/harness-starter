@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from ._shared import require_harness
 from .cli_utils import console
@@ -32,7 +33,7 @@ def _extract_recent_tasks(task_log: str, count: int = 10) -> list[str]:
     return blocks[-count:] if blocks else []
 
 
-def _build_snapshot(target: Path) -> dict[str, object]:
+def _build_snapshot(target: Path) -> dict[str, Any]:
     pj_path = target / ".agent-harness" / "project.json"
     project = json.loads(pj_path.read_text(encoding="utf-8")) if pj_path.exists() else {}
 
@@ -55,7 +56,7 @@ def _build_snapshot(target: Path) -> dict[str, object]:
     }
 
 
-def _render_markdown(snapshot: dict[str, object]) -> str:
+def _render_markdown(snapshot: dict[str, Any]) -> str:
     lines = ["# 项目画像\n"]
     p = snapshot["project"]
     if p:

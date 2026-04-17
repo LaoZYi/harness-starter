@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 import tempfile
 import unittest
@@ -51,7 +50,7 @@ class SuperpowersDefaultEnabledTests(unittest.TestCase):
     def test_default_init_includes_superpowers_commands(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "project"
-            result = initialize_project(root, {**_BASE_ANSWERS})
+            initialize_project(root, {**_BASE_ANSWERS})
             commands_dir = root / ".claude" / "commands"
             for cmd in _EXPECTED_COMMANDS:
                 self.assertTrue(
@@ -88,7 +87,7 @@ class SuperpowersDisabledTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir) / "project"
             answers = {**_BASE_ANSWERS, "superpowers": False}
-            result = initialize_project(root, answers)
+            initialize_project(root, answers)
             commands_dir = root / ".claude" / "commands"
             for cmd in _EXPECTED_COMMANDS:
                 self.assertFalse(

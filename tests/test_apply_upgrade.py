@@ -111,7 +111,7 @@ class ThreeWayMergeUpgradeTests(unittest.TestCase):
             original = product.read_text(encoding="utf-8")
             product.write_text(original + "\n## My Custom Section\n\nUser content here.\n", encoding="utf-8")
 
-            result = execute_upgrade(root, {**_BASE_ANSWERS})
+            execute_upgrade(root, {**_BASE_ANSWERS})
             after = product.read_text(encoding="utf-8")
 
         self.assertIn("My Custom Section", after)
@@ -127,7 +127,6 @@ class ConflictReportingTests(unittest.TestCase):
             # Modify the base to simulate a template change
             base_path = root / ".agent-harness" / ".base" / "AGENTS.md"
             base_content = base_path.read_text(encoding="utf-8")
-            lines = base_content.splitlines(keepends=True)
             # Change a specific line in user file
             user_content = base_content.replace("禁止在任务结束时才批量更新文档", "USER RULE OVERRIDE")
             agents.write_text(user_content, encoding="utf-8")

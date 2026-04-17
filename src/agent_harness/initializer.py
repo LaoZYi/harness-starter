@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 from ._shared import (
     FRAMEWORK_VERSION, PKG_DIR, PRESET_ROOT, SUPERPOWERS_ROOT, TEMPLATE_ROOT,
@@ -14,12 +15,11 @@ from .models import AssessmentResult, InitializationResult, ProjectProfile
 from .templating import materialize_templates
 
 
-def _load_preset(project_type: str) -> dict[str, object]:
+def _load_preset(project_type: str) -> dict[str, Any]:  # Any：preset 结构由 JSON 文件决定
     path = PRESET_ROOT / f"{project_type}.json"
     if not path.exists():
         path = PRESET_ROOT / "backend-service.json"
     return json.loads(path.read_text(encoding="utf-8"))
-
 
 
 def _bullet_list(items: list[str], *, fallback: str) -> str:

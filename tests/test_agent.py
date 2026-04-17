@@ -1,7 +1,6 @@
 """Tests for agent diary/status module (Issue #14, absorbed from MemPalace)."""
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys

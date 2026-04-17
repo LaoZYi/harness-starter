@@ -6,7 +6,7 @@
 
 具体而言：
 - **32 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
-- **5 层规则**（safety / testing / autonomy / context-budget / task-lifecycle）= Agent 的行为约束
+- **10 层通用规则**（safety / testing / autonomy / context-budget / task-lifecycle / agent-design / documentation-sync / error-attribution / api / database）= Agent 的行为约束，其中 api / database 仅对 backend-service / library 等相关类型生成
 - **三层记忆**（memory-index L1 / lessons+references L2 / task-log L3）= Agent 的持久化状态
 - **hooks**（session-start / stop / pre-compact / context-monitor）= Agent 的生命周期感知
 
@@ -41,7 +41,7 @@
 - `src/agent_harness/models.py`：数据模型（ProjectProfile、InitializationResult 等）。
 - `src/agent_harness/_shared.py`：共享常量（TEMPLATE_ROOT、META_ROOT 等）、slugify、require_harness。
 - `src/agent_harness/memory.py`：分层记忆索引维护（`rebuild_index()` 从 lessons/task-log/references 重建 `memory-index.md`）。
-- `src/agent_harness/skills_registry.py` + `skills_lint.py`：Skills Registry SSOT（Issue #27）。`skills-registry.json` 是 34 个 skill 元数据（id/category/triggers/lfg_stage/expected_in_lfg）的单一真相源。`skills_registry.load_registry / render_decision_tree / render_skill_index_by_phase / render_lfg_coverage_table / apply_to_target` 把 `<<SKILL_*>>` 双尖括号占位符（避开 `{{var}}` jinja 冲突）替换为实际内容；initializer 和 upgrade 在材化 superpowers 模板后自动调用 `apply_to_target`。`skills_lint.run` 三检查：孤儿 .md.tmpl / 注册但缺文件 / expected_in_lfg=true 但 lfg 未引用；`harness skills lint <target>` CLI 子命令（`make ci` 串入 `make skills-lint` 守卫），新增 skill 只改 registry。
+- `src/agent_harness/skills_registry.py` + `skills_lint.py`：Skills Registry SSOT（Issue #27）。`skills-registry.json` 是 36 个 skill 元数据（id/category/triggers/lfg_stage/expected_in_lfg）的单一真相源。`skills_registry.load_registry / render_decision_tree / render_skill_index_by_phase / render_lfg_coverage_table / apply_to_target` 把 `<<SKILL_*>>` 双尖括号占位符（避开 `{{var}}` jinja 冲突）替换为实际内容；initializer 和 upgrade 在材化 superpowers 模板后自动调用 `apply_to_target`。`skills_lint.run` 三检查：孤儿 .md.tmpl / 注册但缺文件 / expected_in_lfg=true 但 lfg 未引用；`harness skills lint <target>` CLI 子命令（`make ci` 串入 `make skills-lint` 守卫），新增 skill 只改 registry。
 - `src/agent_harness/security.py`：统一输入安全校验（`sanitize_name` / `sanitize_path` / `sanitize_content` + `SecurityError`）。将 `.claude/rules/safety.md` 的信任边界从文档约束代码化为强制函数。agent.py 和 squad/spec.py 复用其 `NAME_PATTERN` 和 `sanitize_name`，消除重复正则。吸收自 MemPalace（Issue #15）。
 - `src/agent_harness/audit.py`：关键文件变更审计 WAL（`append_audit / tail / stats / truncate_before`），fcntl 锁保证并发安全，只追踪 current-task / task-log / lessons 三个文件。
 - `src/agent_harness/agent.py` + `agent_cli.py`：多 agent 日志隔离（`init_agent / diary_append / status_set / list_agents / aggregate`），fcntl 锁保证并发 append 无丢失；专为 `/dispatch-agents` 和 `/subagent-dev` 场景服务，与 /squad 的 workers/ 目录并列但互不相交。Issue #30 新增**知识制品（knowledge artifacts）**：`diary_append_artifact(agent_id, artifact_type, summary, content, refs)` 把 sub-agent 的发现写成结构化 Markdown 块（`## artifact` + ts/type/summary/refs/content 字段），`extract_artifacts` 用正则解析回 dict，`aggregate` 顶部集中展示所有 artifacts 供后续任务 refs 复用（compound intelligence）；CLI 入口 `harness agent artifact <id> --type <T> --summary <S> [--content <C> | --content-file <F>] [--refs a,b]`。
@@ -52,7 +52,7 @@
 
 ### 资源层
 - `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、4 个 common 命令（`/process-notes`、`/digest-meeting`、`/recall`、`/source-verify`）、文档、任务追踪、L2 参考清单目录（`.agent-harness/references/`）等。
-- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（30 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）和 3 个本地原创技能（lint-lessons、evolve、squad）。
+- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（32 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）和 3 个本地原创技能（lint-lessons、evolve、squad）。
 - `src/agent_harness/templates/meta/`：meta 项目类型专属模板（services/registry、dependency-graph、conventions、shared-plugins、business 领域知识骨架、BEST-PRACTICES 指南、/sync-meta 和 /populate-meta 命令）。
 - `src/agent_harness/templates/<type>/`：各项目类型的专属规则模板（backend-service、web-app、cli-tool、worker、mobile-app、monorepo、data-pipeline、library 各有 1 个专属规则文件）。
 - `src/agent_harness/presets/`：9 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。

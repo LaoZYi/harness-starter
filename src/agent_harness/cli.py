@@ -95,12 +95,12 @@ def _cmd_init(args: argparse.Namespace) -> None:
         _guard_self_init(target)
     if args.assess_only:
         profile = discover_project(target)
-        result = assess_project(profile, root=target)
+        assessment = assess_project(profile, root=target)
         if args.json:
-            print(json.dumps({"profile": asdict(profile), "assessment": asdict(result)}, ensure_ascii=False, indent=2))
+            print(json.dumps({"profile": asdict(profile), "assessment": asdict(assessment)}, ensure_ascii=False, indent=2))
             return
         print_profile(profile)
-        print_assessment(result)
+        print_assessment(assessment)
         return
     if not args.dry_run:
         target.mkdir(parents=True, exist_ok=True)
@@ -171,6 +171,7 @@ def _cmd_sync(args: argparse.Namespace) -> None:
     if args.all:
         run_sync_all(meta, dry_run=args.dry_run)
     else:
+        assert target is not None  # --all 为 False 时 argparse 保证 target 存在
         run_sync(target, meta, dry_run=args.dry_run)
 
 def _cmd_memory_rebuild(args: argparse.Namespace) -> None:

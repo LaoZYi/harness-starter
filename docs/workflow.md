@@ -15,15 +15,15 @@
 
 ## 命令规范
 
-- 小改动：至少运行 `make check`。
-- 改评估、升级、初始化逻辑或模板：运行 `make ci`。
+- 小改动：至少运行 `make check`（含 `lint`）。
+- 改评估、升级、初始化逻辑或模板：运行 `make ci`（含 `typecheck`）。
 - 改 CLI 命令：运行 `make ci`，并实际跑一次对应命令验证。
 - 改文档但不改代码：运行 `make check`。
 
 ## 提交前检查
 
 1. 改动目标是否能在一句话里描述。
-2. 是否有对应测试（当前 304 个，新功能必须补测试）。
+2. 是否有对应测试（当前 516 个，新功能必须补测试）。
 3. 是否有文档同步（product.md、architecture.md、runbook.md）。
 4. 是否新增了隐藏命令或隐式约束。
 5. 如果动了 CLI 或命令入口，是否同步更新了 `docs/runbook.md`。
@@ -32,3 +32,5 @@
 8. 如果动了升级逻辑，是否验证了备份和覆盖行为。
 9. 如果新增了模块，是否加到 `scripts/check_repo.py` 的 REQUIRED_FILES。
 10. 模块是否超过 280 行限制。
+11. `make lint` 是否无残余 ruff 错误。
+12. `make typecheck` 是否无残余 mypy 错误。

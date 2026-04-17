@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import shutil
 from pathlib import Path
+from typing import Callable
 
 import questionary
 
@@ -247,7 +248,7 @@ def non_interactive_init(
     args: argparse.Namespace,
     profile: ProjectProfile,
     config: dict[str, object],
-    resolve_answers_fn: object,
+    resolve_answers_fn: Callable[[argparse.Namespace, ProjectProfile, dict[str, object]], dict[str, object]],
 ) -> dict[str, object]:
     answers = resolve_answers_fn(args, profile, config)
     lang = str(answers.get("language", "unknown"))

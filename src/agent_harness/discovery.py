@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tomllib
 from pathlib import Path
+from typing import Any
 
 from ._shared import slugify
 from .lang_detect import (
@@ -22,11 +23,11 @@ PROJECT_TYPES = (
 SENSITIVITY_LEVELS = ("standard", "internal", "high")
 
 
-def _read_json(path: Path) -> dict[str, object]:
+def _read_json(path: Path) -> dict[str, Any]:  # Any：JSON 结构由外部决定，运行时校验
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _read_toml(path: Path) -> dict[str, object]:
+def _read_toml(path: Path) -> dict[str, Any]:  # Any：同上
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
@@ -108,8 +109,8 @@ def _detect_project_type(root: Path, language: str) -> str:  # noqa: C901
             return "meta"
     if (root / "pnpm-workspace.yaml").exists() or (root / "lerna.json").exists():
         return "monorepo"
-    pkg: dict[str, object] = {}
-    js_deps: dict[str, object] = {}
+    pkg: dict[str, Any] = {}
+    js_deps: dict[str, Any] = {}
     if (root / "package.json").exists():
         pkg = _read_json(root / "package.json")
         if pkg.get("workspaces"):

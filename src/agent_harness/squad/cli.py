@@ -11,9 +11,7 @@ from .state import (
     Manifest,
     WorkerRecord,
     append_status,
-    done_workers,
     list_active_squads,
-    pending_worker_info,
     read_manifest,
     squad_dir,
     write_manifest,
@@ -22,7 +20,6 @@ from .tmux import (
     build_new_session_cmd,
     build_new_window_cmd,
     ensure_tmux_available,
-    list_windows,
 )
 from .worker_files import (
     provision_worker_worktree,
@@ -134,9 +131,9 @@ def cmd_create(args) -> int:
         print(f"[squad] wave 0 已启动 ({len(wave0)})：{', '.join(w.name for w in wave0) or '（无 — 所有 worker 都有依赖？检查 spec）'}")
         if pending:
             print(f"[squad] pending ({len(pending)})：{', '.join(w.name + '←[' + ','.join(w.depends_on) + ']' for w in pending)}")
-            print(f"[squad] 依赖完成后运行：harness squad done <worker>  然后  harness squad advance")
+            print("[squad] 依赖完成后运行：harness squad done <worker>  然后  harness squad advance")
         print(f"[squad] 观察：tmux attach -t {session_name}")
-        print(f"[squad] 状态：harness squad status")
+        print("[squad] 状态：harness squad status")
     return 0
 
 
@@ -154,7 +151,7 @@ def cmd_status(args) -> int:
             continue
         print(f"\nSquad: {m.task_id} (tmux session: {m.tmux_session})")
         print(f"  base_branch: {m.base_branch}")
-        print(f"  workers:")
+        print("  workers:")
         for w in m.workers:
             state = derive_worker_state(
                 root, task_id, m.tmux_session, w.name, w.depends_on, now,

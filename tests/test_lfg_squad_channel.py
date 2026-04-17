@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 
 from agent_harness._shared import SUPERPOWERS_ROOT
 

@@ -19,7 +19,6 @@ class RenderSettingsTests(unittest.TestCase):
 
     def test_scout_allows_read_only_tools(self) -> None:
         s = render_settings("scout")
-        allow = s["permissions"].get("allow", [])
         # At least Read/Glob/Grep should be allowed (or implicit default)
         # We assert that Read is not in deny; allow list is optional
         self.assertNotIn("Read", s["permissions"]["deny"])

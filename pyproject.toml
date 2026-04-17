@@ -11,6 +11,14 @@ requires-python = ">=3.11"
 authors = [{ name = "OpenAI Codex" }]
 dependencies = ["questionary>=2.0", "rich>=13.0", "pyyaml>=6.0"]
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6",
+    "mypy>=1.8",
+    "vulture>=2.10",
+    "types-PyYAML>=6.0",
+]
+
 [project.scripts]
 harness = "agent_harness.cli:main"
 
@@ -22,4 +30,34 @@ agent_harness = [
     "templates/**/*",
     "presets/**/*",
     "VERSION",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+# 模板文件不需要 lint（本身就是 .md.tmpl / .sh.tmpl，不是 Python）
+extend-exclude = [
+    "src/agent_harness/templates",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# 默认规则集 E/W/F 已开；这里只显式列 ignore
+# E701/E702: 模板生成代码风格，允许单行多语句
+# E741: 变量名 l/I 在少量历史代码里存在，不值得重命名
+ignore = ["E701", "E702", "E741"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+# 先不开 strict。后续可逐步收紧。
+check_untyped_defs = false
+warn_unused_ignores = true
+# 测试和脚本不做类型检查（它们没用 type hints）
+exclude = [
+    "^tests/",
+    "^scripts/",
+    "^src/agent_harness/templates/",
 ]

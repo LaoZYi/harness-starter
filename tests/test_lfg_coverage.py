@@ -12,6 +12,7 @@ EXPECTED_NOT_IN_LFG list with a justification).
 from __future__ import annotations
 
 import re
+import sys
 import unittest
 from pathlib import Path
 
@@ -23,11 +24,8 @@ COMMON_DIR = ROOT / "src" / "agent_harness" / "templates" / "common" / ".claude"
 
 
 # Skills classification is now sourced from skills-registry.json (Issue #27).
-# This avoids drift between which-skill.md.tmpl, lfg.md.tmpl, and the contract test.
-# To add/remove skills: edit src/agent_harness/templates/superpowers/skills-registry.json
-# and run `harness skills lint .`.
-import sys as _sys
-_sys.path.insert(0, str(ROOT / "src"))
+# sys.path insert must precede the import; ruff's E402 is suppressed intentionally.
+sys.path.insert(0, str(ROOT / "src"))
 from agent_harness.skills_registry import (  # noqa: E402
     expected_in_lfg as _expected_in_lfg,
     expected_not_in_lfg as _expected_not_in_lfg,

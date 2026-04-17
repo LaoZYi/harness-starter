@@ -215,7 +215,7 @@ def cmd_watch(args) -> int:
     interval = max(1, int(getattr(args, "interval", 3) or 3))
     max_iterations = getattr(args, "_max_iterations", None)  # 测试用
 
-    def _handler(signum, frame):
+    def _handler(signum, _frame):
         global _shutdown_requested
         _shutdown_requested = True
         print(f"\n[squad watch] 收到信号 {signum}，优雅退出中...", flush=True)
