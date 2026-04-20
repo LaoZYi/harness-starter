@@ -1,0 +1,131 @@
+---
+description: 知识冲突解析——5 型分类 + 标准处理路径，给 lessons.md 维护链路一致的裁决准则
+---
+
+# 知识冲突解析（Knowledge Conflict Resolution）
+
+> **来源**：吸收自 [ilang-ai/Imprint](https://github.com/ilang-ai/Imprint) v2.1 的 5 型 Conflict Resolution。
+> **适用**：本项目 `lessons.md` 维护链路（`/lint-lessons` 和 `/compound`）。
+> **分类标记**：`collaborative-permanent`——即使模型对齐改善，知识库一致性规则依然需要。
+
+## 为什么有这条规则
+
+`lessons.md` 会随任务推进积累矛盾条目。**单纯发现矛盾不够**，还得告诉消费者「该怎么办」。本规则把冲突按**解决路径**（不是症状）分成 5 型，每型有标准处理动作。
+
+与 `/lint-lessons` 原有的 5 种症状分类（规则反向 / 根因冲突 / 预防冲突 / 适用边界 / 优先级）**正交、互补、叠加**——症状维度回答「是什么」，解决维度回答「怎么办」。
+
+## 5 型速查表
+
+| 型 | 场景 | 判定信号 | 标准处理路径 |
+|---|---|---|---|
+| **T1** | 用户本轮显式指令 vs 历史行为规则 | 用户说「这次要 X」但 lessons / rules 说「通常 Y」 | 跟用户本会话，不改 rule；若连续 3 次以上用户同一指令 → 升级成新规则 |
+| **T2** | 全局规则 vs 项目 / 团队规则 | `.claude/rules/` 默认规则与 `.harness-plugins/rules/` 或项目 CLAUDE.md 冲突 | 项目 / 团队规则覆盖全局，记录 mismatch，不删全局条目 |
+| **T3** | 两条 confirmed lesson 互相矛盾 | 两条都高置信度、都在 lessons.md、给出相反建议 | 转条件分支（`when:`）+ 记录 mismatch，**不删任一** |
+| **T4** | 多 agent 给出不一致结论 | `harness agent aggregate` 或 squad reviewer 输出里出现冲突推断 | 两条都**降级为 tentative**，等用户确认后才固化 |
+| **T5** | lesson 与当前任务冲突 | lesson 说"不要做 X"但本次任务主动要做 X | lesson 是**警告不是阻断**；自然提醒风险，不拒绝任务 |
+
+## 在本项目 lessons 域的适用性
+
+**本次只接入 T3 / T4 / T5**到 `/lint-lessons` 和 `/compound` 的流程。
+
+- **T1** 不接入（out-of-scope for lessons）：属于 AI 行为准则范畴，不该作为 lesson 维护问题处理。T1 出现时走 `.claude/rules/` 和 CLAUDE.md 的用户指令优先级规则
+- **T2** 不接入（out-of-scope for lessons）：属于规则层级问题，不该作为 lesson 维护问题处理。未来吸收「用户级跨项目 profile」（Imprint 点 3）或多规则层级协调时可复用此型的锚点
+
+**保留 T1 / T2 描述**是为未来扩展留语义位置——看到"T1/T2"时就知道它属于哪一类，避免新机制吸收时重复造轮子。
+
+## T3 / T4 / T5 的详细处理路径
+
+### T3：两条 confirmed lesson 相互矛盾
+
+**场景示例**：
+- A（2026-03-15，confirmed）："测试里用 `mock` 隔离外部依赖，避免抖动"
+- B（2026-04-20，confirmed）："测试禁止 `mock` 替代真实数据库，因为会掩盖迁移 bug"
+
+**处理路径**：
+1. **不删任一条** —— 两条可能都对，只是缺适用条件
+2. **转条件分支**：合并为一条，明确 `when:` 语义。例：
+   > 测试依赖隔离：
+   > - `when:external_service` → 使用 `mock`（A 的适用场景）
+   > - `when:database or storage` → 使用真实环境（B 的适用场景）
+3. **记录 mismatch**：在合并后的条目里标注"原 A、B 合并"，保留可追溯性
+4. **交由用户确认**：`/lint-lessons` 输出建议，`/compound` 在遇到 T3 时做预检提示，都**不自动执行合并**
+
+### T4：多 agent 结论不一致
+
+**场景示例**：
+- squad 里 scout-a 的 artifact 说"项目栈是 React 18"
+- 同 squad 里 scout-b 的 artifact 说"项目栈是 Vue 3"
+- 两条 artifact 都被汇总进 diary，下游 builder 要用
+
+**处理路径**：
+1. **两条都降级为 tentative**：在 lessons 或 artifact 记录上打 `confidence:tentative` 标签（本项目未引入 confidence 字段时可用文字标注"待确认"）
+2. **不擅自二选一**：即使某一方看起来更可能正确，也不自行裁决
+3. **等用户确认**：显式向用户展示两条冲突结论 + 上下文，由用户选
+4. **确认后才固化**：用户选定后升级为 confirmed，另一条归档到历史记录但不删除
+
+### T5：lesson 与当前任务冲突
+
+**场景示例**：
+- lesson：「serverless 无共享 state，不要依赖进程内缓存」（confirmed）
+- 当前任务：明知风险仍要做 serverless + in-memory cache demo
+
+**处理路径**：
+1. **lesson 是警告不是阻断**：AI 不拒绝任务、不跳过实施
+2. **自然提醒风险**：在计划或实施开头用 1-2 句话提及 lesson 内容及其风险场景
+3. **不重复提醒**：只在任务开始时说一次，不每步 remind
+4. **不记录为 rework**：T5 场景下任务正常执行，不触发 `error-attribution` 流程
+
+## 与 `/lint-lessons` 的接入点
+
+`/lint-lessons` 步骤 2.2 发现矛盾 / 张力对后，除了输出原有的症状分类，**额外**标注 resolution-type：
+
+```
+### 矛盾 / 张力候选（共 N 对）
+
+1. 🔴 矛盾 · 规则反向 · resolution-type: T3
+   - A: "测试用 mock 隔离依赖" (2026-03-15)
+   - B: "测试禁止 mock 替代数据库" (2026-04-20)
+   - 建议动作：转条件分支（when:external_service vs when:database），合并为一条
+
+2. ⚠️ 张力 · 适用边界模糊 · resolution-type: T3
+   - A: ...
+   - B: ...
+   - 建议动作：合并并明确 when: 适用条件
+
+3. 🔴 矛盾 · 根因冲突 · resolution-type: T4（由 squad aggregate 产出）
+   - A: scout-a artifact
+   - B: scout-b artifact
+   - 建议动作：两条均降级 tentative，人工选定后固化
+```
+
+当冲突不属于 T3/T4/T5 任何一型（例如属于 T1 用户指令或 T2 规则层级问题）时，resolution-type 字段标 `N/A`，并在建议里说明"此类冲突不适合在 lessons 域处理"。
+
+## 与 `/compound` 的接入点
+
+`/compound` 步骤 3（查重与合并）在现有"重叠度判断"之后，新增步骤 3.5 做冲突预检：
+
+1. 若检测到**新 lesson 与已有条目不是重叠而是相反**（根因不同但指向同一问题 / 预防措施互斥）
+2. 按 T3 / T4 / T5 分型：
+   - 如果是用户本次任务踩过的坑总结，和已有 lesson 方向相反 → **T3**
+   - 如果来自 squad / `harness agent aggregate` 的多 agent 产物 → **T4**
+   - 如果新 lesson 只是警告本次任务的潜在风险，不是总结本次实际教训 → **T5**（一般不需要写新 lesson，直接引用旧的）
+3. 提示用户：
+   - T3 → 推荐"转条件分支合并"而非新建
+   - T4 → 推荐"两条都写 tentative"
+   - T5 → 推荐"别写新 lesson，只在 current-task 里记一次风险提醒"
+4. **不 block 写入**：用户如仍坚持写入，`/compound` 正常执行，只是 T3 情况下会在日志里留一条 mismatch 备忘
+
+## 铁律
+
+- **不自动合并 / 删除 / 降级**：所有处理路径都必须经用户确认
+- **不把 T1 / T2 当 lessons 问题处理**：它们不属于本规则的执行范围
+- **叠加使用症状维度和解决维度**：两者都要输出，不互替代
+
+## 与其他规则的关系
+
+- **task-lifecycle.md**：任务生命周期的时序约束，与本规则的知识库一致性约束正交
+- **anti-laziness.md 门禁 1（数量门禁）**：本规则要求「每个冲突都必须标 resolution-type（T3/T4/T5/N/A 之一）」——落地了门禁 1"产出清单每项必须有明确状态"的精神
+- **documentation-sync.md**：合并 / 升级 lesson 后必须同步 `memory-index.md` 的"最近教训"段
+- **ADR 0002**：本规则的决策理由、权衡、备选方案记录
+
+当前项目：`{{project_name}}`（{{project_type}} / {{language}}）

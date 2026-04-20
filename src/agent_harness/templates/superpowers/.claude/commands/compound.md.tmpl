@@ -82,6 +82,31 @@ cat .agent-harness/lessons.md 2>/dev/null | grep -i "<关键词>"
 
 **铁律：绝不创建重复条目。** 宁可更新旧条目也不要新建相似条目。
 
+### 第 3.5 步：冲突预检（非重复而是矛盾）
+
+重叠度判断处理的是「重复」；本步处理的是**方向相反**——新 lesson 与已有条目的根因或预防措施**互斥**。
+
+参考 `.claude/rules/knowledge-conflict-resolution.md` 的 5 型分类，命中矛盾时按 T3 / T4 / T5 **分型提示人工裁决**（**不 block 写入**）：
+
+| 触发信号 | resolution-type | 建议动作 |
+|---|---|---|
+| 新 lesson 来自本次任务踩过的坑，但和已有 confirmed lesson 方向相反 | **T3** | 推荐"转条件分支"合并而非新建——让用户在 `/lint-lessons` 里裁决是否合并；若用户仍坚持写新条目，在条目正文标注 `# 与 YYYY-MM-DD <旧条目标题> 存在 mismatch，待合并`，保留后续处理的线索 |
+| 新 lesson 来自 squad / `harness agent aggregate` 的多 agent 产物，且不同 agent 给出不一致结论 | **T4** | 推荐**两条都写为 tentative**（在条目标题后注明"（待确认）"）；等用户后续选定再升级 |
+| 新 lesson 仅是当前任务对某已有 lesson 警告的"验证案例"（未踩新坑） | **T5** | 推荐**不写新条目**，只在 `current-task.md` 开头记一次"引用 <旧条目> 作为风险提示"即可——lesson 是警告不是阻断，复述会制造噪音 |
+| 冲突属于用户本轮指令 vs 历史（T1）或全局规则 vs 项目规则（T2） | **N/A** | 告知用户"此类冲突不属于 lessons 域"，走对应层级规则解决，不写 lesson |
+
+**预检流程**：
+
+1. grep 已有同分类条目：`grep -A 10 "^## .*\[<分类>\]" .agent-harness/lessons.md`
+2. 人工对照根因 / 解决方案方向是否相反
+3. 相反 → 按上表分型 → 展示给用户
+4. 用户若确认写新条目，正常进第 4 步；若接受建议动作（合并 / tentative / 不写），按 `knowledge-conflict-resolution.md` 流程处理
+
+**铁律**：
+- 🔴 **警告性不 block**：预检是提示，不阻止写入
+- 🔴 **人工裁决**：AI 不自行合并 / 降级 / 丢弃，始终等用户确认
+- 🔴 **T1 / T2 不在 lessons 域处理**：看见这两型时不要试图用 `/compound` 解决，告知用户走对应层级规则
+
 ## 第 4 步：写入知识库
 
 向 `.agent-harness/lessons.md` 追加结构化条目。如果文件不存在则创建。

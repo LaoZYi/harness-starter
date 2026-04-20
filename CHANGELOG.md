@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Added — 知识冲突解析规则（GitHub #43 / GitLab #22，2026-04-20）
+
+吸收 [ilang-ai/Imprint](https://github.com/ilang-ai/Imprint) v2.1 的 Conflict Resolution 5 型分类，为 lessons 维护链路增加「解决路径维度」的分型输出。
+
+**新增**：
+- `.claude/rules/knowledge-conflict-resolution.md`（模板 + dogfood 产物）：文案化 T1-T5 全 5 型 + 在本项目 lessons 域的适用性（只接入 T3/T4/T5）
+- `docs/decisions/0002-knowledge-conflict-resolution.md`：ADR 记录取舍（为什么不吸收 Imprint 的 DSL + confidence 字段）
+- `tests/test_lessons_conflict_resolution.py`：14 条契约（规则结构 6 + lint-lessons 分型 3 + compound 预检 3 + ADR 状态 2）
+
+**改**：
+- `/lint-lessons` 步骤 2.2 输出每对冲突额外标注 `resolution-type`（T3/T4/T5/N/A）+ 建议动作示例覆盖 3 型
+- `/compound` 新增步骤 3.5 冲突预检：区分"重复"与"矛盾"，后者按 T3/T4/T5 分型提示人工裁决，不 block 写入
+- `CHANGELOG.md` + `docs/*.md` 测试计数 529 → 543
+
+**边界**：T1（用户本轮指令 vs 历史）和 T2（全局规则 vs 项目规则）在 lessons 域 out-of-scope，仅在规则文件中保留描述为将来扩展留锚点。Imprint 的 confidence 字段 / decay 规则 / `.dna.md` DSL / 用户级 profile 均未吸收，作为独立 Issue 评估。
+
 ### Fixed — 测试 env 隔离用户全局 gitconfig（GitLab #21，2026-04-20）
 
 修掉 `make test` 在本地 git 配置带强制 pre-commit hook / `core.hooksPath` / `commit.gpgsign` 的机器上整体崩盘的问题（用户侧 27 ERROR + 1 FAIL）。
@@ -333,7 +349,7 @@
 
 ### Infrastructure
 
-- 529 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条）
+- 543 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条：规则结构 6 + lint-lessons 分型 3 + compound 预检 3 + ADR 状态 2）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

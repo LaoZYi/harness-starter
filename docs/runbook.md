@@ -5,7 +5,7 @@
 - `make check`：校验框架仓库结构、模板入口、Python 语法、dogfood 漂移检测，并先跑 `lint`（ruff）。
 - `make lint`：运行 ruff 代码风格检查（需先装 dev 工具：`uv sync --extra dev`）。
 - `make typecheck`：运行 mypy 类型检查。
-- `make test`：运行框架级回归测试（529 个）。
+- `make test`：运行框架级回归测试（543 个）。
 - `make ci`：串联 `check` + `typecheck` + `skills-lint` + `test`（提交前完整跑一遍）。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。

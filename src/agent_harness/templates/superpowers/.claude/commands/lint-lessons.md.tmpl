@@ -39,6 +39,8 @@
 
 #### 2.2 矛盾 / 张力检测（灵感自 OpenSwarm 向量记忆 consolidation）
 
+> 本步骤同时消费两条轴：**症状维度**（下列 5 类模式）+ **解决维度**（T3/T4/T5 resolution-type，见 `.claude/rules/knowledge-conflict-resolution.md`）。两者叠加输出，不互替代。
+
 对所有条目做两两语义比对，找出「互相矛盾」或「存在张力」的候选对：
 
 **矛盾的三种模式**：
@@ -52,25 +54,49 @@
 4. **适用边界模糊**：条目 A 和 B 对同一问题给出不同解法，没说明各自适用场景
 5. **优先级未明**：多条教训都想在同一时机触发，但没说谁优先
 
+##### 2.2.1 标注 resolution-type（解决维度）
+
+对每对候选额外标注 resolution-type（取自 `knowledge-conflict-resolution.md`）：
+
+| resolution-type | 场景 | 标准处理路径 |
+|---|---|---|
+| **T3** | 两条 confirmed lesson 互相矛盾 | 转条件分支（`when:`）+ 记录 mismatch，不删任一 |
+| **T4** | 多 agent（如 squad aggregate）产出不一致结论 | 两条都降级为 tentative，等用户确认 |
+| **T5** | lesson 与当前任务冲突 | lesson 是警告不是阻断，自然提醒不拒绝任务 |
+| **N/A** | 冲突属于 T1（用户本轮指令）或 T2（全局 vs 项目规则层），不适合在 lessons 域处理 | 建议里说明"请走对应层级规则而非 lesson" |
+
+lessons 域**只消费 T3 / T4 / T5**；T1 / T2 是其他域的问题，遇到时 resolution-type 标 `N/A` + 给出跳转建议。
+
 **输出格式**：
 
 ```
 ### 矛盾 / 张力候选（共 N 对）
 
-1. 🔴 矛盾 · 规则反向
+1. 🔴 矛盾 · 规则反向 · resolution-type: T3
    - A: "文件锁必须先锁再 truncate" (2026-04-12)
    - B: "文件写入前先 truncate 释放空间" (2026-03-01)
-   - 建议裁决：A 新且针对并发场景，B 可能过时 → 更新或删除 B
+   - 建议动作：转条件分支（when:concurrent_write 用 A，when:single_writer 用 B），合并为一条，保留两条原始信息
 
-2. ⚠️ 张力 · 适用边界模糊
+2. ⚠️ 张力 · 适用边界模糊 · resolution-type: T3
    - A: "用 mock 隔离外部依赖"
    - B: "禁止 mock 替代真实数据库"
-   - 建议裁决：两条都对，但缺适用条件 → 合并并明确"除数据库外可 mock"
+   - 建议动作：合并并明确 when: 适用条件（when:external_service 用 A，when:database 用 B）
+
+3. 🔴 矛盾 · 根因冲突 · resolution-type: T4
+   - A: squad scout-a artifact "项目栈是 React 18"
+   - B: squad scout-b artifact "项目栈是 Vue 3"
+   - 建议动作：两条都降级 tentative，在报告中向用户展示后由用户选定再固化
+
+4. ⚠️ 张力 · 优先级未明 · resolution-type: T5
+   - A: "serverless 无共享 state"（lesson 警告）
+   - B: 当前任务要做 serverless demo
+   - 建议动作：lesson 是警告不是阻断，在 current-task 开头提一次风险即可，不改 lesson
 ```
 
 **铁律**：
-- 🔴 **只检出，不自动合并 / 删除**。人工决策不可省，因为矛盾可能反映了真实的条件分支，盲目合并会丢失重要区分。
-- 每对候选必须给出裁决建议（4 选 1）：保留 A 删 B / 保留 B 删 A / 合并为一条 / 都保留但补充适用条件
+- 🔴 **只检出，不自动合并 / 删除 / 降级**。人工决策不可省，因为矛盾可能反映了真实的条件分支，盲目合并会丢失重要区分。
+- 每对候选必须同时给出：**症状分类** + **resolution-type（T3/T4/T5/N/A）** + **建议动作**
+- 建议动作从 4 种裁决模板中选一个精化：**保留 A 删 B** / **保留 B 删 A** / **合并为一条**（T3 首选，带 `when:`）/ **都保留但补充适用条件**
 - 裁决由用户在第 4 步确认后才执行
 
 #### 2.3 过时检测
