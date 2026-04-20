@@ -59,6 +59,7 @@ harness agent aggregate
 ## 快速地图
 
 - `src/agent_harness/cli.py`：统一 CLI 入口。
+- `src/agent_harness/cli_answers.py`：answer 解析（CLI > .harness.json > project.json > profile）。
 - `src/agent_harness/init_flow.py`：交互/非交互初始化流程。
 - `src/agent_harness/doctor.py`：健康检查。
 - `src/agent_harness/export.py`：项目画像导出。
@@ -71,7 +72,8 @@ harness agent aggregate
 - `src/agent_harness/agent.py` + `agent_cli.py`：多 agent 日志隔离（`harness agent init/diary/status/list/aggregate`）。
 - `src/agent_harness/discovery.py`：项目探测。
 - `src/agent_harness/assessment.py`：接入评估。
-- `src/agent_harness/upgrade.py`：升级规划和验证。
+- `src/agent_harness/upgrade.py`：升级规划与执行。
+- `src/agent_harness/upgrade_verify.py`：upgrade 后置校验（含 GitLab #20 sentinel 扫描）。
 - `src/agent_harness/initializer.py`：初始化主流程（含插件渲染）。
 - `src/agent_harness/templates/common/`：生成到目标项目的骨架文件（含 .claude/rules/、4 个 common 命令、L2 参考清单 references/）。
 - `src/agent_harness/presets/`：9 种项目类型预设。

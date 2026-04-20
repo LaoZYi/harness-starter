@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import fnmatch
-import json
 from datetime import UTC, datetime
 from difflib import unified_diff
 from pathlib import Path
 
 from ._merge3 import json_merge, merge3
-from ._shared import PKG_DIR, PLACEHOLDER_RE, SUPERPOWERS_ROOT, TEMPLATE_ROOT
+from ._shared import PKG_DIR, SUPERPOWERS_ROOT, TEMPLATE_ROOT
 from .initializer import _load_preset, prepare_initialization
 from .models import UpgradeExecutionResult, UpgradePlanResult
 from .runtime_install import install_runtime
@@ -22,7 +21,7 @@ FILE_CATEGORIES: dict[str, str] = {
     ".claude/hooks/*": "overwrite",
     ".claude/settings.json": "overwrite",
     ".github/*": "overwrite",
-    "CLAUDE.md": "overwrite",
+    "CLAUDE.md": "three_way",
     "CLAUDE.local.md.example": "overwrite",
     "docs/decisions/.gitkeep": "overwrite",
     "docs/superpowers/specs/.gitkeep": "overwrite",
@@ -245,36 +244,4 @@ def execute_upgrade(
         selected_files=sorted(rendered.keys()), dry_run=False, changelog=changelog)
 
 
-def verify_upgrade(target_root: Path) -> list[str]:
-    """Post-upgrade verification. Returns list of warnings (empty = PASS)."""
-    target_root = target_root.resolve()
-    warnings: list[str] = []
-    agents = target_root / "AGENTS.md"
-    if agents.exists():
-        line_count = len(agents.read_text(encoding="utf-8").splitlines())
-        if line_count > 80:
-            warnings.append(f"AGENTS.md 超过 80 行（当前 {line_count} 行），建议拆分到 docs/。")
-    pj = target_root / ".agent-harness" / "project.json"
-    if pj.exists():
-        try:
-            json.loads(pj.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as e:
-            warnings.append(f"project.json 格式错误：{e}")
-    for md in (target_root / "AGENTS.md", target_root / "CLAUDE.md"):
-        if md.exists():
-            text = md.read_text(encoding="utf-8")
-            unfilled = PLACEHOLDER_RE.findall(text)
-            if unfilled:
-                warnings.append(f"{md.name} 中存在未填充的占位符：{', '.join(unfilled[:3])}")
-    # Check for unresolved merge conflict markers in all mergeable files
-    marker = "<<<<<<< "
-    for md in sorted(p for pat in ("**/*.md", "**/*.yml", "**/*.yaml", "**/*.py", "**/*.toml") for p in target_root.glob(pat)):
-        rel = str(md.relative_to(target_root))
-        if get_category(rel) in ("overwrite", "skip"):
-            continue
-        try:
-            if marker in md.read_text(encoding="utf-8"):
-                warnings.append(f"{rel} 中存在未解决的合并冲突标记")
-        except (UnicodeDecodeError, OSError):
-            pass
-    return warnings
+from .upgrade_verify import verify_upgrade  # noqa: E402,F401  re-export
