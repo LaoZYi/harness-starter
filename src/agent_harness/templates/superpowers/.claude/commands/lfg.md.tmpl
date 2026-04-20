@@ -523,7 +523,7 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 **通过门：评审结论为 PASS**
 
 1. 运行 `/request-review` — 整理本次变更的 diff 摘要、关键决策、验收标准，形成结构化评审材料（评审员可直接拿去用）
-2. 运行 `/multi-review` — 6 角色并行评审所有变更（以 `/request-review` 产出为输入）
+2. 运行 `/multi-review` — 6 角色并行评审所有变更（以 `/request-review` 产出为输入）。默认使用 `review` 模式（审查员间上下文隔离，防锚定）；涉及安全或架构决策时用 `--mode challenge`（对抗验证）；复杂权衡用 `--mode consult`（共享上下文）
 3. 收集评审报告
 
 | 结论 | 下一步 |
