@@ -18,3 +18,6 @@ build/
 .agent-harness/squad/
 .agent-harness/.stop-hook-skip
 .agent-harness/audit.jsonl
+
+# Playwright MCP snapshots (temporary)
+.playwright-mcp/

@@ -1183,3 +1183,84 @@
   - 沉淀：`.agent-harness/lessons.md`（+2 条）、`.agent-harness/memory-index.md`（rebuild）
 - **质量**：527 tests + lint + typecheck + skills-lint + check 全绿；E2E 真实 init→改 project.json→upgrade 验证产物显示 `测试管控平台 / backend-service / pnpm run start`，CLAUDE.md 用户备注保留
 - **完成标准**：5/5 验收标准（R-001~R-005）全 satisfied
+
+---
+
+## 2026-04-20 feat(anti-laziness): 反偷懒 4 道硬门禁（Issue #36）
+
+- **需求**：将快手安全审计文章中的 4 道反偷懒硬门禁泛化为 Harness 通用规则
+- **做了什么**：
+  - 新建 `anti-laziness.md.tmpl` 规则文件，定义数量门禁、上下文隔离、反合理化表、下游消费者门禁
+  - 注入到 `/verify`（第 5.5 步数量门禁）、`/multi-review`（上下文隔离 + 数量门禁）、`/execute-plan`（下游消费者门禁）、`/lfg`（阶段切换交叉引用）
+  - 显式标注 `defensive-temporary` 分类（参见 lessons.md 反偷懒与协作记忆解耦教训）
+- **关键决策**：
+  - 新增独立规则文件而非合入 task-lifecycle.md（后者已 250 行，解耦更清晰）
+  - 只改模板文件，不涉及 Python 运行时代码（门禁是 AI 行为约束，不是运行时逻辑）
+  - verify 的数量门禁插在 R-ID 覆盖检查之前（第 5.5 步），原 5.5 改编号为 5.6
+- **改了哪些文件**：
+  - 新增：`src/agent_harness/templates/common/.claude/rules/anti-laziness.md.tmpl`
+  - 修改：`verify.md.tmpl`、`multi-review.md.tmpl`、`execute-plan.md.tmpl`、`lfg.md.tmpl`
+  - dogfood 同步：`.claude/rules/anti-laziness.md`、`.claude/commands/{verify,multi-review,execute-plan,lfg}.md`
+- **完成标准**：7/7 验收标准全 satisfied
+
+---
+
+## 2026-04-20 feat(multi-review): 跨模型对抗验证 + 争议解决循环（Issue #37）
+
+- **需求**：为 /multi-review 新增 3 种验证模式和结构化争议解决机制
+- **做了什么**：
+  - 新增 review/challenge/consult 三种模式（`--mode` 参数），review 为默认
+  - review 模式：审查员间上下文隔离，不看彼此结论，防锚定
+  - challenge 模式：额外 spawn 挑战者 SubAgent 推翻 P0/P1 结论
+  - consult 模式：保留现有共享上下文行为（向后兼容）
+  - 争议解决循环：论述→仲裁→裁决，最多 3 轮，不一致标 NEEDS_HUMAN_REVIEW
+  - /lfg 阶段 5 默认 review 模式，安全/架构场景用 challenge
+- **关键决策**：
+  - 争议解决循环放在 Step 4（辩论）之后作为 Step 4.5，不重构现有辩论流程
+  - 仲裁者不被告知谁是"原始方"谁是"挑战者"，消除偏见
+  - 争议记录不得静默丢弃，与 Issue #38 静默丢弃检测呼应
+- **改了哪些文件**：
+  - 修改：`multi-review.md.tmpl`、`lfg.md.tmpl` + 2 个 dogfood 产物
+- **完成标准**：6/6 验收标准全 satisfied
+
+---
+
+## 2026-04-20 feat(verify,multi-review): 静默丢弃检测（Issue #38）
+
+- **需求**：被判定为「不适用」的检查项/发现必须有据可查，禁止静默丢弃
+- **做了什么**：
+  - verify 模板：新增「跳过清单」汇总格式（表格）+ 30% 告警阈值
+  - multi-review 模板：新增「静默丢弃检测」段（判定不是问题必须给证据 + Dismissed 清单 + 50% 告警）
+- **关键决策**：
+  - verify 用 30% 阈值（检查清单项多，跳过比例天然低）
+  - multi-review 用 50% 阈值（发现数少，dismissed 比例天然高）
+  - 告警不阻塞流程，只在报告中醒目展示
+- **改了哪些文件**：verify.md.tmpl、multi-review.md.tmpl + 2 个 dogfood 产物
+- **完成标准**：3/3 验收标准全 satisfied
+
+---
+
+## 2026-04-20 feat(verify): spec-to-code compliance（Issue #40）
+
+- **需求**：在 /verify 中新增规格到实现的结构化漂移检测
+- **做了什么**：verify 新增第 5.7 步（意图提取→代码映射→置信度评分→偏差分类），lfg 阶段 7.2.5 引用
+- **改了哪些文件**：verify.md.tmpl、lfg.md.tmpl + 2 个 dogfood 产物
+- **完成标准**：3/3 验收标准全 satisfied
+
+---
+
+## 2026-04-20 feat(tdd,verify): 测试质量增强（Issue #41）
+
+- **需求**：强化测试套件的有效性度量——测试全绿 ≠ 测试够好
+- **做了什么**：tdd 新增第 5.5 步（突变测试 + 属性测试指导），verify 新增第 5.8 步（测试质量评估）
+- **关键决策**：两步都设为评估性/建议性不阻塞循环，避免流程膨胀
+- **改了哪些文件**：tdd.md.tmpl、verify.md.tmpl + 2 个 dogfood 产物
+
+---
+
+## 2026-04-20 feat(cso): sharp-edges 检测（Issue #42）
+
+- **需求**：在 /cso 新增 footgun API 和易误用配置检测，补充开发者视角
+- **做了什么**：/cso 新增阶段 10.5（Sharp Edges），通用 footgun + 框架特异性 footgun + 配置文件 footgun 三类
+- **关键决策**：作为 STRIDE 互补阶段而非替代，可 --mode sharp-edges 单独触发
+- **改了哪些文件**：cso.md.tmpl + dogfood 产物
