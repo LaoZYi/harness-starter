@@ -1278,3 +1278,24 @@
   - TDD：先用 hostile global hook 模拟用户环境（RED 复现 1 ERROR + 1 FAIL），再加 env 隔离（GREEN）
 - **改了哪些文件**：`tests/_git_helper.py`、`tests/test_cli.py`、`tests/test_git_env_isolation.py`（新增）、`docs/runbook.md`、`docs/workflow.md`、`docs/release.md`、`docs/architecture.md`、`CHANGELOG.md`
 - **完成标准**：4/4 验收标准全 satisfied（`make test` 529/529、两处 env 正确、新节就位、计数同步）
+
+---
+
+## 2026-04-20 feat(rules,lessons): Imprint 5 型冲突解析吸收（GitHub #43 / GitLab #22）
+
+- **需求**：吸收 ilang-ai/Imprint v2.1 的 Conflict Resolution 5 型分类到 lessons 维护链路
+- **做了什么**：
+  - 新元规则 `.claude/rules/knowledge-conflict-resolution.md`（文案化 T1-T5 + 明确 lessons 域只接入 T3/T4/T5）
+  - `/lint-lessons` 步骤 2.2 每对冲突额外标注 resolution-type + 建议动作精化
+  - `/compound` 新增步骤 3.5 冲突预检：区分"重复"与"矛盾"，后者按分型提示人工裁决，不 block
+  - ADR 0002 记录取舍（不吸收 Imprint confidence / DSL / 用户级 profile）
+  - 14 条新测试 + 5 份文档计数同步 529 → 543
+- **关键决策**：
+  - 症状维度 × 解决维度 **正交叠加**，不替换原有 5 种症状分类
+  - 只接入 T3/T4/T5 到 lessons 域；T1/T2 保留描述但 out-of-scope（为未来 Imprint 增量吸收预留锚点）
+  - 冲突预检始终**非 blocking**——AI 提示分型，用户裁决
+  - 走简化完整通道（evolution 但跳过 /ideate + /brainstorm），因为 Issue body 已有具体落地方案
+- **改了哪些文件**：
+  - 新增：规则模板 + dogfood 产物 + ADR + spec + plan + 测试文件 = 6
+  - 改：2 个 skill 模板 + 2 个 dogfood 产物 + CHANGELOG + 4 个 docs = 9
+- **完成标准**：7/7 R-ID satisfied；make ci 543/543 pass
