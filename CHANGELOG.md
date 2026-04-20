@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed — 测试 env 隔离用户全局 gitconfig（GitLab #21，2026-04-20）
+
+修掉 `make test` 在本地 git 配置带强制 pre-commit hook / `core.hooksPath` / `commit.gpgsign` 的机器上整体崩盘的问题（用户侧 27 ERROR + 1 FAIL）。
+
+- `tests/_git_helper.py` 新增 `isolated_git_env()`：`GIT_CONFIG_GLOBAL=/dev/null` + `GIT_CONFIG_SYSTEM=/dev/null`，`init_git_repo` 所有 `subprocess.run` 统一传入
+- `tests/test_cli.py::_run_harness` 沿用同一隔离 env，确保 harness 子进程内部 `git commit`（`cli_utils.maybe_git_commit`）不被用户全局 hook 拦截
+- `tests/test_git_env_isolation.py` 新增 2 条契约：模拟「拒绝一切 commit 的 hostile 全局 hook」，分别验证 `_git_helper` 和 `_run_harness` 不受影响
+- 产品代码零改动：`maybe_git_commit` 原有「commit 失败 → 改动已 staged + 打印引导」是正确的用户体验，仅把测试对用户环境的依赖拆掉
+- `docs/runbook.md` 新增「本地 git 全局配置与测试」一节，提醒新增 subprocess git 测试时复用 `isolated_git_env()` 模式
+
 ### Changed — `/use-superpowers` 更名为 `/which-skill`（2026-04-16）
 
 消除与上游 obra/superpowers 开源项目的命名歧义。`/use-superpowers` 容易让用户误以为在调用 superpowers 项目本身，实际功能是「技能选择引导」。
@@ -323,7 +333,7 @@
 
 ### Infrastructure
 
-- 527 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条）
+- 529 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

@@ -5,7 +5,7 @@
 - `make check`：校验框架仓库结构、模板入口、Python 语法、dogfood 漂移检测，并先跑 `lint`（ruff）。
 - `make lint`：运行 ruff 代码风格检查（需先装 dev 工具：`uv sync --extra dev`）。
 - `make typecheck`：运行 mypy 类型检查。
-- `make test`：运行框架级回归测试（527 个）。
+- `make test`：运行框架级回归测试（529 个）。
 - `make ci`：串联 `check` + `typecheck` + `skills-lint` + `test`（提交前完整跑一遍）。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -13,6 +13,25 @@
 - `make upgrade-plan TARGET=/path/to/repo ARGS="..."`：预览升级会新增和改动哪些文件。
 - `make upgrade-apply TARGET=/path/to/repo ARGS="..."`：执行升级并自动备份被覆盖文件。
 - `make init TARGET=/path/to/repo ARGS="..."`：初始化目标项目。
+
+## 本地 git 全局配置与测试
+
+`make test` 里大量用例会在临时目录里 `git init` + 空 commit。如果开发者本机的
+全局 gitconfig 带了 pre-commit hook、`core.hooksPath` 指向强制校验目录、
+`commit.gpgsign = true` 却没配 GPG key 等约束，默认继承下去会让测试集体崩盘
+（GitLab #21 就是这种现象：27 个 `setUp` ERROR + 1 个 FAIL）。
+
+测试已通过 `tests/_git_helper.py::isolated_git_env()` 统一屏蔽：所有子进程拿到
+的 env 里 `GIT_CONFIG_GLOBAL=/dev/null` + `GIT_CONFIG_SYSTEM=/dev/null`，
+用户全局 / 系统级 gitconfig 对测试不可见。`tests/test_cli.py::_run_harness`
+在调 `harness` 二进制前也套了同一层 env，避免 harness 内部 `git commit` 被拦。
+
+**新增测试如果需要起 git 子进程，请照抄这个模式**：
+
+- 调 `_git_helper.init_git_repo(path)` 初始化临时仓库（已内建 env 隔离）
+- 需要额外子进程调 `git` 时，传 `env=isolated_git_env()`
+- 不要自己 inline `subprocess.run(["git", "init", ...])`；容易漏掉隔离，其他
+  开发者机器上就会偶发挂
 
 ## 多 agent 日志隔离（子 agent diary）
 

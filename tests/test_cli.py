@@ -9,6 +9,8 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).parent))
+from _git_helper import isolated_git_env  # noqa: E402
 
 _TEST_CONFIG = {
     "project_name": "Test Project",
@@ -28,8 +30,10 @@ _TEST_CONFIG = {
 
 
 def _run_harness(*args: str) -> subprocess.CompletedProcess[str]:
-    import os
-    env = {**os.environ, "PYTHONPATH": str(REPO_ROOT / "src")}
+    # 隔离用户全局 / 系统级 gitconfig：若用户本地 git 有强制 pre-commit hook、
+    # core.hooksPath、commit.gpgsign 等设置，这些不应泄漏到 harness 子进程内部的
+    # git 操作里（Issue gl#21）。
+    env = {**isolated_git_env(), "PYTHONPATH": str(REPO_ROOT / "src")}
     return subprocess.run(
         [sys.executable, "-m", "agent_harness", *args],
         capture_output=True, text=True, env=env,
