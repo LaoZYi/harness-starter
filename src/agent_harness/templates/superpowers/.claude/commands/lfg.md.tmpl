@@ -453,6 +453,8 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 **通过门：所有计划步骤完成 + 测试通过**
 
+> **反偷懒门禁（Issue #36，`.claude/rules/anti-laziness.md`）**：阶段切换时 4 道门禁生效——数量门禁（每项检查有明确状态）、上下文隔离（评审在独立 SubAgent）、反合理化表（跳过必须给具体理由）、下游消费者门禁（前置产物存在且非空）。各 skill 在自身文档中落地具体检查逻辑。
+
 > **Stop hook 守护（Issue #13）**：阶段 4 期间若 AI 试图停止但 `current-task.md` 仍有未勾选 checkbox，`.claude/hooks/stop.sh` 会 block 并要求先更新进度。若发现 `.agent-harness/.stop-hook-skip` sentinel 存在，**先询问用户**是否允许跳过——sentinel 残留会让守护机制失效。完成任务后务必删除 sentinel（`rm -f .agent-harness/.stop-hook-skip`），让下次任务重新受保护。
 
 #### 4.1 按步执行
