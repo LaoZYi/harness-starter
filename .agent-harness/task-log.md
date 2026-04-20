@@ -1264,3 +1264,17 @@
 - **做了什么**：/cso 新增阶段 10.5（Sharp Edges），通用 footgun + 框架特异性 footgun + 配置文件 footgun 三类
 - **关键决策**：作为 STRIDE 互补阶段而非替代，可 --mode sharp-edges 单独触发
 - **改了哪些文件**：cso.md.tmpl + dogfood 产物
+
+---
+
+## 2026-04-20 fix(tests): env 隔离用户全局 gitconfig（GitLab #21）
+
+- **需求**：外部使用者在带强制 pre-commit hook / `core.hooksPath` 的机器上跑 `make test` 批量失败（27 ERROR + 1 FAIL）
+- **做了什么**：测试侧统一用 `GIT_CONFIG_GLOBAL=/dev/null` + `GIT_CONFIG_SYSTEM=/dev/null` 屏蔽用户全局 gitconfig
+- **关键决策**：
+  - 产品代码零改动——`maybe_git_commit` 的「commit 失败→保留 staged + 友好提示」是正确用户体验
+  - 不采用 `--no-verify` 绕过（违反全局"never skip hooks"准则）；选 env 完全隔离方案
+  - 封装成 `isolated_git_env()` 公共 helper，避免各测试自己 inline subprocess.run
+  - TDD：先用 hostile global hook 模拟用户环境（RED 复现 1 ERROR + 1 FAIL），再加 env 隔离（GREEN）
+- **改了哪些文件**：`tests/_git_helper.py`、`tests/test_cli.py`、`tests/test_git_env_isolation.py`（新增）、`docs/runbook.md`、`docs/workflow.md`、`docs/release.md`、`docs/architecture.md`、`CHANGELOG.md`
+- **完成标准**：4/4 验收标准全 satisfied（`make test` 529/529、两处 env 正确、新节就位、计数同步）

@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
-- 2026-04-17 — /lfg 威力终补（3 处收官）
-- 2026-04-17 — /lfg 威力补强（5 处新特性集成）
-- 2026-04-17 — Python 现代化（C：match/case 重构）
-- 2026-04-17 — 依赖升级（D 接续：upgrade dependencies）
-- 2026-04-17 — 全量文档同步 + ruff/mypy 集成（E 体检 + D 修复）
+- 2026-04-20 feat(cso): sharp-edges 检测（Issue #42）
+- 2026-04-20 feat(tdd,verify): 测试质量增强（Issue #41）
+- 2026-04-20 feat(verify): spec-to-code compliance（Issue #40）
+- 2026-04-20 feat(verify,multi-review): 静默丢弃检测（Issue #38）
+- 2026-04-20 feat(multi-review): 跨模型对抗验证 + 争议解决循环（Issue #37）
 
 ## 参考资料（.agent-harness/references/）
 

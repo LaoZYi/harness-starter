@@ -8,7 +8,7 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 
 > 新增条目时在对应分类追加 anchor 链接。若出现新分类，在此表新增一行并同步 `/compound` 指令。anchor 规则见 `/compound` 指令第 4.5 步。
 
-- **测试**: [文件锁顺序必须先锁再 truncate](#2026-04-12-测试-文件锁顺序必须先锁再-truncate), [优先级契约测试必须覆盖所有优先级等级](#2026-04-20-测试-优先级契约测试必须覆盖所有优先级等级)
+- **测试**: [文件锁顺序必须先锁再 truncate](#2026-04-12-测试-文件锁顺序必须先锁再-truncate), [优先级契约测试必须覆盖所有优先级等级](#2026-04-20-测试-优先级契约测试必须覆盖所有优先级等级), [测试脚手架起 git subprocess 必须 env 隔离用户全局配置](#2026-04-20-测试-测试脚手架起-git-subprocess-必须-env-隔离用户全局配置)
 - **模板**: [模板中的文档占位符语法会被模板引擎吞掉](#2026-04-09-模板-模板中的文档占位符语法会被模板引擎吞掉), [命令重命名后模板文件也要全量扫描](#2026-04-09-模板-命令重命名后模板文件也要全量扫描), [lfg 模板引用 NOT_IN_LFG 技能要避开 "运行 /xxx" 措辞](#2026-04-16-模板-lfg-模板引用-not_in_lfg-技能要避开-运行-xxx-措辞)
 - **流程**: [进化去重必须覆盖已关闭 Issue](#2026-04-08-流程-进化去重必须覆盖已关闭-issue), [新增技能时文档散布计数需全量扫描](#2026-04-08-流程-新增技能时文档散布计数需全量扫描), [新任务覆盖前必须先关闭旧任务](#2026-04-09-流程-新任务覆盖前必须先关闭旧任务), [同一项目的增量吸收用 evolution-update 标签](#2026-04-12-流程-同一项目的增量吸收用-evolution-update-标签), [CLI flag 假设在 plan 阶段必须 source-verify](#2026-04-12-流程-cli-flag-假设在-plan-阶段必须-source-verify), [评估报告前必须先查合约测试](#2026-04-13-流程-评估报告前必须先查合约测试), [plan 阶段判 out-of-scope 前必须 grep 硬编码数字](#2026-04-16-流程-plan-阶段判-out-of-scope-前必须-grep-硬编码数字), [能力集成度评估必须用量化扫描而非主观判断](#2026-04-17-流程-能力集成度评估必须用量化扫描而非主观判断), [补强任务按 ROI 递减主动收手](#2026-04-17-流程-补强任务按-roi-递减主动收手)
 - **工具脚本**: [_runtime 模块清单是 dogfood 的一部分](#2026-04-14-工具脚本-runtime-模块清单是-dogfood-的一部分), [dogfood 产物在 .claude 下默认 gitignore 需 force-add](#2026-04-14-工具脚本-dogfood-产物在-claude-下默认-gitignore-需-force-add), [dogfood 命令展平](#2026-04-08-工具脚本-dogfood-命令展平), [重复工具函数提取后必须删除原始定义](#2026-04-09-工具脚本-重复工具函数提取后必须删除原始定义), [shell 命令构造必须-shlex-quote-所有路径](#2026-04-12-工具脚本-shell-命令构造必须-shlex-quote-所有路径), [守卫禁用白名单改自动发现](#2026-04-13-工具脚本-守卫禁用白名单改自动发现)
@@ -26,6 +26,13 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 ```
 
 ---
+
+## 2026-04-20 [测试] 测试脚手架起 git subprocess 必须 env 隔离用户全局配置
+
+- 错误：`make test` 在某开发者机器上批量失败（GitLab #21：27 ERROR + 1 FAIL），全部是临时仓库里的 `git commit`。根因是该用户本地全局 gitconfig 带了 pre-commit hook / `core.hooksPath` 指向强制校验目录（他们自己的协作流程要求"必须走 worktree 分支"）。原 `tests/_git_helper.init_git_repo` 只设了 local `user.email/name` 和 `commit.gpgsign=false`，没屏蔽全局配置，hook 继承下去直接 `exit 1`；同一问题也让 `tests/test_cli.py::_run_harness` 调的 `harness init --git-commit` 内部 commit 被拦，`cli_utils.maybe_git_commit` 捕获后降级为 warning，`git log` 为空，`test_git_commit_flag` 断言失败
+- 根因：`subprocess.run(["git", ...])` 默认继承整个 `os.environ`，git 会读 `~/.gitconfig`、`/etc/gitconfig`、以及 `GIT_*` 环境变量指向的配置。local repo config 只能覆盖**同名键**，没法阻止全局 `core.hooksPath` 或 pre-commit 这类带副作用的指令生效
+- 规则：任何测试脚手架起 git 子进程时，env 必须同时带 `GIT_CONFIG_GLOBAL=/dev/null` 和 `GIT_CONFIG_SYSTEM=/dev/null`（git 官方支持的完全隔离入口，不依赖 local config 能否"反向覆盖"）。封装成 `isolated_git_env()` 公共 helper，所有 git 子进程走它；不允许各测试自己 inline `subprocess.run(["git", ...])` 绕开。新增跨边界测试（测试→subprocess 工具→其内部 git）时，工具的 env 也要透传这套隔离
+- 适用场景：任何需要在临时目录 `git init` + commit 的测试；调用 CLI 工具（工具内部会跑 git）的集成测试；CI 机器和开发者机器 git 配置差异大的跨平台项目；类似的"子进程继承父 env"踩坑（SSH agent、npm rc、pip config、shell rc 等）
 
 ## 2026-04-20 [架构设计] answers 与持久化 schema 分裂必须显式桥接
 
