@@ -1160,3 +1160,26 @@
   - lfg 从 906 → 920 行（+14 行）
 - **改了哪些文件**：`src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`、dogfood `.claude/commands/lfg.md`
 - **质量**：516 tests + lint + typecheck + skills-lint 全绿；威力分预期 8.75 → 9.75
+
+
+## 2026-04-20 GitLab #20 修复：harness upgrade 未读 project.json
+
+- **需求**：GitLab Issue #20 `[Bug] harness upgrade 时未读取 project.json，重新渲染落到模板默认值`。backend-service + pnpm 项目升级后 CLAUDE.md / AGENTS.md / commands/*.md / docs/product.md 全部被改成 `api-framework / worker / npm run start`
+- **做了什么**：
+  1. `cli_answers.load_project_json` 新函数读取 `.agent-harness/project.json` 并做 schema 归一化（`project_summary` → `summary`，`commands.run/check/test/ci` → 扁平 `*_command`）
+  2. `resolve_answers` 优先级链改为 `CLI > .harness.json > project.json > profile(discover) > None`
+  3. `upgrade.FILE_CATEGORIES` 把 `CLAUDE.md` 从 `overwrite` 改为 `three_way`，用户笔记升级后保留
+  4. `upgrade_verify.verify_upgrade` 新增 sentinel 回落检测：project.json 的 summary 已填但产物里仍出现「待补充项目目标」时发 warning
+  5. 按 AGENTS.md 280 行硬限拆分 `cli_answers.py` / `upgrade_verify.py`
+  6. 11 条新测试（6 优先级契约 + 1 CLAUDE.md three_way + 4 sentinel）
+- **关键决策**：
+  - **schema 归一化函数作为唯一入口**：所有读 project.json 的消费者（`resolve_answers` / `verify_upgrade`）走同一个 `load_project_json`，禁止各自解包。吸收成教训"answers 与持久化 schema 分裂必须显式桥接"
+  - CLAUDE.md 按 Issue 建议直接改 three_way，不加 feature flag
+  - sentinel 扫描只针对 summary（Issue 明确案例），`api-framework` 是用户项目自身 pyproject/package.json 的 `name`，不加扫
+- **改了哪些文件**：
+  - 新增：`src/agent_harness/cli_answers.py`、`src/agent_harness/upgrade_verify.py`、`tests/test_resolve_answers.py`
+  - 修改：`src/agent_harness/cli.py`（瘦身到 243 行）、`src/agent_harness/upgrade.py`（瘦身到 248 行 + CLAUDE.md three_way）、`tests/test_apply_upgrade.py`、`tests/test_upgrade.py`
+  - 文档：`AGENTS.md`、`docs/architecture.md`、`CHANGELOG.md`、`docs/runbook.md`、`docs/workflow.md`、`docs/release.md`（测试数 516 → 527）
+  - 沉淀：`.agent-harness/lessons.md`（+2 条）、`.agent-harness/memory-index.md`（rebuild）
+- **质量**：527 tests + lint + typecheck + skills-lint + check 全绿；E2E 真实 init→改 project.json→upgrade 验证产物显示 `测试管控平台 / backend-service / pnpm run start`，CLAUDE.md 用户备注保留
+- **完成标准**：5/5 验收标准（R-001~R-005）全 satisfied

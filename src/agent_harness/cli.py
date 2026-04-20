@@ -4,11 +4,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import tomllib
 from dataclasses import asdict
 from pathlib import Path
 
 from .assessment import assess_project
+from .cli_answers import (
+    auto_discover_config, load_project_json, merged_config, resolve_answers,
+)
 from .cli_utils import (
     console, maybe_git_commit, print_assessment, print_init_result, print_profile,
     print_upgrade_apply, print_upgrade_plan, print_verify_warnings,
@@ -19,17 +21,15 @@ from .init_flow import (
     interactive_init, non_interactive_init,
 )
 from .initializer import initialize_project
-from .models import ProjectProfile
 from .upgrade import plan_upgrade as _plan_upgrade, execute_upgrade as _execute_upgrade, verify_upgrade as _verify
 from .audit_cli import register_subcommand as _reg_audit
 from .agent_cli import register_subcommand as _reg_agent
 from .squad.cli import register_subcommand as _reg_squad
 
-PROJECT_FIELDS = (
-    "project_name", "project_slug", "summary", "project_type",
-    "language", "package_manager", "run_command", "test_command",
-    "check_command", "ci_command", "deploy_target", "sensitivity",
-)
+# Back-compat: tests & external callers reference these names on cli module.
+_resolve_answers = resolve_answers
+_load_project_json = load_project_json
+_auto_discover_config = auto_discover_config
 
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[2]
 
@@ -37,16 +37,6 @@ def _guard_self_init(target: Path) -> None:
     if target.resolve() == _FRAMEWORK_ROOT:
         raise SystemExit("错误：目标目录是框架仓库自身。请指定目标项目：harness init /path/to/your-project")
 
-def _load_config(path: Path) -> dict[str, object]:
-    if path.suffix == ".json":
-        return json.loads(path.read_text(encoding="utf-8"))
-    if path.suffix == ".toml":
-        return tomllib.loads(path.read_text(encoding="utf-8"))
-    raise SystemExit("配置文件仅支持 .json 或 .toml")
-
-def _auto_discover_config(target: Path) -> dict[str, object]:
-    p = target / ".harness.json"
-    return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
 
 def _add_common_project_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--project-name")
@@ -63,30 +53,6 @@ def _add_common_project_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--sensitivity", choices=SENSITIVITY_CHOICES)
     parser.add_argument("--has-production", action="store_true")
     parser.add_argument("--no-production", action="store_true")
-
-def _resolve_answers(args: argparse.Namespace, profile: ProjectProfile, config: dict[str, object]) -> dict[str, object]:
-    answers: dict[str, object] = {}
-    for key in PROJECT_FIELDS:
-        cli_value = getattr(args, key.replace("-", "_"), None)
-        if cli_value is not None:
-            answers[key] = cli_value
-        elif key in config:
-            answers[key] = config[key]
-        else:
-            answers[key] = getattr(profile, key, None)
-    if args.has_production:
-        answers["has_production"] = True
-    elif args.no_production:
-        answers["has_production"] = False
-    elif "has_production" in config:
-        answers["has_production"] = bool(config["has_production"])
-    else:
-        answers["has_production"] = profile.has_production
-    return answers
-
-def _merged_config(target: Path, args: argparse.Namespace) -> dict[str, object]:
-    explicit = _load_config(Path(args.config).resolve()) if args.config else {}
-    return {**_auto_discover_config(target), **explicit}
 
 # ── command handlers ──
 def _cmd_init(args: argparse.Namespace) -> None:
@@ -112,7 +78,7 @@ def _cmd_init(args: argparse.Namespace) -> None:
     elif is_interactive:
         ask_scaffold(target)
     profile = discover_project(target)
-    config = _merged_config(target, args)
+    config = merged_config(target, args)
     if is_interactive:
         answers = interactive_init(target, profile, config)
     else:
@@ -129,7 +95,7 @@ def _cmd_upgrade_plan(args: argparse.Namespace) -> None:
     target = Path(args.target).resolve()
     _guard_self_init(target)
     profile = discover_project(target)
-    config = _merged_config(target, args)
+    config = merged_config(target, args)
     answers = _resolve_answers(args, profile, config)
     result = _plan_upgrade(target, answers, only_files=args.only or None)
     if args.json:
@@ -145,7 +111,7 @@ def _cmd_upgrade_apply(args: argparse.Namespace) -> None:
     target = Path(args.target).resolve()
     _guard_self_init(target)
     profile = discover_project(target)
-    config = _merged_config(target, args)
+    config = merged_config(target, args)
     answers = _resolve_answers(args, profile, config)
     result = _execute_upgrade(target, answers, only_files=args.only or None, dry_run=args.dry_run)
     print_upgrade_apply(result)

@@ -323,7 +323,7 @@
 
 ### Infrastructure
 
-- 516 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条）
+- 527 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

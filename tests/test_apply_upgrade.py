@@ -117,6 +117,23 @@ class ThreeWayMergeUpgradeTests(unittest.TestCase):
         self.assertIn("My Custom Section", after)
         self.assertIn("User content here", after)
 
+    def test_upgrade_preserves_user_additions_in_claude_md(self) -> None:
+        """GitLab Issue #20：CLAUDE.md 应用户可编辑，升级时走 three_way 保留自定义内容。"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "project"
+            initialize_project(root, {**_BASE_ANSWERS})
+            claude_md = root / "CLAUDE.md"
+            user_marker = "# 我的本地备注 - 不应被覆盖"
+            claude_md.write_text(claude_md.read_text(encoding="utf-8") + "\n" + user_marker + "\n", encoding="utf-8")
+
+            result = execute_upgrade(root, {**_BASE_ANSWERS})
+            updated_text = claude_md.read_text(encoding="utf-8")
+
+            self.assertIn("CLAUDE.md", result.merged_files,
+                          "CLAUDE.md 应走 three_way 合并而非 overwrite")
+            self.assertIn(user_marker, updated_text,
+                          "用户在 CLAUDE.md 的本地备注在 upgrade 后应保留")
+
 
 class ConflictReportingTests(unittest.TestCase):
     def test_conflict_markers_in_output(self) -> None:
