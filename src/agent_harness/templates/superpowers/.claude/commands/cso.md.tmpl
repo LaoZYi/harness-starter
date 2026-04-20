@@ -126,6 +126,46 @@ git log -p | grep -iE '(password|secret|api_key|token|private_key)\s*[:=]'
 | DoS（拒绝服务） | 资源耗尽 | 限流、超时、资源限制 |
 | Elevation（提权） | 权限提升 | 角色校验、最小权限原则 |
 
+### 阶段 10.5：Sharp Edges（footgun 检测，Issue #42）
+
+与 STRIDE 从攻击者视角互补——本阶段从开发者视角识别 **footgun API** 和**易误用配置**。可通过 `--mode sharp-edges` 单独触发，或默认作为 CSO 的一个子阶段执行。
+
+#### 检测项
+
+**通用 footgun API**：
+- `eval()` / `exec()` / `Function()` — 动态代码执行
+- `pickle.loads()` / `yaml.load()`（非 safe_load）— 反序列化 RCE
+- `subprocess.call(shell=True)` / `os.system()` — shell 命令注入
+- 硬编码 `tempfile.mktemp()`（vs `mkstemp()`）— TOCTOU
+- `random.random()` 用于密码学场景（应用 `secrets`）
+
+**框架特异性 footgun**：
+- Django：`DEBUG=True` in production、`SECRET_KEY` 硬编码、`ALLOWED_HOSTS=['*']`
+- Flask：`app.secret_key` 硬编码、`debug=True` 部署
+- Express：`app.use(cors())` 无配置（默认 allow all）
+- Spring：`@PreAuthorize` 缺失的暴露端点
+- MyBatis：`${}` 字符串拼接（vs `#{}` 参数化）
+
+**配置文件 footgun**：
+- CORS `allow_all` / `*`
+- 无 rate limit 的公开端点
+- 无 CSRF token 的状态变更请求
+- cookie 无 `Secure` / `HttpOnly` / `SameSite` 属性
+- TLS 配置允许老旧协议（SSLv3 / TLS 1.0）
+
+#### 输出格式
+
+```
+## Sharp Edges 清单
+
+| # | 位置 | 类型 | 风险等级 | 推荐替代 |
+|---|------|------|---------|---------|
+| 1 | app.py:42 | footgun API | High | 用 `subprocess.run([...], shell=False)` 替代 `shell=True` |
+| 2 | settings.py:15 | 配置误用 | Critical | DEBUG 从环境变量读取，生产环境必须为 False |
+```
+
+与 STRIDE 的关系：STRIDE 问「攻击者怎么进来」，Sharp Edges 问「开发者怎么踩坑」。两者互补，不重复。
+
 ### 阶段 11：数据分类
 
 识别敏感数据处理：
