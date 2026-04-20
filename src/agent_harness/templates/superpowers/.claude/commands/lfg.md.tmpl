@@ -597,6 +597,10 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 有 `missed` 的 R-ID → 回到阶段 4 补充实施；有 `out-of-scope` 的 → 🔴 展示给用户确认。
 
+#### 7.2.5 Spec-to-Code Compliance（Issue #40）
+
+如果上游 `/spec` 产出过规格文档，在 R-ID 核验后执行 `/verify` 的第 5.7 步——逐条检查实现是否忠实匹配规格意图（aligned / drifted / missing）。`missing` 等同于 R-ID missed，回阶段 4；`drifted` 展示给用户判断。无 `/spec` 产出则跳过。
+
 #### 7.3 穷举验证（关键路径）
 
 如果本次改动涉及**数据安全、用户内容、文件读写、升级迁移**等关键路径，必须做穷举端到端验证：
