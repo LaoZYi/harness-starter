@@ -6,7 +6,7 @@
 
 1. **探测**：扫描目标项目，产出结构化画像（语言、包管理器、命令、目录结构）。
 2. **评估**：根据画像产出接入评分、缺口和建议。
-3. **初始化**：根据项目类型和探测结果生成文档/配置文件。支持 `--scaffold` 从现有技术框架创建——本地目录路径或远端 git URL 自动检测（含 `--scaffold-ref` branch/tag + `--scaffold-subdir` 子目录）。交互式问答支持返回上一步和确认修改。
+3. **初始化**：根据项目类型和探测结果生成文档/配置文件。支持三种脚手架来源——`--scaffold <本地路径>`、`--scaffold <git URL>`（含 `--scaffold-ref` branch/tag + `--scaffold-subdir` 子目录）、`--scaffold-cmd "<命令>"`（执行 `npm create vite@latest . -- --template react` / `cargo init` / `django-admin startproject` 等主流脚手架）。`--scaffold` 与 `--scaffold-cmd` 互斥。交互式问答支持返回上一步和确认修改。
 4. **工作流技能**：默认生成 32 个结构化开发技能命令（融合 superpowers + compound-engineering + gstack + 12-factor-agents），覆盖构思、设计、计划、执行、评审、安全、沉淀、自我进化全生命周期。可通过 `--no-superpowers` 关闭。外加 4 个 common 层命令（`/process-notes`、`/digest-meeting`、`/recall`、`/source-verify`）不受 `--no-superpowers` 影响。其中 `/digest-meeting` 是研发流程的源头入口——把多人讨论的语音转文字原始记录转为框架可消费的结构化产物（init 模式填文档 / iterate 模式写 current-task）。
 5. **首次分析**：初始化后 current-task.md 预填分析任务，AI 打开项目自动补全文档。
 6. **升级**：对已接入的项目做增量升级，支持三方合并（保留用户内容）、diff 预览、选择性升级和自动备份。冲突时插入标记并醒目提示。
@@ -15,6 +15,8 @@
 9. **上游同步**：`make sync-superpowers` 从上游仓库拉取最新 skills 变更报告。
 
 ## 持续演进（按时间倒序，最新在顶）
+
+9.5. **`harness init --scaffold-cmd` 第三种脚手架来源（2026-04-21）**：给 `harness init` 新增 `--scaffold-cmd "<命令>"`，执行主流脚手架一步到位生成项目（vite / next / cargo / django / poetry 等）。与 `--scaffold` argparse 互斥。核心设计：`shlex.split` + `subprocess.run(argv, shell=False)` 让 shell 元字符（`;` `&` `|` `$()`）被视为字面参数（sentinel 契约测试锁定）；stdio 继承父终端让交互式脚手架正常问答；`shutil.which` 预检给友好错误；cwd = target 不改写用户参数（用户自己写 `.` 作脚手架 target）。见 ADR 0004。新增 14 条契约测试（总 574）。
 
 10. **Environment Engineering 设计哲学（Issue #34，2026-04-16，参考 holaboss-ai/holaOS）**：在 `docs/architecture.md` 顶部新增「设计哲学：Environment Engineering」段——明确本项目的方法论根基（优化 Agent 运行环境而非 prompt），对比 holaOS 的技术路径差异，消歧义 "Agent Harness" 一词在两个项目中的不同含义。纯文档增补，无代码变化。
 11. **Claude Code 内部机制对齐（Issue #33，2026-04-16，吸收自 Windy3f3f3f3f/how-claude-code-works）**：从 Claude Code 50 万行源码分析中提炼关键洞察，深化本项目规则。（1）`context-budget.md` 新增"5 级渐进式压缩"对照段——说明规则 2 的 ≤ 2k tokens 阈值是 L1 Tool Result Budget 之前的前置防线，`/compact` 对应 L5 Autocompact 是最后手段；（2）`task-lifecycle.md` StuckDetector 前新增"L0 静默恢复"层——区分可重试的瞬时失败（命令超时、工具截断、临时文件冲突、git 锁）vs 同根因 3 次才停，对齐 Claude Code 7 个 continue site 的分级恢复理念；（3）新增 L2 参考文件 `references/claude-code-internals.md`（5 级压缩 + 7 continue site + 工具预执行 + 参考链接）。**不吸收**：agent-design.md 的"工具预执行"增强（F8 Control Flow 已覆盖），具体代码实现（逆向分析可能因版本差异过时）。
@@ -78,6 +80,7 @@ meta 专属命令（统一 `meta-` 前缀）：
 |------|------|
 | `harness init <target>` | 交互式初始化（可选框架脚手架 + 5 个问题 + 确认/回退 + 自动探测） |
 | `harness init <target> --scaffold <path_or_url> [--scaffold-ref <ref>] [--scaffold-subdir <path>]` | 基于现有技术框架创建（本地路径或 git URL 自动检测） |
+| `harness init <target> --scaffold-cmd "<命令>"` | 执行脚手架命令创建（与 `--scaffold` 互斥）|
 | `harness init <target> --assess-only` | 只看探测评估结果 |
 | `harness init <target> --non-interactive` | 全自动初始化 |
 | `harness upgrade plan <target>` | 升级预览 |

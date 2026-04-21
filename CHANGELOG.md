@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Added — `harness init --scaffold-cmd` 支持脚手架命令（2026-04-21）
+
+给 `harness init` 新增第三种脚手架来源：**脚手架命令**（`--scaffold-cmd "<cmd>"`），补齐「本地路径 / 远端 git / 脚手架命令」三种覆盖。支持 `npm create vite@latest` / `npx create-next-app` / `cargo init` / `django-admin startproject` / `poetry new` 等主流脚手架。
+
+**新增**：
+- `src/agent_harness/_scaffold_cmd.py`：`run_scaffold_command()` + 交互辅助 `ask_cmd_scaffold()`。`shlex.split` + `subprocess.run(argv, shell=False)` + stdio 继承父进程 + `shutil.which` 预检
+- `--scaffold-cmd "<命令>"`：执行脚手架命令，与 `--scaffold` 互斥（argparse 互斥组）
+- `docs/decisions/0004-scaffold-from-cmd.md`：ADR 记录取舍（为什么独立 flag、为什么 argv 不 shell=True、为什么 cwd=target 不改写参数）
+- `tests/test_scaffold_cmd.py`：14 条契约（core 8 + shell 元字符安全 2 + CLI 互斥 1 + 交互选项 1 + shutil.which mock 1 + CLI 端到端 1）
+
+**改**：
+- `src/agent_harness/cli.py`：`--scaffold` 与 `--scaffold-cmd` 组成 argparse `add_mutually_exclusive_group()`；`_cmd_init` 加 `scaffold_cmd` 分支
+- `src/agent_harness/init_flow.py::ask_scaffold`：交互选项从 3 扩展到 4（加「是，通过脚手架命令创建」）
+
+**安全**：命令走 argv 列表（`shell=False`），shell 元字符（`;` `&` `|` `$()`）被视为字面参数。契约测试以 sentinel 文件验证 `sh -c 'echo ok' ; rm -rf <sentinel>` 不会删除 sentinel。
+
+**失败**：空命令 / shlex 解析失败（引号不闭合） / 命令未安装 / 返回非 0，均清晰中文报错。
+
 ### Added — `harness init --scaffold` 支持远端 git 仓库（2026-04-21）
 
 `harness init --scaffold <value>` 的 `<value>` 现在自动检测本地路径 vs git URL。配 git URL 后一步从远端拉取模板完成初始化，无需手动 clone。
@@ -368,7 +386,7 @@
 
 ### Infrastructure
 
-- 560 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条、scaffold-from-git 17 条：is_git_url 8 + clone/ref/subdir 5 + git 未装 1 + subdir 路径遍历 2 + CLI 端到端 1）
+- 574 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条、scaffold-from-git 17 条：is_git_url 8 + clone/ref/subdir 5 + git 未装 1 + subdir 路径遍历 2 + CLI 端到端 1；scaffold-from-cmd 14 条：run_scaffold_command 8 + shell 元字符安全 2 + CLI 互斥 1 + 交互选项 1 + shutil.which mock 1 + CLI 端到端 1）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

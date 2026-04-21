@@ -46,7 +46,6 @@ def copy_scaffold(scaffold: Path, target: Path) -> int:
     return count
 
 
-
 def _lang_default(lang_defs: dict[str, str], key: str, profile_val: str, slug: str) -> str:
     if profile_val and profile_val not in ("TODO", "unknown", "未定"):
         return profile_val
@@ -58,7 +57,7 @@ def ask_scaffold(target: Path) -> bool:
     """Ask user if they want to scaffold from an existing framework. Returns True if scaffold was applied."""
     answer = questionary.select(
         "是否基于现有技术框架创建",
-        choices=["否，空项目", "是，指定本地框架路径", "是，从远端 git 仓库拉取"],
+        choices=["否，空项目", "是，指定本地框架路径", "是，从远端 git 仓库拉取", "是，通过脚手架命令创建"],
         default="否，空项目",
     ).ask()
     if answer is None:
@@ -67,15 +66,17 @@ def ask_scaffold(target: Path) -> bool:
         return False
     if answer.startswith("是，从远端"):
         from ._scaffold_git import ask_git_scaffold
-        count = ask_git_scaffold(target)
-        console.print(f"  [green]已从 git 拉取并复制框架代码[/green]：{count} 个文件")
-        return True
-    scaffold_path = questionary.path("框架路径", only_directories=True, validate=lambda v: Path(v).expanduser().is_dir() or "路径不存在").ask()
-    if scaffold_path is None:
-        raise SystemExit(1)
-    scaffold = Path(scaffold_path).expanduser().resolve()
-    count = copy_scaffold(scaffold, target)
-    console.print(f"  [green]已复制框架代码[/green]：{count} 个文件来自 {scaffold.name}")
+        msg = f"  [green]已从 git 拉取并复制框架代码[/green]：{ask_git_scaffold(target)} 个文件"
+    elif answer.startswith("是，通过脚手架"):
+        from ._scaffold_cmd import ask_cmd_scaffold
+        msg = f"  [green]脚手架命令执行完成[/green]：{ask_cmd_scaffold(target)} 个新文件"
+    else:
+        scaffold_path = questionary.path("框架路径", only_directories=True, validate=lambda v: Path(v).expanduser().is_dir() or "路径不存在").ask()
+        if scaffold_path is None:
+            raise SystemExit(1)
+        scaffold = Path(scaffold_path).expanduser().resolve()
+        msg = f"  [green]已复制框架代码[/green]：{copy_scaffold(scaffold, target)} 个文件来自 {scaffold.name}"
+    console.print(msg)
     return True
 
 

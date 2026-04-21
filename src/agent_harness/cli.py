@@ -71,8 +71,13 @@ def _cmd_init(args: argparse.Namespace) -> None:
     if not args.dry_run:
         target.mkdir(parents=True, exist_ok=True)
     is_interactive = not (args.non_interactive or args.config or _auto_discover_config(target))
+    scaffold_cmd_str = getattr(args, "scaffold_cmd", None)
     scaffold_src = getattr(args, "scaffold", None)
-    if scaffold_src:
+    if scaffold_cmd_str:
+        from ._scaffold_cmd import run_scaffold_command
+        count = run_scaffold_command(scaffold_cmd_str, target)
+        console.print(f"  [green]脚手架命令执行完成[/green]：{count} 个新文件")
+    elif scaffold_src:
         from ._scaffold_git import is_git_url, copy_scaffold_from_git
         if is_git_url(scaffold_src):
             copy_scaffold_from_git(
@@ -169,7 +174,9 @@ def build_parser() -> argparse.ArgumentParser:
     init_p = subs.add_parser("init", help="初始化 harness")
     init_p.add_argument("target", help="目标项目路径")
     init_p.add_argument("--config", help="JSON/TOML 配置文件")
-    init_p.add_argument("--scaffold", help="基于现有框架创建：本地目录路径 或 git URL（https/ssh/git@）")
+    scaffold_group = init_p.add_mutually_exclusive_group()
+    scaffold_group.add_argument("--scaffold", help="基于现有框架创建：本地目录路径 或 git URL（https/ssh/git@）")
+    scaffold_group.add_argument("--scaffold-cmd", help="执行脚手架命令创建（例：'npm create vite@latest . -- --template react'）")
     init_p.add_argument("--scaffold-ref", help="--scaffold 为 git URL 时，指定 branch 或 tag（默认仓库默认分支）")
     init_p.add_argument("--scaffold-subdir", help="--scaffold 为 git URL 时，只复制仓内该子目录（默认仓根）")
     _add_common_project_args(init_p)

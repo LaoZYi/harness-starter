@@ -39,6 +39,7 @@ make test
 make ci
 harness init /path/to/repo
 harness init /path/to/repo --assess-only
+harness init /path/to/repo --scaffold-cmd "npm create vite@latest . -- --template react"
 harness upgrade plan /path/to/repo
 harness upgrade apply /path/to/repo
 harness doctor /path/to/repo

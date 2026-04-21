@@ -5,7 +5,7 @@
 - `make check`：校验框架仓库结构、模板入口、Python 语法、dogfood 漂移检测，并先跑 `lint`（ruff）。
 - `make lint`：运行 ruff 代码风格检查（需先装 dev 工具：`uv sync --extra dev`）。
 - `make typecheck`：运行 mypy 类型检查。
-- `make test`：运行框架级回归测试（560 个）。
+- `make test`：运行框架级回归测试（574 个）。
 - `make ci`：串联 `check` + `typecheck` + `skills-lint` + `test`（提交前完整跑一遍）。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -14,7 +14,9 @@
 - `make upgrade-apply TARGET=/path/to/repo ARGS="..."`：执行升级并自动备份被覆盖文件。
 - `make init TARGET=/path/to/repo ARGS="..."`：初始化目标项目。
 
-## `--scaffold` 的两种形态（本地路径 / 远端 git）
+## `--scaffold` 的三种来源（本地路径 / 远端 git / 脚手架命令）
+
+### 1. `--scaffold <本地路径或 git URL>`
 
 `harness init <target> --scaffold <value>` 会自动检测 `<value>`：
 
@@ -37,6 +39,42 @@ harness init ./my-app --scaffold https://gitlab.example.com/team/repos.git --sca
 **鉴权**委托给用户 git 配置（SSH key / credential helper）。本命令不接受 token。
 
 **限制**：`--scaffold-ref` 只支持 branch / tag，不支持任意 commit SHA（`git clone --branch` 能力上限）。
+
+### 2. `--scaffold-cmd "<命令>"`
+
+直接执行一条脚手架命令在 target 下生成项目骨架（与 `--scaffold` 互斥）：
+
+```bash
+# Vite / React
+harness init ./my-app --scaffold-cmd "npm create vite@latest . -- --template react"
+
+# Next.js
+harness init ./my-app --scaffold-cmd "npx create-next-app@latest ."
+
+# Django
+harness init ./my-site --scaffold-cmd "django-admin startproject . mysite"
+
+# Cargo
+harness init ./my-rs --scaffold-cmd "cargo init"
+
+# Poetry
+harness init ./my-py --scaffold-cmd "poetry new ."
+```
+
+**关键点**：
+
+- 命令的**工作目录是 target**，所以大多数脚手架要用 `.` 作自己的 target 参数（或用「在当前目录初始化」的命令形式，如 `cargo init` 而非 `cargo new`）
+- 命令经 `shlex.split` 解析为 argv 列表，**不走 shell**——`;` `&` `|` `$()` 等元字符被视为字面参数
+- stdio 透传父终端，交互式脚手架（vite、create-next-app 等）可正常问答
+- 命令未安装时直接 `SystemExit` 给中文错误（走 `shutil.which` 预检）
+- 命令退出码非 0 视为失败
+
+**互斥**：`--scaffold` 与 `--scaffold-cmd` 不能同时使用（argparse 互斥组）。
+
+### 3. 交互式
+
+不传任何 `--scaffold*` flag 时，`harness init <target>` 会弹出 4 选项：
+「否，空项目 / 是，指定本地框架路径 / 是，从远端 git 仓库拉取 / 是，通过脚手架命令创建」
 
 ## 本地 git 全局配置与测试
 
