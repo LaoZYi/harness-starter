@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-20 feat(rules,lessons): Imprint 5 型冲突解析吸收（GitHub #43 / GitLab #22）
 - 2026-04-20 fix(tests): env 隔离用户全局 gitconfig（GitLab #21）
 - 2026-04-20 feat(cso): sharp-edges 检测（Issue #42）
 - 2026-04-20 feat(tdd,verify): 测试质量增强（Issue #41）
 - 2026-04-20 feat(verify): spec-to-code compliance（Issue #40）
-- 2026-04-20 feat(verify,multi-review): 静默丢弃检测（Issue #38）
 
 ## 参考资料（.agent-harness/references/）
 

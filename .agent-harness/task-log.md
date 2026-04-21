@@ -1299,3 +1299,25 @@
   - 新增：规则模板 + dogfood 产物 + ADR + spec + plan + 测试文件 = 6
   - 改：2 个 skill 模板 + 2 个 dogfood 产物 + CHANGELOG + 4 个 docs = 9
 - **完成标准**：7/7 R-ID satisfied；make ci 543/543 pass
+
+---
+
+## 2026-04-21 feat(init): --scaffold 支持远端 git URL
+
+- **需求**：`harness init --scaffold` 现只支持本地路径，加远端 git URL 拉取
+- **做了什么**：
+  - 新模块 `_scaffold_git.py`：`is_git_url()` + `copy_scaffold_from_git()` + `ask_git_scaffold()` 交互辅助。shallow clone（`--depth 1`）+ tempfile 自动清理 + subdir 路径遍历双保险（`..` 拒绝 + `commonpath` 检测）
+  - `--scaffold` 自动检测 local-path vs git-url（http(s)/ssh/git@/git:// 前缀或 `.git` 后缀）
+  - 新增 `--scaffold-ref <branch|tag>`（不支持任意 commit SHA，`git clone --branch` 上限）+ `--scaffold-subdir <relpath>`（monorepo 模板仓场景）
+  - `ask_scaffold` 交互选项从 2 扩到 3
+  - ADR 0003 Accepted（记录为什么单 flag 自动检测 / 不传 token / 不引 GitPython）
+  - 17 条新测试（8 URL 检测 + 5 clone/ref/subdir + 1 git 未装 + 2 路径遍历防护 + 1 CLI 端到端）
+  - 6 份文档同步（CHANGELOG + runbook + product + architecture + workflow + release），测试计数 543 → 560
+  - **11 场景真实 smoke test**（7 本地 bare repo + 4 真实 GitHub），验证了单测之外的真实网络 transport
+- **关键决策**：
+  - 单 flag 自动检测（Option A）而非独立 `--scaffold-git`——向后兼容 + UX 简洁
+  - shallow clone `--depth 1` 省流量；不缓存
+  - 鉴权委托给用户 git 配置，本命令不接 token 参数（安全）
+  - subdir 双保险校验避免路径逃逸（/cso 分析结论）
+- **改了哪些文件**：5 新 + 9 改
+- **完成标准**：8/8 R-ID satisfied；make ci 560/560 pass；真实 GitHub smoke test 通过
