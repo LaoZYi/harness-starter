@@ -1345,3 +1345,60 @@
   - `shutil.which` 预检：未安装命令给友好中文错误，比让 `FileNotFoundError` 冒出去更好
 - **改了哪些文件**：5 新 + 9 改
 - **完成标准**：9/9 R-ID satisfied；make ci 574/574 pass；穷举脚本 10/10 pass；commit `fe5c07a` 在分支 `feat/scaffold-cmd-20260421`
+
+## 2026-04-21 feat(lfg-audit): /lfg 威力释放度体检工具（10 维 scorecard）
+
+- 需求：评估 /lfg 有没有发挥项目最大威力——「把新能力都收到 /lfg 了，但怎么知道真的发挥了全部威力？」
+- 做了什么：
+  - 新增 `harness lfg audit` CLI：10 维 scorecard + 阈值门禁 + JSON 输出
+  - 10 维度：Rules 覆盖 / Skills 编排 / Memory 分层 / 反偷懒门禁 / StuckDetector / Agent 设计 / Audit WAL / 文档同步 / 知识复利 / Context Budget
+  - 代码 3 文件共 454 行（均 ≤ 280 行）：`lfg_audit.py`（数据模型 + audit 入口）+ `lfg_audit_checks.py`（10 个 check）+ `lfg_audit_cli.py`（CLI）
+  - 测试 14 条覆盖三类场景（正常/边界/错误），全绿；总测试 574 → 588
+  - 本项目首跑 9.9/10，命中 1 个真实 gap：`knowledge-conflict-resolution.md` 未反哺 /lfg（Dim 1 只得 0.90）
+  - 文档同步：docs/product.md（持续演进 9.4 + CLI 表）、docs/runbook.md、AGENTS.md，以及 5 个文档里的测试计数 574→588
+- 关键决策：
+  - 静态分析优先（不做运行时追踪）——1-2 天能出 MVP 验证价值，运行时埋点成本高 10 倍
+  - 拆三文件而非单文件——触发 280 行硬限后按 `audit_cli.py`/`agent_cli.py` 现有模式拆分
+  - 拒绝对损坏 registry 降级处理——corrupt 必须退出 2，避免 0 分 Dim 2 掩盖基础设施错误
+  - opt-in 规则（api.md/database.md）不计入 Dim 1 基线——从 presets 的 exclude_rules 自动推导
+  - 不做 `/lfg-audit` skill 包装器——CLI 已够用，等价值验证后再说
+- 改了：
+  - src/agent_harness/lfg_audit.py (new, 154 行)
+  - src/agent_harness/lfg_audit_checks.py (new, 228 行)
+  - src/agent_harness/lfg_audit_cli.py (new, 72 行)
+  - src/agent_harness/cli.py (+2 行：注册 lfg subparser)
+  - tests/test_lfg_audit.py (new, 14 条测试)
+  - docs/product.md (持续演进 9.4 + CLI 表新增一行)
+  - docs/runbook.md (harness lfg audit 命令示例)
+  - AGENTS.md (常用命令新增一行)
+  - docs/architecture.md / runbook.md / workflow.md / release.md / CHANGELOG.md (测试计数 574 → 588)
+- 完成标准：全部通过
+  - [x] harness lfg audit 命令可用，输出完整 10 维 scorecard
+  - [x] 10 个 check 函数全部实现，无 TODO stub
+  - [x] 14 条测试三类全覆盖、全过
+  - [x] make ci 全绿（588/588）
+  - [x] docs 同步
+  - [x] 跑出的 scorecard 指出至少 1 个真实未释放维度（knowledge-conflict-resolution.md 未接入 /lfg）
+
+## 2026-04-21 feat(lfg): knowledge-conflict-resolution 规则接入 /lfg 阶段 9
+
+- 需求：按 `harness lfg audit` 跑出的真实 gap 补齐——`knowledge-conflict-resolution.md` 未反哺 /lfg（Dim 1 Rules 覆盖 0.90/1.00）
+- 做了什么：
+  - 阶段 9.1 /compound 前插入 T3/T4/T5 冲突预检 blockquote（3 行净增），引用规则路径
+  - 阶段 9.3 快速 lint 2 项→3 项，第 3 项「指向相反→按 T3/T4/T5 标 resolution-type」
+  - `make dogfood` 同步到 `.claude/commands/lfg.md`
+  - `test_threshold_gate_fails_below` 测试阈值 10→11（基线 9.9→10.0 后必须上调）
+- 关键决策：
+  - 只接入 T3/T4/T5（规则明说本次不扩展 T1/T2）
+  - 净增 ≤ 5 行（Context Budget 约束；规则全文已独立存档，/lfg 只做指针）
+  - 不改 /compound 和 /lint-lessons 技能模板（规则已说明接入点，技能内部实现另行）
+- 改了：
+  - src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl (阶段 9.1 + 9.3 两处)
+  - .claude/commands/lfg.md (dogfood 同步产物)
+  - tests/test_lfg_audit.py (阈值 10→11)
+- 完成标准：全部通过
+  - [x] harness lfg audit 总分 10.0/10，Dim 1 = 1.00
+  - [x] make ci 全绿（588/588）
+  - [x] knowledge-conflict-resolution.md 在 lfg.md.tmpl 被引用
+  - [x] 净增文字 ≤ 10 行
+- 附带收益：证明 `harness lfg audit` 的闭环价值——10 分钟内用工具定位 gap → 精准接入 → 工具验证达标 → 上个任务的价值直接体现在下个任务

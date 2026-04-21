@@ -8,6 +8,7 @@
 
 <!-- 由 /compound 技能或 `harness memory rebuild` 维护。-->
 
+- 2026-04-21 [架构设计] 入口技能 gap 先用工具量化再动手
 - 2026-04-14 [架构设计] 子 agent 产出要从自由日志升级到结构化制品
 - 2026-04-14 [架构设计] 角色权限分层要从文档约束升级到运行时强制
 - 2026-04-13 [流程] 280 行硬限触发时连环效应——3 个文件同时超
@@ -17,17 +18,16 @@
 - 2026-04-13 [架构设计] 单入口技能 ≠ 能力接入完整
 - 2026-04-13 [流程] 评估报告前必须先查合约测试
 - 2026-04-13 [流程] 破坏性变更用后缀自动检测 + 精确迁移提示，比"兼容旧格式"更好
-- 2026-04-13 [架构设计] 复制 Python 子包做内嵌运行时时，相对 import 必须重写为绝对前缀
 
 ## 最近任务（保留最多 5 条）
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-21 feat(lfg): knowledge-conflict-resolution 规则接入 /lfg 阶段 9
+- 2026-04-21 feat(lfg-audit): /lfg 威力释放度体检工具（10 维 scorecard）
+- 2026-04-21 feat(init): --scaffold-cmd 支持脚手架命令（第三种 scaffold 来源）
 - 2026-04-21 feat(init): --scaffold 支持远端 git URL
 - 2026-04-20 feat(rules,lessons): Imprint 5 型冲突解析吸收（GitHub #43 / GitLab #22）
-- 2026-04-20 fix(tests): env 隔离用户全局 gitconfig（GitLab #21）
-- 2026-04-20 feat(cso): sharp-edges 检测（Issue #42）
-- 2026-04-20 feat(tdd,verify): 测试质量增强（Issue #41）
 
 ## 参考资料（.agent-harness/references/）
 
