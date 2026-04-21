@@ -27,7 +27,7 @@
 - `src/agent_harness/discovery.py`：扫描目标项目并给出结构化画像。
 - `src/agent_harness/assessment.py`：根据画像给出接入评分、缺口和建议。
 - `src/agent_harness/initializer.py`：整合探测结果、预设和用户输入，渲染模板并生成文件。含插件渲染逻辑。
-- `src/agent_harness/upgrade.py`：比较模板生成结果与现有文件，给出升级计划并执行。含文件分类（overwrite/skip/three_way/json_merge）和基线存储。`CLAUDE.md` 从 overwrite 改为 three_way（GitLab Issue #20），升级时保留用户在 CLAUDE.md 中加的本地备注。
+- `src/agent_harness/upgrade.py`：比较模板生成结果与现有文件，给出升级计划并执行。含文件分类（overwrite/skip/three_way/json_merge）和基线存储。`CLAUDE.md` 从 overwrite 改为 three_way（GitLab Issue #20），升级时保留用户在 CLAUDE.md 中加的本地备注。`three_way` 分支在 base 基线缺失时**不退化为 overwrite**，改写 `<file>.harness-new` 旁路文件保护用户内容（GitLab Issue #23），通过 `--force` 逃生；`UpgradeExecutionResult.missing_base_files` 列出所有走保护分支的文件。
 - `src/agent_harness/upgrade_verify.py`：upgrade 后置校验。检查 AGENTS.md 长度、project.json 合法性、占位符未填、合并冲突残留；以及**sentinel 回落检测**（GitLab Issue #20）——若 project.json 的 `project_summary` 已填写但 `AGENTS.md` / `CLAUDE.md` / `docs/product.md` 里仍出现「待补充项目目标」，说明 answers 解析或变量替换失败，发出 warning。
 - `src/agent_harness/_merge3.py`：三方合并算法。merge3() 做行级文本合并，json_merge() 做 JSON 结构化合并。冲突时插入 `<<<<<<< 当前内容` 标记。
 - `src/agent_harness/templating.py`：模板发现、占位符替换和落盘。
@@ -65,7 +65,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：588 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（82 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归 + 17 个 Issue #19a 依赖触发契约 + 18 个 Issue #21 mailbox/watch 契约：WAL 模式验证、事件读写 + 过滤、state.py 签名兼容、cmd_watch 全 done 自动退出 + max_iterations 控制 + 自动 advance、cmd_dump JSONL 导出、gitignore 模板规则 + 19 个 Issue #22 watchdog 契约：sentinel skip、session_lost 一次性、worker_crashed 幂等、done/未 spawned 不误报、多 worker 同 tick crash、KNOWN_TYPES 注册 + 评审 5 条回归保护：重启场景退出独立于事件去重、sentinel 不强制退出 watch、session probe / list_windows 异常隔离）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）、security 输入校验（25 条：sanitize_name/path/content 覆盖正常、边界、路径遍历、符号链接逃逸、null 字节、控制字符、oversize）、GSD 吸收契约（18 条：StuckDetector 规则存在、/lint-lessons 矛盾检测、需求矩阵三元映射、/plan-check 8 维度 + 3 轮修订、context-monitor hook 端到端 + skip 开关、workflow 规则 + /lfg 整合）。
+- `tests/`：598 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（82 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归 + 17 个 Issue #19a 依赖触发契约 + 18 个 Issue #21 mailbox/watch 契约：WAL 模式验证、事件读写 + 过滤、state.py 签名兼容、cmd_watch 全 done 自动退出 + max_iterations 控制 + 自动 advance、cmd_dump JSONL 导出、gitignore 模板规则 + 19 个 Issue #22 watchdog 契约：sentinel skip、session_lost 一次性、worker_crashed 幂等、done/未 spawned 不误报、多 worker 同 tick crash、KNOWN_TYPES 注册 + 评审 5 条回归保护：重启场景退出独立于事件去重、sentinel 不强制退出 watch、session probe / list_windows 异常隔离）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）、security 输入校验（25 条：sanitize_name/path/content 覆盖正常、边界、路径遍历、符号链接逃逸、null 字节、控制字符、oversize）、GSD 吸收契约（18 条：StuckDetector 规则存在、/lint-lessons 矛盾检测、需求矩阵三元映射、/plan-check 8 维度 + 3 轮修订、context-monitor hook 端到端 + skip 开关、workflow 规则 + /lfg 整合）。
 
 ## 约束
 

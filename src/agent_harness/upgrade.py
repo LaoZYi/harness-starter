@@ -13,6 +13,7 @@ from .runtime_install import install_runtime
 from .templating import render_templates
 
 BASE_DIR = ".agent-harness/.base"
+SIDECAR_SUFFIX = ".harness-new"
 
 # File category: overwrite/skip/json_merge/three_way (default).
 FILE_CATEGORIES: dict[str, str] = {
@@ -95,10 +96,14 @@ def _build_checklist(create, update, rendered, root):
     no = sum(1 for f in update if get_category(f) == "overwrite")
     ns = sum(1 for r in rendered if get_category(r) == "skip" and (root / r).exists())
     nb = sum(1 for f in update if get_category(f) == "three_way" and not (root / BASE_DIR / f).exists())
-    if nm: cl.append(f"{nm} 个文件将三方合并（保留用户内容）。")
+    nm_real = nm - nb  # 真正走三方合并的数量（剔除走保护旁路的）
+    if nm_real > 0: cl.append(f"{nm_real} 个文件将三方合并（保留用户内容）。")
     if no: cl.append(f"{no} 个模板文件直接覆盖。")
     if ns: cl.append(f"{ns} 个用户数据文件已保护。")
-    if nb: cl.append(f"⚠️ {nb} 个文件无基准版本，将备份后覆盖。")
+    if nb: cl.append(
+        f"⚠️ {nb} 个文件无基准版本，将写到 {SIDECAR_SUFFIX} 旁路文件保护用户内容"
+        f"（如需强制刷新请用 --only <file> --force）。"
+    )
     return cl or ["文件已是最新。"]
 
 
@@ -154,6 +159,7 @@ def execute_upgrade(
     *,
     only_files: list[str] | None = None,
     dry_run: bool = False,
+    force: bool = False,
 ) -> UpgradeExecutionResult:
     target_root = target_root.resolve()
     rendered = _filter_rendered(_render_all(target_root, answers), only_files)
@@ -180,6 +186,7 @@ def execute_upgrade(
     skipped: list[str] = []
     merged: list[str] = []
     conflicts: dict[str, list[str]] = {}
+    missing_base: list[str] = []
 
     for rp in plan.create_files:
         output_path = target_root / rp
@@ -203,14 +210,29 @@ def execute_upgrade(
                 output_path.write_text(new_content, encoding="utf-8")
                 updated.append(rp)
             case "three_way":
-                if not base_path.exists():
+                # GitLab Issue #23：base 缺失或损坏时不退化为 overwrite，
+                # 改写旁路文件 <file>.harness-new 保护用户内容。
+                # force=True 作为逃生口，允许用户主动刷新。
+                base_missing = not base_path.exists() or not base_content
+                if base_missing and not force:
+                    sidecar = output_path.with_name(output_path.name + SIDECAR_SUFFIX)
+                    sidecar.parent.mkdir(parents=True, exist_ok=True)
+                    sidecar.write_text(new_content, encoding="utf-8")
+                    missing_base.append(rp)
+                    reason = ("无基准版本" if not base_path.exists()
+                              else "基准文件损坏或为空")
+                    conflicts[rp] = [
+                        f"{reason}，已将框架新模板写入 {rp}{SIDECAR_SUFFIX}，"
+                        f"原文件保留不变。请人工比对后合并；如需强制刷新请用 "
+                        f"--only {rp} --force。"
+                    ]
+                    # 不加入 updated/merged —— 原文件未被修改
+                elif base_missing and force:
                     output_path.write_text(new_content, encoding="utf-8")
                     updated.append(rp)
-                    conflicts[rp] = ["无基准版本，已用框架版本覆盖（备份至 backups/）"]
-                elif not base_content:
-                    output_path.write_text(new_content, encoding="utf-8")
-                    updated.append(rp)
-                    conflicts[rp] = ["基准文件损坏或为空，已用框架版本覆盖（备份至 backups/）"]
+                    conflicts[rp] = [
+                        "无基准版本，--force 强制用框架版本覆盖（已备份至 backups/）"
+                    ]
                 else:
                     result_text, conflict_list = merge3(base_content, current, new_content)
                     output_path.write_text(result_text, encoding="utf-8")
@@ -241,7 +263,8 @@ def execute_upgrade(
         updated_files=updated, unchanged_files=plan.unchanged_files, skipped_files=skipped,
         merged_files=merged, conflicts=conflicts,
         backup_root=str(backup_root) if backup_root else None,
-        selected_files=sorted(rendered.keys()), dry_run=False, changelog=changelog)
+        selected_files=sorted(rendered.keys()), dry_run=False, changelog=changelog,
+        missing_base_files=missing_base)
 
 
 from .upgrade_verify import verify_upgrade  # noqa: E402,F401  re-export

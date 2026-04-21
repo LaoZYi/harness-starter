@@ -128,7 +128,7 @@ def _cmd_upgrade_apply(args: argparse.Namespace) -> None:
     profile = discover_project(target)
     config = merged_config(target, args)
     answers = _resolve_answers(args, profile, config)
-    result = _execute_upgrade(target, answers, only_files=args.only or None, dry_run=args.dry_run)
+    result = _execute_upgrade(target, answers, only_files=args.only or None, dry_run=args.dry_run, force=getattr(args, "force", False))
     print_upgrade_apply(result)
     if not result.dry_run:
         print_verify_warnings(_verify(target))
@@ -210,6 +210,8 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_project_args(apply_p)
     apply_p.add_argument("--only", action="append", default=[], help="限定文件")
     apply_p.add_argument("--dry-run", action="store_true")
+    apply_p.add_argument("--force", action="store_true",
+                         help="对无 base 基线的 three_way 文件强制覆盖（谨慎使用；默认走旁路保护）")
     apply_p.set_defaults(func=_cmd_upgrade_apply)
 
     doc_p = subs.add_parser("doctor", help="检查 harness 健康状态")
