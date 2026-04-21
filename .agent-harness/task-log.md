@@ -1321,3 +1321,27 @@
   - subdir 双保险校验避免路径逃逸（/cso 分析结论）
 - **改了哪些文件**：5 新 + 9 改
 - **完成标准**：8/8 R-ID satisfied；make ci 560/560 pass；真实 GitHub smoke test 通过
+
+---
+
+## 2026-04-21 feat(init): --scaffold-cmd 支持脚手架命令（第三种 scaffold 来源）
+
+- **需求**：`harness init --scaffold` 现支持本地路径和远端 git URL 两种，加第三种「基于脚手架命令」（如 `npm create vite@latest` / `django-admin startproject` / `cargo init` 等主流脚手架一条命令初始化项目）
+- **做了什么**：
+  - 新模块 `_scaffold_cmd.py`（85 行）：`run_scaffold_command(command, target)` + `ask_cmd_scaffold(target)` 交互辅助。`shlex.split` + `subprocess.run(argv, shell=False)` + stdio 继承父进程 + `shutil.which` 预检 + `mkdir(parents=True, exist_ok=True)` target
+  - CLI 新 flag `--scaffold-cmd "<命令>"`，与 `--scaffold` 组成 argparse `add_mutually_exclusive_group()`；`_cmd_init` 加 `scaffold_cmd` 分支（cli.py +7 行）
+  - `ask_scaffold` 交互选项从 3 扩到 4（新增「是，通过脚手架命令创建」）；为守住 280 行硬限压缩 3 个「是」分支消息发布点为统一 `console.print(msg)`（init_flow.py 278 → 279）
+  - ADR 0004 Accepted（记录为什么独立 flag 而非扩展 `--scaffold` / 为什么 argv 不 `shell=True` / 为什么 cwd=target 不改写参数）
+  - 14 条新契约（`RunScaffoldCommandTests` 8 + `ShellMetacharSafetyTests` 2 用 sentinel 文件证明安全 + `CliMutualExclusionTests` 1 + `InteractiveChoiceTests` 1 + `CliEndToEndTests` 1 + `ShutilWhichMockTests` 1）
+  - 6 份文档同步（CHANGELOG + runbook「三种来源」段和常见脚手架示例 + product 核心能力 #3 + CLI 清单 + 持续演进 + architecture 模块清单 + AGENTS 常用命令 + release/workflow 测试计数），测试计数 560 → 574
+  - **10 项穷举验证脚本**（正常 ×2、边界 ×2、错误 ×3、安全 ×1、回归 ×1、组合 ×1），全 PASS
+  - lessons 新增一条：**「用户命令执行的 shell 元字符安全必须用 sentinel 文件证明」**——把 argv 安全契约从文档承诺锁定为运行时行为
+- **关键决策**：
+  - 独立 `--scaffold-cmd` flag + argparse 互斥组（而非复用 `--scaffold` 启发式判别命令 vs 路径——命令字符串和路径不可靠区分）
+  - `shlex.split` + `subprocess.run(argv, shell=False)` 默认：shell 元字符（`;` `&` `|` `$()`）被视为字面参数；用 `sh -c 'echo ok' _ ; rm -rf <sentinel>` 的 sentinel 契约测试锁定（运行后 sentinel 必须存活）
+  - stdio 继承父终端（不捕获）：交互式脚手架 vite / next / create-react-app 等能正常问答，避免捕获导致的死锁
+  - cwd = target，不改写用户参数：文档里教用户用 `.` 作脚手架 target（`npm create vite@latest .`、`cargo init`、`django-admin startproject . mysite`）
+  - 不引入预设清单（`--scaffold-preset vite-react` 等）：维护成本高、易过时
+  - `shutil.which` 预检：未安装命令给友好中文错误，比让 `FileNotFoundError` 冒出去更好
+- **改了哪些文件**：5 新 + 9 改
+- **完成标准**：9/9 R-ID satisfied；make ci 574/574 pass；穷举脚本 10/10 pass；commit `fe5c07a` 在分支 `feat/scaffold-cmd-20260421`
