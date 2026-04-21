@@ -1402,3 +1402,31 @@
   - [x] knowledge-conflict-resolution.md 在 lfg.md.tmpl 被引用
   - [x] 净增文字 ≤ 10 行
 - 附带收益：证明 `harness lfg audit` 的闭环价值——10 分钟内用工具定位 gap → 精准接入 → 工具验证达标 → 上个任务的价值直接体现在下个任务
+
+## 2026-04-21 fix(upgrade): 缺 base 基线时保护用户文档（GitLab Issue #23）
+
+- 需求：`harness upgrade apply` 把用户长期维护的 `docs/architecture.md`(508 行 NestJS 架构图)整体覆盖为 40 行模板骨架。根因 `upgrade.py:206-209` 的 `three_way` 分支在 base 缺失时退化为 overwrite。
+- 做了什么：
+  - 缺 base 的 `three_way` 分支改写 `<file>.harness-new` 旁路文件 + 警告，原文件保留不变
+  - `UpgradeExecutionResult` 新增 `missing_base_files` 字段
+  - `_build_checklist` 警告文案从「将备份后覆盖」改为「将写到 .harness-new 旁路文件保护用户内容」
+  - 新增 `execute_upgrade(force=True)` 逃生口 + CLI `--force` flag
+  - 保护策略对**所有** `three_way` 文件通用（不维护白名单）
+- 关键决策：
+  - **方案 A**（旁路文件 + 警告）选定原因：兼顾"保护用户内容"和"让用户看到框架新模板"，比纯 skip 信息更多，比改 `docs/architecture.md` 为 skip 更通用（保护所有 three_way 文件）
+  - **不维护用户文档白名单**：策略的通用性比列表更可靠；任何 three_way 文件无 base 时都该保护，bug 根因是策略缺口而非特定文件缺口
+  - **`--force` 在 CLI 和 API 双层可用**：用户主动覆盖时通过 `--only <file> --force` 显式表达意图
+  - **backups/ 兜底机制保留**：第二道防线，不破坏现有稳定行为
+- 改了哪些文件：
+  - `src/agent_harness/upgrade.py`（核心保护分支 + force 参数 + checklist 文案 + SIDECAR_SUFFIX 常量）
+  - `src/agent_harness/models.py`（`UpgradeExecutionResult.missing_base_files`）
+  - `src/agent_harness/cli.py`（`--force` flag 注册 + 透传）
+  - `tests/test_apply_upgrade.py`（新增 `NoBaseProtectionTests` 10 条 R-001..R-010）
+  - `docs/product.md` / `docs/architecture.md` / `docs/runbook.md` / `CHANGELOG.md` / `docs/release.md`（同步说明 + 测试计数 588→598）
+  - `.agent-harness/lessons.md`（2 条新教训）
+- 完成标准：
+  - [x] R-001..R-010 全部 satisfied，单元测试 10/10 绿
+  - [x] 端到端穷举：5 场景 19 check 全过（/tmp/issue23_e2e_verify.py）
+  - [x] make ci 全绿（598 tests，无 lint/typecheck 警告）
+  - [x] dogfood 无漂移
+  - [x] 历史 `test_user_content_preserved_in_three_way` / CLAUDE.md three_way 等回归测试不破

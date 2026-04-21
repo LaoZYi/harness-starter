@@ -16,6 +16,8 @@
 
 ## 持续演进（按时间倒序，最新在顶)
 
+9.3. **缺 base 基线时保护用户文档（GitLab Issue #23，2026-04-21）**：`harness upgrade apply` 遇到 `three_way` 文件但 `.agent-harness/.base/<file>` 不存在（共同祖先丢失）时，不再退化为 overwrite——改写 `<file>.harness-new` 旁路文件 + 警告，原文件保留不变。`UpgradeExecutionResult` 新增 `missing_base_files` 字段列出所有走保护分支的文件；`plan` 阶段 checklist 醒目提示"⚠️ N 个文件无基准版本，将写到 .harness-new 旁路文件保护用户内容"；用户可通过 `harness upgrade apply --only <file> --force` 强制刷新（逃生口）。保护策略对所有 `three_way` 文件通用（`docs/architecture.md` / `docs/product.md` / `CLAUDE.md` / `references/*` 等），不是维护白名单——策略的通用性比列表更可靠。10 条新测试（R-001..R-010）+ 5 场景 19 check 端到端穷举。`.agent-harness/backups/<ts>/` 兜底机制保持不变作为第二道防线。**根因**：原 `three_way` 分支在缺 base 时直接 `output_path.write_text(new_content)`，违反了策略表声明的默认合并语义——覆盖用户 500 行 NestJS 架构图这类核心资产。
+
 9.4. **`harness lfg audit` /lfg 威力体检（2026-04-21）**：新增 `harness lfg audit` CLI，对 `/lfg` 做 10 维静态 scorecard，回答"新加能力有没有反哺到 `/lfg`"。10 维度：Rules 覆盖 / Skills 编排 / Memory 分层 / 反偷懒门禁 / StuckDetector / Agent 设计（F3/F5/F8/F10）/ Audit WAL / 文档同步 / 知识复利 / Context Budget。每维 0.0-1.0 浮点分，总分 10；默认阈值 7.0，`--threshold N` 可调；`--json` 机读输出便于 CI 集成。基于 lessons.md「单入口技能 ≠ 能力接入完整」教训落地为工具——每次加新能力跑一次，即可发现没接入 `/lfg` 的盲区。首次跑本项目评分 9.9/10，命中 1 个真实 gap（`knowledge-conflict-resolution.md` 未反哺）。14 条新测试（正常/边界/错误三类），总 588。代码拆为 `lfg_audit.py`（数据模型 + audit 入口）、`lfg_audit_checks.py`（10 个 check）、`lfg_audit_cli.py`（CLI），均 ≤ 280 行。
 
 9.5. **`harness init --scaffold-cmd` 第三种脚手架来源（2026-04-21）**：给 `harness init` 新增 `--scaffold-cmd "<命令>"`，执行主流脚手架一步到位生成项目（vite / next / cargo / django / poetry 等）。与 `--scaffold` argparse 互斥。核心设计：`shlex.split` + `subprocess.run(argv, shell=False)` 让 shell 元字符（`;` `&` `|` `$()`）被视为字面参数（sentinel 契约测试锁定）；stdio 继承父终端让交互式脚手架正常问答；`shutil.which` 预检给友好错误；cwd = target 不改写用户参数（用户自己写 `.` 作脚手架 target）。见 ADR 0004。新增 14 条契约测试（总 574）。

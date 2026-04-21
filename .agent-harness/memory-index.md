@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-21 fix(upgrade): 缺 base 基线时保护用户文档（GitLab Issue #23）
 - 2026-04-21 feat(lfg): knowledge-conflict-resolution 规则接入 /lfg 阶段 9
 - 2026-04-21 feat(lfg-audit): /lfg 威力释放度体检工具（10 维 scorecard）
 - 2026-04-21 feat(init): --scaffold-cmd 支持脚手架命令（第三种 scaffold 来源）
 - 2026-04-21 feat(init): --scaffold 支持远端 git URL
-- 2026-04-20 feat(rules,lessons): Imprint 5 型冲突解析吸收（GitHub #43 / GitLab #22）
 
 ## 参考资料（.agent-harness/references/）
 

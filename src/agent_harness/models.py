@@ -85,3 +85,4 @@ class UpgradeExecutionResult:
     selected_files: list[str] = field(default_factory=list)
     dry_run: bool = False
     changelog: str | None = None
+    missing_base_files: list[str] = field(default_factory=list)
