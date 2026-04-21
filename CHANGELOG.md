@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Added — `harness init --scaffold` 支持远端 git 仓库（2026-04-21）
+
+`harness init --scaffold <value>` 的 `<value>` 现在自动检测本地路径 vs git URL。配 git URL 后一步从远端拉取模板完成初始化，无需手动 clone。
+
+**新增**：
+- `src/agent_harness/_scaffold_git.py`：`is_git_url()` + `copy_scaffold_from_git()` + 交互辅助 `ask_git_scaffold()`。shallow clone（`--depth 1`）+ tmpdir 清理 + subdir 路径遍历双保险
+- `--scaffold-ref <branch|tag>`：指定 git ref（默认仓库默认分支；不支持任意 commit SHA）
+- `--scaffold-subdir <relpath>`：只复制仓内子目录（适配 monorepo 模板仓）
+- `docs/decisions/0003-scaffold-from-git.md`：ADR 记录取舍（为什么单 flag 自动检测、为什么不支持 token、为什么不引 GitPython）
+- `tests/test_scaffold_git.py`：17 条契约（URL 检测 8 + 端到端 + ref + subdir + git 未装 + 路径遍历防护 + CLI 集成）
+
+**改**：
+- `src/agent_harness/cli.py::_cmd_init`：检测 `--scaffold` 参数是 git URL → 走新流程；否则保留本地路径行为
+- `src/agent_harness/init_flow.py::ask_scaffold`：交互选项从 2 扩展到 3（「否」/「本地路径」/「远端 git」）
+
+**鉴权**：委托给用户 git 配置（SSH key / credential helper / `~/.netrc`）。本命令不接受 token 等认证参数——避免敏感信息泄露到命令行。
+
+**失败**：git 未装 / 仓库不存在 / ref 不存在 / subdir 不存在 / subdir 含 `..` 或绝对路径，均清晰中文报错，不 fallback 到空项目。
+
 ### Added — 知识冲突解析规则（GitHub #43 / GitLab #22，2026-04-20）
 
 吸收 [ilang-ai/Imprint](https://github.com/ilang-ai/Imprint) v2.1 的 Conflict Resolution 5 型分类，为 lessons 维护链路增加「解决路径维度」的分型输出。
@@ -349,7 +368,7 @@
 
 ### Infrastructure
 
-- 543 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条：规则结构 6 + lint-lessons 分型 3 + compound 预检 3 + ADR 状态 2）
+- 560 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条、scaffold-from-git 17 条：is_git_url 8 + clone/ref/subdir 5 + git 未装 1 + subdir 路径遍历 2 + CLI 端到端 1）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

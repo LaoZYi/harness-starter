@@ -73,8 +73,18 @@ def _cmd_init(args: argparse.Namespace) -> None:
     is_interactive = not (args.non_interactive or args.config or _auto_discover_config(target))
     scaffold_src = getattr(args, "scaffold", None)
     if scaffold_src:
-        copy_scaffold(Path(scaffold_src).expanduser(), target)
-        console.print(f"  [green]已复制框架代码[/green]：{Path(scaffold_src).name}")
+        from ._scaffold_git import is_git_url, copy_scaffold_from_git
+        if is_git_url(scaffold_src):
+            copy_scaffold_from_git(
+                scaffold_src,
+                target,
+                ref=getattr(args, "scaffold_ref", None),
+                subdir=getattr(args, "scaffold_subdir", None),
+            )
+            console.print(f"  [green]已从 git 拉取并复制框架代码[/green]：{scaffold_src}")
+        else:
+            copy_scaffold(Path(scaffold_src).expanduser(), target)
+            console.print(f"  [green]已复制框架代码[/green]：{Path(scaffold_src).name}")
     elif is_interactive:
         ask_scaffold(target)
     profile = discover_project(target)
@@ -159,7 +169,9 @@ def build_parser() -> argparse.ArgumentParser:
     init_p = subs.add_parser("init", help="初始化 harness")
     init_p.add_argument("target", help="目标项目路径")
     init_p.add_argument("--config", help="JSON/TOML 配置文件")
-    init_p.add_argument("--scaffold", help="基于现有框架创建（复制框架代码到目标目录）")
+    init_p.add_argument("--scaffold", help="基于现有框架创建：本地目录路径 或 git URL（https/ssh/git@）")
+    init_p.add_argument("--scaffold-ref", help="--scaffold 为 git URL 时，指定 branch 或 tag（默认仓库默认分支）")
+    init_p.add_argument("--scaffold-subdir", help="--scaffold 为 git URL 时，只复制仓内该子目录（默认仓根）")
     _add_common_project_args(init_p)
     init_p.add_argument("--assess-only", action="store_true", help="只做探测评估")
     init_p.add_argument("--force", action="store_true", help="覆盖已有文件")

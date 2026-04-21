@@ -5,7 +5,7 @@
 - `make check`：校验框架仓库结构、模板入口、Python 语法、dogfood 漂移检测，并先跑 `lint`（ruff）。
 - `make lint`：运行 ruff 代码风格检查（需先装 dev 工具：`uv sync --extra dev`）。
 - `make typecheck`：运行 mypy 类型检查。
-- `make test`：运行框架级回归测试（543 个）。
+- `make test`：运行框架级回归测试（560 个）。
 - `make ci`：串联 `check` + `typecheck` + `skills-lint` + `test`（提交前完整跑一遍）。
 - `make dogfood`：同步框架自身的技能/规则文件（改了模板后运行此命令）。
 - `make sync-superpowers`：从 3 个上游源拉取最新 skills 变更报告。
@@ -13,6 +13,30 @@
 - `make upgrade-plan TARGET=/path/to/repo ARGS="..."`：预览升级会新增和改动哪些文件。
 - `make upgrade-apply TARGET=/path/to/repo ARGS="..."`：执行升级并自动备份被覆盖文件。
 - `make init TARGET=/path/to/repo ARGS="..."`：初始化目标项目。
+
+## `--scaffold` 的两种形态（本地路径 / 远端 git）
+
+`harness init <target> --scaffold <value>` 会自动检测 `<value>`：
+
+- **本地路径**（绝对或相对）→ 从该目录复制文件作为 target 的起点
+- **git URL**（`http(s)://` / `git@` / `ssh://` / `git://` 前缀，或以 `.git` 结尾）→ 临时 shallow clone，复制后自动清理
+
+git 形态的配套 flag：
+
+```bash
+# 拉默认分支仓根
+harness init ./my-app --scaffold https://github.com/team/framework.git
+
+# 钉 branch / tag
+harness init ./my-app --scaffold git@github.com:team/framework.git --scaffold-ref v2.0
+
+# monorepo 模板仓，只拉某子目录
+harness init ./my-app --scaffold https://gitlab.example.com/team/repos.git --scaffold-subdir apps/backend
+```
+
+**鉴权**委托给用户 git 配置（SSH key / credential helper）。本命令不接受 token。
+
+**限制**：`--scaffold-ref` 只支持 branch / tag，不支持任意 commit SHA（`git clone --branch` 能力上限）。
 
 ## 本地 git 全局配置与测试
 
