@@ -4,7 +4,7 @@
 
 ## 发布前检查
 
-1. `make ci` 是否通过（含 `check` + `lint` + `typecheck` + `skills-lint` + `test`，当前 574 个测试）。
+1. `make ci` 是否通过（含 `check` + `lint` + `typecheck` + `skills-lint` + `test`，当前 588 个测试）。
 2. `make lint` 无残余 ruff 错误。
 3. `make typecheck` 无残余 mypy 错误。
 4. `VERSION` 文件是否已 bump。

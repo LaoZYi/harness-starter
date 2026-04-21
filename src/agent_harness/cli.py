@@ -248,7 +248,8 @@ def build_parser() -> argparse.ArgumentParser:
     search_p.add_argument("--top", type=int, default=_BM25_TOP, help=f"Top-K（默认 {_BM25_TOP}）")
     search_p.set_defaults(func=_cmd_memory_search)
     from .skills_lint import register_subcommand as _reg_skills
-    _reg_squad(subs); _reg_audit(subs); _reg_agent(subs); _reg_skills(subs)
+    from .lfg_audit_cli import register_subcommand as _reg_lfg
+    _reg_squad(subs); _reg_audit(subs); _reg_agent(subs); _reg_skills(subs); _reg_lfg(subs)
     return root
 
 def main() -> None:

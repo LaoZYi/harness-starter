@@ -2,6 +2,46 @@
 
 ## [Unreleased]
 
+### Added — `knowledge-conflict-resolution.md` 接入 `/lfg` 阶段 9（2026-04-21）
+
+补齐 `harness lfg audit` 首跑命中的唯一 gap——「Dim 1 Rules 覆盖 0.90 未达标」。把 Imprint 5 型冲突解析（T3/T4/T5）接入 `/lfg` 阶段 9 的沉淀流程。
+
+**改**：
+- `src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`：
+  - 阶段 9.1 `/compound` 前插入 T3/T4/T5 冲突预检 blockquote（3 行净增）
+  - 阶段 9.3 快速 lint 2 项 → 3 项，第 3 项「指向相反 → 按 T3/T4/T5 标 resolution-type」
+- `.claude/commands/lfg.md`：dogfood 同步产物
+- `tests/test_lfg_audit.py`：`test_threshold_gate_fails_below` 阈值 10 → 11（基线分从 9.9 提升到 10.0 后必须上调）
+
+**效果**：`harness lfg audit` 从 **9.9/10 → 10.0/10**，10 个维度全绿、65 条底层 check 全过。
+
+**克制**：净增 ≤ 5 行；只接入 T3/T4/T5（规则明说本次不扩展 T1/T2）；不改规则本体、不改 `/compound` / `/lint-lessons` 技能模板。
+
+### Added — `harness lfg audit` /lfg 威力体检工具（2026-04-21）
+
+新增 `harness lfg audit` CLI：对 `/lfg` 做 10 维静态 scorecard，回答「新加的能力有没有反哺到 `/lfg`」。基于 lessons.md 沉淀的「单入口技能 ≠ 能力接入完整」教训落地为量化工具。
+
+**10 维度**：Rules 覆盖 / Skills 编排 / Memory 分层加载 / 反偷懒门禁 / StuckDetector / Agent 设计（F3/F5/F8/F10）/ Audit WAL / 文档同步 / 知识复利 / Context Budget。每维 0.0-1.0，总分 10。
+
+**新增**：
+- `src/agent_harness/lfg_audit.py`：`DimensionScore` / `ScoreCard` 数据模型 + `audit()` 入口 + `collect_opt_in_rules()`（从 presets `exclude_rules` 自动排除 api.md/database.md 等非基线规则）
+- `src/agent_harness/lfg_audit_checks.py`：10 个 check 函数 + `DIMENSION_CHECKS` 编排列表
+- `src/agent_harness/lfg_audit_cli.py`：`harness lfg audit [--repo PATH] [--json] [--threshold N]` 命令
+- `tests/test_lfg_audit.py`：14 条契约（正常 4 + 边界 6 + 错误 4），覆盖健康分数、JSON 输出、阈值门禁、故意扰动检测、infra 失败兜底
+
+**改**：
+- `src/agent_harness/cli.py`：注册 `harness lfg audit` subparser
+- `docs/product.md`：持续演进 9.4 + CLI 表新增一行
+- `docs/runbook.md`：harness lfg audit 命令示例
+- `AGENTS.md`：常用命令新增一行
+- 5 个文档测试计数 574 → 588
+
+**退出码**：0 = 分数 ≥ 阈值（默认 7.0），1 = 分数 < 阈值，2 = infra 失败（模板缺失 / registry 损坏）。CI 可通过 `harness lfg audit --threshold 9 || exit 1` 强制守护。
+
+**首跑效果**：9.9/10，精准命中 `knowledge-conflict-resolution.md` 未反哺 `/lfg` 这一真实 gap（见上一条 Added 的修复）。证明工具有实际发现力，非空转。
+
+**设计边界（留给未来）**：静态分析层——只看模板字面引用，不证明运行时执行。全闭环需要运行时追踪版（另起任务）。
+
 ### Added — `harness init --scaffold-cmd` 支持脚手架命令（2026-04-21）
 
 给 `harness init` 新增第三种脚手架来源：**脚手架命令**（`--scaffold-cmd "<cmd>"`），补齐「本地路径 / 远端 git / 脚手架命令」三种覆盖。支持 `npm create vite@latest` / `npx create-next-app` / `cargo init` / `django-admin startproject` / `poetry new` 等主流脚手架。
@@ -386,7 +426,7 @@
 
 ### Infrastructure
 
-- 574 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条、scaffold-from-git 17 条：is_git_url 8 + clone/ref/subdir 5 + git 未装 1 + subdir 路径遍历 2 + CLI 端到端 1；scaffold-from-cmd 14 条：run_scaffold_command 8 + shell 元字符安全 2 + CLI 互斥 1 + 交互选项 1 + shutil.which mock 1 + CLI 端到端 1）
+- 588 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条、scaffold-from-git 17 条：is_git_url 8 + clone/ref/subdir 5 + git 未装 1 + subdir 路径遍历 2 + CLI 端到端 1；scaffold-from-cmd 14 条：run_scaffold_command 8 + shell 元字符安全 2 + CLI 互斥 1 + 交互选项 1 + shutil.which mock 1 + CLI 端到端 1）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

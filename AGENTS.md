@@ -52,6 +52,7 @@ harness squad create spec.json  # 或项目自带：.agent-harness/bin/squad cre
 harness squad status
 harness audit append --file lessons.md --op append --summary "..."
 harness audit tail
+harness lfg audit                               # /lfg 威力体检（10 维 scorecard）
 harness agent init agent-1
 harness agent diary agent-1 "开始子任务"
 harness agent aggregate

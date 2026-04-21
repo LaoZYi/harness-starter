@@ -649,6 +649,8 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 **若本次任务走 squad 或 /dispatch-agents/subagent-dev**：先运行 `harness agent aggregate` 汇总所有 sub-agent 的 artifacts + diary（Issue #30 结构化知识制品会集中显示在顶部），把值得沉淀的发现作为 `/compound` 的输入——比只看 current-task.md 能捕获更多 sub-agent 遇到过的坑。
 
+> **冲突预检（`.claude/rules/knowledge-conflict-resolution.md`）**：/compound 写入新 lesson 前，若本次任务踩的坑与已有 lesson **指向相反**，按 T3/T4/T5 分型——T3（两条 confirmed lesson 互斥）→ 推荐转 `when:` 条件分支合并而非新建；T4（多 agent 结论不一致，来自 squad/aggregate）→ 两条都标 tentative 等用户选；T5（lesson 只是风险警告不是实际教训）→ 别写新 lesson，只在 current-task 里记一次风险提醒。规则不自动执行，`/compound` 只做提示。
+
 运行 `/compound` 提炼经验教训：
 - 评审中被发现的问题（说明下次如何在实施阶段就避免）
 - 实施中走过的弯路（说明下次的更优路径）
@@ -676,9 +678,10 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 
 #### 9.3 知识库健康检查
 
-对知识库做快速体检（**不要**运行完整的 `/lint-lessons`，只手动检查以下 2 项）：
+对知识库做快速体检（**不要**运行完整的 `/lint-lessons`，只手动检查以下 3 项，对齐 `.claude/rules/knowledge-conflict-resolution.md`「叠加使用症状维度和解决维度」）：
 - 新写入的条目是否与已有条目重复？如果是 → 合并
 - 是否存在过时的条目（引用的文件已不存在）？如果是 → 标记
+- 新条目与已有条目**指向相反**？按 T3/T4/T5 标 resolution-type，交由用户裁决（不自动合并）
 
 > 完整 6 项 `/lint-lessons` 检查建议每 1-2 周手动运行。
 
