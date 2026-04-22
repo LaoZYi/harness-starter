@@ -42,6 +42,27 @@ description: 多 agent 协作的设计硬约束（12-factor-agents 适配）
 
 **理由**：执行状态（"worker 说完成了"）≠ 业务状态（"current-task 勾选了、task-log 归档了"）。两者分裂会导致"Agent 认为做完但业务没更新"，下次恢复状态不一致。
 
+## F11（Artifact Ownership）硬约束：下游不得直接改上游产物
+
+> 来源：腾讯 JK Launcher 团队《Harness Engineering 工程化落地》——下游 agent 觉得上游写得不严谨时，会"顺手改掉"。结果是：谁对哪份产物负责、追责路径、回退边界全部失效。
+
+- **禁止**：worker 直接编辑其他 worker 产出的文件（规格、计划、设计文档、上一阶段 diary 等）
+- **正确**：每个 worker **只写自己的产物目录**；发现上游产物有问题时，只能做两件事
+  1. 在自己的产物里**提出 blocker**（含具体问题 + 期望的修正方向）
+  2. 由 orchestrator / 主会话读到 blocker 后**打回**给上游 worker 重新生成
+- **产物目录约定**（以常见场景为例）
+  - `/squad`：worker 只写 `squad/<task>/workers/<name>/` 下的文件 + 自己 mailbox 事件
+  - `/dispatch-agents`：子 agent 只写 prompt 里 **明示**的输出路径
+  - `/subagent-dev`：执行者写 `agents/<id>/diary.md` 和 `status.md`，**不**改规划者产出的 spec / plan
+
+**理由**：如果允许下游私改上游，整条流程就失去"某份产物由谁署名"的契约。出问题后没人能回放"上游当时给的是什么、下游在此之上做了什么"。产物所有权是 F5（Unified State）的前置保障——状态同步的前提是每份状态有明确的唯一作者。
+
+**违反检测**：
+
+- `/agent-design-check` F11 维度（新增）扫 worker prompt：是否出现「必要时直接补充上游文档」「遇到 spec 缺失自行补全后继续」等越权用语
+- 执行期的 `audit.jsonl`（见 task-lifecycle）：同一产物文件在单任务里被两个不同 agent 写入 = 违反信号
+- 遇到越权时不是默默回滚，而是**打回到违反的 agent**，并在 lessons 里登记一条（进入"脚本化候选"链路，见 knowledge-conflict-resolution.md）
+
 ## 搭配规则
 
 - `.claude/rules/task-lifecycle.md` — 分层记忆 + Context Ownership（Factor 3）
