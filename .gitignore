@@ -18,6 +18,9 @@ build/
 .agent-harness/squad/
 .agent-harness/.stop-hook-skip
 .agent-harness/audit.jsonl
+.agent-harness/.tool-call-count
+.agent-harness/.context-monitor-skip
+.agent-harness/.watchdog-skip
 
 # Playwright MCP snapshots (temporary)
 .playwright-mcp/
