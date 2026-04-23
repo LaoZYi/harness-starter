@@ -2,7 +2,7 @@ PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 PACKAGE = src/agent_harness
 HARNESS = PYTHONPATH=src $(PYTHON) -m agent_harness
 
-.PHONY: test check ci lint typecheck skills-lint assess upgrade-plan upgrade-apply init sync-superpowers dogfood setup help
+.PHONY: test check ci lint typecheck skills-lint deadcode shellcheck-hooks assess upgrade-plan upgrade-apply init sync-superpowers dogfood setup help
 
 help:
 	@echo "常用目标："
@@ -11,7 +11,9 @@ help:
 	@echo "  make check     仓库健康检查 + lint"
 	@echo "  make lint      ruff 代码风格检查"
 	@echo "  make typecheck mypy 类型检查"
-	@echo "  make ci        check + lint + typecheck + skills-lint + test（提交前运行）"
+	@echo "  make deadcode  vulture 死代码扫描（min-confidence 80）"
+	@echo "  make shellcheck-hooks  shellcheck 扫 .claude/hooks/*.sh"
+	@echo "  make ci        check + typecheck + skills-lint + deadcode + shellcheck + test（提交前运行）"
 	@echo "  make init TARGET=/path/to/repo      对目标仓库执行 init"
 	@echo "  make upgrade-plan TARGET=/path      查看升级计划"
 	@echo "  make upgrade-apply TARGET=/path     应用升级"
@@ -53,7 +55,21 @@ check: lint
 skills-lint:
 	$(HARNESS) skills lint .
 
-ci: check typecheck skills-lint test
+deadcode:
+	@if $(PYTHON) -m vulture --version >/dev/null 2>&1; then \
+	  $(PYTHON) -m vulture $(PACKAGE) --min-confidence 80; \
+	else \
+	  echo "vulture 未安装（可选工具）。跑 make setup 装 dev 依赖后启用。"; \
+	fi
+
+shellcheck-hooks:
+	@if command -v shellcheck >/dev/null 2>&1; then \
+	  shellcheck .claude/hooks/*.sh; \
+	else \
+	  echo "shellcheck 未安装（可选工具）。macOS: brew install shellcheck / Linux: apt install shellcheck"; \
+	fi
+
+ci: check typecheck skills-lint deadcode shellcheck-hooks test
 
 assess:
 ifndef TARGET

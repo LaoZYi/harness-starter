@@ -467,3 +467,15 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
   1. 工作流文档必须明确**交付轮**（单条任务 / `/lfg` 推到发布）和**治理轮**（周期性或触发式：发布后 `/doc-release`、drift 时 `/lint-lessons`、重大改动前 `/cso`、回顾时 `/retro`、吸收外部时 `/evolve`）的分工
   2. 治理链路不是"有空才做的 nice-to-have"——新入 agent 时应该知道这两条链路都必须跑
   3. 任何新 skill 接入前先判定归属：交付链路（改变产物）vs 治理链路（改变元状态）。归属不清 → 不接入，先想清楚再加
+
+---
+
+## 质量快照 — 2026-04-23
+
+`/health` 综合得分 **10.0/10 CLEAN**，六维全绿（typecheck / lint / test 612/612 / deadcode / shellcheck）。本次同时启用三项工具链改进作为长期门禁基线：
+
+- `vulture --min-confidence 80` 纳入 `make deadcode`（@ 80 零告警；@ 60 有 13 条 false positive 不作门禁——多为 dataclass 字段和给目标项目用的公共 API）
+- `shellcheck .claude/hooks/*.sh` 纳入 `make shellcheck-hooks`（CI 环境无 shellcheck 时 fallback skip，不炸）
+- `mypy check_untyped_defs = true`（启用时 0 新 error，零成本收益）
+
+三项都接入 `make ci`。下次 `/health` 若得分 < 10 → 定位退化点与本基线对比。

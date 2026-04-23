@@ -52,8 +52,8 @@ ignore = ["E701", "E702", "E741"]
 [tool.mypy]
 python_version = "3.11"
 ignore_missing_imports = true
-# 先不开 strict。后续可逐步收紧。
-check_untyped_defs = false
+# 2026-04-23 开启：本仓库跑严格化后 0 新 error，零成本收益
+check_untyped_defs = true
 warn_unused_ignores = true
 # 测试和脚本不做类型检查（它们没用 type hints）
 exclude = [
