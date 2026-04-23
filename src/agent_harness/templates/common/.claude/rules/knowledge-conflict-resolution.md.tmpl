@@ -51,6 +51,34 @@ description: 知识冲突解析——5 型分类 + 标准处理路径，给 less
 3. **记录 mismatch**：在合并后的条目里标注"原 A、B 合并"，保留可追溯性
 4. **交由用户确认**：`/lint-lessons` 输出建议，`/compound` 在遇到 T3 时做预检提示，都**不自动执行合并**
 
+#### T3 的 4 决策 SOP（dedup decision，OpenViking 吸收）
+
+> 来源：volcengine/OpenViking 在记忆抽取时的「向量预过滤 + LLM 4 选 1」机制（参考 `docs/en/concepts/06-extraction.md`）。本项目复用现有 `.agent-harness/bin/memory search` 的 BM25 做相似度预过滤，**不引入** embedding / vecdb / faiss 依赖，**不拷贝** OpenViking 代码（AGPL-3.0）。
+
+把上面 4 步「处理路径」从模糊建议升级为**可操作 SOP**：
+
+**前置（相似度预过滤）**：用 BM25 拿 top-3 相似条目（不引入 embedding 依赖）。
+
+```bash
+.agent-harness/bin/memory search "<新 lesson 关键词>" --top 3 --scope lessons
+```
+
+**4 决策（基于根因方向、解决方案、适用边界做 4 选 1）**：
+
+| 决策 | 触发信号 | 标准动作 |
+|---|---|---|
+| `skip` | 新 lesson 与某条 confirmed lesson 语义高度重合（根因一致 + 解决方案相同） | **不写新条**；在 `current-task.md` 记一次"引用 <旧条目> 即可" |
+| `create` | 新 lesson 是真正全新信息（新根因 / 新解决方案），与已有条目相关度低 | **正常追加**新条目（按 `/compound` 第 4 步） |
+| `merge` | 新 lesson 与某条已有条目部分重合，但各自有独立 `when:` 适用条件 | **合并为一条**带 `when:` 条件分支；保留双方原始信息在正文 |
+| `delete` | 新 lesson 证伪了某条 confirmed lesson（旧条在新环境下已无效） | 旧条**不物理删**，标注 `⚠️ deprecated by YYYY-MM-DD <新标题>` 归档；新条按 `/compound` 第 4 步写入 |
+
+**硬约束（与 T3 原处理路径并存，不互相替代）**：
+
+- 🔴 **不自动执行决策**。AI 输出 4 决策建议给用户确认后才动手——延续 T3 原 4 步的「不自动执行」铁律
+- 🔴 **`merge` 和 `delete` 必须同步刷新** `.agent-harness/memory-index.md`，避免 L1 索引过时指向已合并/归档条目
+- 🔴 **`delete` 不物理删**：旧条保留在 `lessons.md` 加 deprecated 标注作追溯锚点（与 T6 晋升「原 lesson 不删」同理，保留历史可回溯）
+- 🔴 **决策结果是元分类，不替代「条件分支」语义**：`merge` 决策落地仍按 T3 原步骤 2「转条件分支」执行——4 决策回答「该不该合 + 如何写入」，原 4 步回答「合并的具体形态（when: 语义）」
+
 ### T4：多 agent 结论不一致
 
 **场景示例**：
@@ -153,12 +181,15 @@ description: 知识冲突解析——5 型分类 + 标准处理路径，给 less
    - **T6 → 推荐晋升路径 A/B/C（脚本化 / 升级 Rule / 写入反合理化表），而非追加第 N 条同款 lesson**
 4. **不 block 写入**：用户如仍坚持写入，`/compound` 正常执行，只是 T3 / T6 情况下会在日志里留一条 mismatch / 晋升候选备忘
 
+**步骤 3.6（dedup decision）**：步骤 3.5 完成冲突分型后，`/compound` 进一步对新 lesson 和 `memory search --top 3 --scope lessons` 返回的 top-K 相似条目做 **4 选 1 决策**（skip / create / merge / delete，见上文「T3 的 4 决策 SOP」）。3.5 回答"是不是矛盾、是哪一型"；3.6 回答"具体该怎么处置"。两步叠加，不互相替代。
+
 ## 铁律
 
 - **不自动合并 / 删除 / 降级 / 晋升**：所有处理路径都必须经用户确认
 - **不把 T1 / T2 当 lessons 问题处理**：它们不属于本规则的执行范围
 - **叠加使用症状维度和解决维度**：两者都要输出，不互替代
 - **T6 不代表"必须脚本化"**：只代表"值得评估晋升"。经验性 lesson 可以永远停在 lessons 层，关键是反复触发时要**显式**做一次决策，而不是默认继续写同款
+- **T3 冲突必须叠加 dedup decision**：`/lint-lessons` 和 `/compound` 在标注 `resolution-type: T3` 的同时，必须给出 `dedup decision: skip/create/merge/delete/N/A` 双标签，4 决策是 T3 的标准 SOP（见上文）
 
 ## 与其他规则的关系
 

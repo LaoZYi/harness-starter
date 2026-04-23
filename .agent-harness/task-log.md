@@ -26,6 +26,50 @@
 
 ---
 
+## 2026-04-23 进化集成：volcengine/OpenViking Memory dedup 4 决策（Issue #45）
+
+- **需求**：把 OpenViking（AGPL-3.0, 22.8k ⭐）在记忆抽取时的「向量预过滤 + LLM 4 选 1」机制吸收到本项目的 lessons 维护链路，把 `knowledge-conflict-resolution.md` T3 章节从「转条件分支合并」模糊描述升级为可操作 SOP
+- **做了什么**：
+  1. `knowledge-conflict-resolution.md.tmpl` T3 章节新增「4 决策 SOP」子段（skip/create/merge/delete 表格 + 3 条硬约束）+ 铁律段追加「T3 必须叠加 dedup decision」+「与 /compound 接入点」追加 3.6 步承接
+  2. `/compound` 新增第 3.6 步「Dedup 决策」，含前置 `memory search --top 3` + 4 决策表格 + 输出建议格式 + 硬约束 + **触发作用域限定（仅 T3 或无冲突时触发）**
+  3. `/lint-lessons` 2.2.1 之后新增 2.2.2 子段「标注 dedup decision」，含 **4 决策在 lint-lessons 语境的语义说明**（与 compound 语境显式区别）+ 双标签输出示例 + 铁律段扩展
+  4. 6 条契约测试（test_t3_has_four_decision_sop / test_compound_has_dedup_step_36_with_memory_search / test_lint_lessons_has_dedup_decision_label / test_lint_lessons_preserves_keep_a_anchor **强化锁 3 模板** / test_compound_dedup_not_auto_execute / test_lint_lessons_t4_t5_dedup_decision_marked_na）
+  5. docs/product.md 9.1 持续演进条目 + architecture/CHANGELOG/release 计数 614→620 同步
+- **关键决策**：
+  1. **零依赖原则**：复用现有 `memory search` 的 BM25 做相似度预过滤，不引入 embedding / vecdb / faiss，不拷贝 OpenViking 代码（AGPL-3.0）
+  2. **只升级 T3，不动 T4/T5/T6**：Issue 方案明确，T4 走多 agent tentative 原路径，T5 走风险警告原路径，本次 4 决策仅为 T3 专属 SOP
+  3. **跨场景同名关键词保留命名 + 加语境提示**（评审 Round 1 P1-1）：skip/create 在 /compound 和 /lint-lessons 语境下语义不同；选择显式声明差异而非重命名，保留"一套机制"的语义关联
+  4. **/compound 3.6 触发作用域限定**（评审 Round 1 P1-2）：仅 T3 或无冲突触发，避免与 T4/T5 原路径重叠
+  5. **锚点保护强化**（评审 Round 1 P1-3）：`保留 A` 单字锁定 → 锁 3 个完整模板（保留 A 删 B / 保留 B 删 A / 合并为一条），防止 4 模板段整体丢失时假阳
+  6. **_extract_section 层级耦合推迟不改**（评审 Round 1 P1 推迟）：该耦合是架构健康警示而非缺陷，记入 lessons 作追溯锚点
+- **改了**：
+  - `src/agent_harness/templates/common/.claude/rules/knowledge-conflict-resolution.md.tmpl`
+  - `src/agent_harness/templates/superpowers/.claude/commands/compound.md.tmpl`
+  - `src/agent_harness/templates/superpowers/.claude/commands/lint-lessons.md.tmpl`
+  - `.claude/commands/compound.md`, `.claude/commands/lint-lessons.md`, `.claude/rules/knowledge-conflict-resolution.md`（dogfood 同步）
+  - `tests/test_lessons_conflict_resolution.py`（+6 契约测试）
+  - `docs/product.md`（9.1 条目 + 测试计数）
+  - `docs/architecture.md`, `CHANGELOG.md`, `docs/release.md`（计数 614→620）
+  - `docs/superpowers/specs/2026-04-23-openviking-dedup-decision-plan.md`（plan 文件）
+  - `.agent-harness/lessons.md`（3 条教训 + 3 处索引更新）
+  - `.agent-harness/memory-index.md`（rebuild --force 刷新）
+- **完成标准**：
+  - [x] R-001..R-007 全 satisfied
+  - [x] make ci 全绿（620 tests）
+  - [x] 2 SubAgent 评审 Round 1 收敛（5 P1: 4 修 + 1 推迟）
+  - [x] 用户验证通过
+- **量化指标**：
+  - `rework_count`: 0（评审 Round 1 不是返工）
+  - `review_p0_count`: 0
+  - `review_p1_count`: 5（4 接受修 + 1 推迟）
+  - `user_verify_first_pass`: true
+  - `dialog_rounds`: ~10（从 /lfg #45 到用户通过）
+  - `docs_produced`: 1（plan）+ 9 处文档更新
+- **相关 commit**：`8c812a3..204e5dd`（4 commits）
+- **相关 tag**：`lfg/i45-step-1` / `lfg/i45-step-8` / `lfg/i45-review-r1` / `lfg/i45-step-9`
+
+---
+
 ## 2026-04-08 进化集成：addyosmani/agent-skills（Issue #6）
 
 - 需求：从 addyosmani/agent-skills 吸收反合理化机制和 spec-driven-development 到框架
