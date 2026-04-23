@@ -106,6 +106,46 @@ cat .agent-harness/lessons.md 2>/dev/null | grep -i "<关键词>"
 - 🔴 **警告性不 block**：预检是提示，不阻止写入
 - 🔴 **人工裁决**：AI 不自行合并 / 降级 / 丢弃，始终等用户确认
 - 🔴 **T1 / T2 不在 lessons 域处理**：看见这两型时不要试图用 `/compound` 解决，告知用户走对应层级规则
+- 🔴 **冲突分型完成后，进入第 3.6 步做 dedup 决策**：3.5 回答"是不是矛盾、是哪一型"，3.6 回答"具体该怎么处置（4 选 1）"
+
+### 第 3.6 步：Dedup 决策（4 选 1，OpenViking 吸收）
+
+> 来源：volcengine/OpenViking 在记忆抽取时的「向量预过滤 + LLM 4 选 1」机制。本项目复用现有 `.agent-harness/bin/memory search` 的 BM25 做相似度预过滤，**不引入** embedding / vecdb / faiss 依赖，**不拷贝** OpenViking 代码（AGPL-3.0）。
+
+冲突预检完成后，**额外**对新 lesson 和已有 top-3 相似条目做 dedup 决策：
+
+**前置**：用 BM25 拿 top-3 相似条目。
+
+```bash
+.agent-harness/bin/memory search "<本次教训关键词>" --top 3 --scope lessons
+```
+
+**4 决策（skip / create / merge / delete，基于根因方向、解决方案、适用边界 4 选 1）**：
+
+| 决策 | 触发信号 | 标准动作 |
+|---|---|---|
+| `skip` | top-1 相似度很高，语义重合（根因一致 + 解决方案相同） | 不写新条；在 `current-task.md` 记一次"引用 <旧条目> 即可" |
+| `create` | top-3 都相关度低，新 lesson 是真正全新信息 | 正常追加（按第 4 步走） |
+| `merge` | 某条与新 lesson 部分重合，存在互补 `when:` 适用条件 | 合并为一条带 `when:` 条件分支（按 `.claude/rules/knowledge-conflict-resolution.md` T3 的 4 决策 SOP） |
+| `delete` | 某条已被新 lesson 证伪（旧条在新环境下无效） | 旧条**不物理删**，标注 `⚠️ deprecated by YYYY-MM-DD <新标题>` 归档；新条按第 4 步写入 |
+
+**输出决策建议给用户，不自动执行**：
+
+```
+dedup 决策建议：merge
+- 与 2026-04-12 [测试] 环境变量泄漏 部分重合
+- 互补 when:：旧条适用"单元测试"，新条适用"集成测试"
+- 建议合并为一条：when:unit_test → X ; when:integration_test → Y
+- 回复 "create" → 保留两条独立
+- 回复 "delete" → 新条覆盖旧条（旧条 deprecated 归档）
+- 回复 "skip" → 取消写入
+```
+
+**硬约束**：
+
+- 🔴 参考 `.claude/rules/knowledge-conflict-resolution.md` T3 章节的完整 SOP
+- 🔴 **不自动执行**：用户确认决策后才进入第 4 步写入（或归档 / 合并 / 跳过）
+- 🔴 `merge` 和 `delete` 必须在第 5 步同步刷新 `.agent-harness/memory-index.md`（避免 L1 索引指向已合并/归档条目）
 
 ## 第 4 步：写入知识库
 

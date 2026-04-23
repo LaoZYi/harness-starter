@@ -79,15 +79,15 @@
 - [x] 阶段 2 构思（跳过，/brainstorm 不适用——本任务方案已明确）
 - [x] 阶段 2.5 规格（跳过——Issue body 已含足量验收标准）
 - [x] 阶段 3 计划 — docs/superpowers/specs/2026-04-23-openviking-dedup-decision-plan.md, 8 维度自检通过
-- [ ] 阶段 4 实施（按计划 TDD）
-  - [ ] 步骤 1 RED: 扩 5 条契约测试
-  - [ ] 步骤 2 扩 knowledge-conflict-resolution.md.tmpl T3 章节
-  - [ ] 步骤 3 /compound 新增第 3.6 步
-  - [ ] 步骤 4 /lint-lessons 新增 2.2.2 双标签
-  - [ ] 步骤 5 make dogfood
-  - [ ] 步骤 6 docs/product.md 9.1 条目
-  - [ ] 步骤 7 make ci 全绿
-  - [ ] 步骤 8 memory rebuild --force
+- [x] 阶段 4 实施（按计划 TDD）— 619/619 tests pass
+  - [x] 步骤 1 RED: 扩 5 条契约测试（3 fail + 2 pass 回归）
+  - [x] 步骤 2 扩 knowledge-conflict-resolution.md.tmpl T3 章节（新增 4 决策 SOP 子段）
+  - [x] 步骤 3 /compound 新增第 3.6 步（dedup 决策 + memory search --top 3）
+  - [x] 步骤 4 /lint-lessons 新增 2.2.2 双标签（resolution-type + dedup decision）
+  - [x] 步骤 5 make dogfood（3 文件同步）
+  - [x] 步骤 6 docs/product.md 9.1 条目
+  - [x] 步骤 7 make ci 619/619 绿（原 614 → +5 新测试）
+  - [x] 步骤 8 memory rebuild --force（10 教训 / 5 任务刷新）
 - [ ] 阶段 4.3 自检
 - [ ] 阶段 5 评审（/multi-review）
 - [ ] 阶段 6 修复循环
