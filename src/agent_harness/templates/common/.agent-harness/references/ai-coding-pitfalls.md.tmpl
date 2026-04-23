@@ -1,0 +1,151 @@
+# AI 写码常见问题清单（AI Coding Pitfalls）
+
+> L2 温知识层 — 与 `/spec`、`/write-plan`、`/multi-review`、`/verify`、`/cso` 配合使用。按需通过 `/recall --refs pitfalls` 或 `/recall --refs "AI 写码"` 加载。
+>
+> 来源：腾讯 CDN LEGO 团队 57 真实案例提炼的 13 类典型问题 + 5 大根因（《Harness Engineering：AI 能在真正「出事会炸」的后端系统里写代码吗？》2026-04），结合本仓库 `lessons.md` 相关教训归类整理。
+
+## 使用方式
+
+- **计划阶段**（`/spec`、`/write-plan`）：加载本清单作为「预期失败模式」表，逐项判断是否适用本任务
+- **实施阶段**（`/execute-plan`、`/tdd`）：出现同类症状时优先对照根因部分，**不要**直接改代码
+- **评审阶段**（`/multi-review`、`/cso`）：把本清单作为 checklist，逐类检查是否存在
+
+---
+
+## 五大根因（按严重度倒序）
+
+按该团队量化结论，**「不会说我不知道」位列最高风险**，因为它直接削弱人的审查意愿，让其他根因引发的错误更容易漏网。
+
+| # | 根因 | 表现 | 对抗机制（本仓库已有） |
+|---|------|------|------------------------|
+| **R1** | **不会说「我不知道」**（最高） | 用自信的语气输出错误结论，审查者被语气误导降低审查强度 | `anti-laziness.md` 门禁 5「不确定性输出」、`/source-verify` |
+| R2 | **幻觉**（Hallucination） | 编造函数签名、RFC 章节号、百分比数据、配置项 | `/source-verify`、`task-lifecycle.md` L0 静默恢复后仍错 → StuckDetector |
+| R3 | **改不全** | 局部修改遗忘全局影响（insert 了却没 cleanup、改了 A 忘了 B） | `safety.md` 的「改一处，查所有同类」、`/plan-check` 8+1 维度 |
+| R4 | **模式匹配代替验证** | 代码相似就推断行为相同、跳过实测、凭经验定罪 | `/tdd` RED 必须实际失败、`/verify` 穷举验证脚本 |
+| R5 | **缺乏环境意识** | 不区分容器 / 宿主机、不查配置直接猜、不看版本说明 | `context-budget.md` Think in Code、`/source-verify`、hooks 提示 |
+
+**元归纳**：R1-R5 本质都是 AI 缺乏**「不确定性意识」和「全局视野」**。Harness 设计的所有门禁和技能，都是在弥补这两者缺位。
+
+---
+
+## 十三类典型问题
+
+按严重度分三组。每类给出症状 + 触发场景 + 预防措施。
+
+### Critical（上线后可直接导致事故）
+
+#### P-01 异步语义误用
+
+- **症状**：在异步上下文误用同步 API；在 tokio / asyncio / Future / Promise 链里用 blocking send；lambda 捕获跨线程导致悬垂引用
+- **典型场景**：Rust tokio 任务里 `std::sync::mpsc::send`；JS Promise 链里 `fs.readFileSync`；C++ `std::async` 回调里引用已析构的栈变量
+- **预防**：
+  - `/spec` 阶段显式声明「执行上下文」（同步 / 异步 / 多线程），产物清单进入 `/write-plan` 的文件作用域栏
+  - `/multi-review` 跨模型通道专设「并发审查员」人格（Concurrency Specialist）
+
+#### P-05 安全盲区（时序攻击 / SSRF / JWT）
+
+- **症状**：字符串比较用 `==`（时序攻击）；URL 解析后未校验内部网段（SSRF）；JWT 校验算法允许 `none`；密码用 MD5
+- **典型场景**：身份校验、支付接口、内部服务对外暴露
+- **预防**：`/cso` 阶段 10.5 Sharp Edges 专门扫；`references/security-checklist.md` 前置加载
+
+#### P-07 内存泄漏 / 资源泄漏
+
+- **症状**：DashMap / Map 只增不减；打开文件 / socket 忘关；atexit 回调未注册；事件监听 addListener 无对应 removeListener
+- **典型场景**：长跑服务（daemon、worker）、缓存层、WebSocket gateway
+- **预防**：
+  - `/tdd` 步骤 5.5 突变测试里覆盖「长跑内存增长」场景
+  - `/cso` 的 footgun 清单加 API-level 资源对（open/close、add/remove、acquire/release）
+
+#### P-08 协议实现不完整
+
+- **症状**：只实现 happy path，忽略 RFC 中 MAY / SHOULD / MUST NOT 分支；错误码处理漏掉；协议升级 / 降级路径未测
+- **典型场景**：HTTP、QUIC、TLS、WebSocket、数据库 wire protocol 的自实现
+- **预防**：
+  - 协议实现前用 `/source-verify` 拉对应 RFC 章节到上下文
+  - `/spec` 需求矩阵的 R-ID 按 RFC MUST / SHOULD / MAY 分层
+
+### High（引入即埋雷，审查才能拦）
+
+#### P-02 幻觉（API / 配置不存在）
+
+- **症状**：调用 `framework.doMagicalThing()` 但框架从无此 API；import 的 package 不存在；配置项名字凭记忆编
+- **典型场景**：使用非主流 / 较新 / 较旧版本的框架；多个版本 API 不兼容时
+- **预防**：`/source-verify` 前置；`anti-laziness.md` 门禁 5 不确定性输出
+
+#### P-03 改不全（insert 无 cleanup）
+
+- **症状**：新加路由忘了关闭逻辑；数据库写入忘了回滚 / 删除；状态机加了状态不加迁移
+- **典型场景**：配对 API（open/close、acquire/release、register/unregister）、状态机、事件流
+- **预防**：`safety.md` 的「改一处，查所有同类」grep 规则；`/plan-check` 依赖分析维度
+
+#### P-04 配置与实现脱节
+
+- **症状**：代码读 `config.featureFlag`，但 config 里没这键或默认值矛盾；文档写 `TIMEOUT=30s`，代码写死 60
+- **典型场景**：功能开关、超时、重试次数、日志级别
+- **预防**：`/verify` 步骤 5.7 spec-to-code compliance；配置改动必须同步文档
+
+#### P-09 底层未读就改上层
+
+- **症状**：改 API handler 而没读 ORM 层；改前端而没读 API schema；改 skill 模板而没读依赖规则
+- **典型场景**：大型项目、初次接触的模块、修 bug 时
+- **预防**：
+  - `autonomy.md` Trust Calibration 中大 / 超大任务**强制先派 Explorer（scout）**读相关模块
+  - `/write-plan` 文件作用域必须列**读过**和**改过**两个清单
+
+#### P-10 源码分析替代实测
+
+- **症状**：读了代码就断言「这里应该会 X」；贴了伪代码当成验证；用 ChatGPT 描述替代跑测试
+- **典型场景**：新人、紧急修复、「代码看起来没问题」的场景
+- **预防**：
+  - `/tdd` 的 RED 必须**实际**失败（跑出来有红色输出）
+  - `/verify` 反合理化表反对「理论上应该过」
+  - `anti-laziness.md` 门禁 5：凭源码分析给的结论要挂 ⚠️ 待核实
+
+### Medium（风格或回归，长期拖慢）
+
+#### P-06 测试 Flaky（平台差异）
+
+- **症状**：本地过 CI 挂；Linux 过 macOS 挂；随机顺序跑挂；并发跑时挂
+- **典型场景**：涉及时间、路径分隔符、端口、文件锁、全局状态的测试
+- **预防**：`testing-patterns.md` Test Anti-Patterns 段引用；`/tdd` 步骤 5.5 突变测试验证稳定性
+
+#### P-11 大文件编辑损坏
+
+- **症状**：Edit 工具对超长文件做 old_string 替换，因为缩进 / 引号 / 换行差一个字符全挂；整块重写后丢失部分内容
+- **典型场景**：> 500 行配置、> 1000 行源码、带 YAML 多文档分隔符的文件
+- **预防**：
+  - 超长文件优先用 `Read` 定位行号 → 小范围 Edit；拒绝整块 Write
+  - 改前 git diff；改后必须过一次 check 命令
+
+#### P-12 环境盲区
+
+- **症状**：不区分容器内 / 宿主机路径；不看 Python / Node 版本直接用新语法；忽略 shell 差异（bash vs zsh vs dash）
+- **典型场景**：跨平台 CLI、Docker 里调试、CI vs 本地差异
+- **预防**：`/lfg` 阶段 0.1 meta 路由表检查；AGENTS.md 项目特异约束
+
+#### P-13 不会说「我不知道」（根因 R1 的最直观呈现）
+
+- **症状**：见 R1 表；本类问题是根因 R1 在**输出**层面的具体形式，所有 Critical / High 问题都会因 R1 的存在被放大
+- **预防**：`anti-laziness.md` 门禁 5 不确定性输出**专门**针对本类
+
+---
+
+## 通用预防模式（三件套）
+
+### 1. 上下文预加载（对抗幻觉 + 环境盲区）
+
+- 涉及框架 / 库 / 协议 → **先** `/source-verify` 或加载对应 `references/*.md`
+- 涉及项目历史问题 → **先** `/recall --refs pitfalls` 加载本文件 + `/recall <关键词>` 检索 lessons
+- 涉及超大 / 大任务 → **先**派 Explorer（scout）只读探路，再写代码
+
+### 2. 结构化输出（对抗不确定性）
+
+- 事实性断言必须挂来源（文件路径 / 命令输出）或 `⚠️ 待核实`
+- 推测不得混在确定性句里（见 `anti-laziness.md` 门禁 5）
+- 评审意见三态：`接受` / `质疑（附反证）` / `推迟（附条件）`，禁止批量 dismiss
+
+### 3. 多轨验证（对抗模式匹配）
+
+- 单模型 review → 跨模型对抗 CR（`/multi-review` cross-model 通道）
+- 源码分析 → 跑测试 / 跑命令 / 看 log
+- 单 agent 判断 → `/squad` 或 `/dispatch-agents` 多 agent 交叉

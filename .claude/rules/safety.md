@@ -20,6 +20,65 @@ description: 安全和不可逆操作约束
 - 用于 `read_text()` / `open()` 的文件 → 考虑二进制内容、编码异常
 - YAML/JSON 解析结果 → 校验类型，不要假设一定是 dict/list/str
 
+### 反例免疫：路径拼接
+
+```python
+# ❌ 错误写法：直接用用户输入拼路径
+def read_user_file(filename: str) -> str:
+    return (UPLOAD_DIR / filename).read_text()   # filename="../etc/passwd" 直接穿越
+
+# ✅ 正确写法：resolve 后校验属于信任目录
+def read_user_file(filename: str) -> str:
+    target = (UPLOAD_DIR / filename).resolve()
+    if not target.is_relative_to(UPLOAD_DIR.resolve()):
+        raise ValueError(f"path escape: {filename}")
+    return target.read_text()
+```
+
+### 反例免疫：字符串拼接成命令
+
+```python
+# ❌ 错误写法：shell=True + f-string 拼接
+subprocess.run(f"git log --grep={user_input}", shell=True)   # user_input="' ; rm -rf /" 灾难
+
+# ✅ 正确写法：argv 列表 + shell=False（默认）
+subprocess.run(["git", "log", f"--grep={user_input}"])       # 元字符被当字面量
+```
+
+## 不可逆命令 / 密钥 — 反例免疫
+
+### 反例免疫：rm -rf / git reset --hard
+
+```bash
+# ❌ 错误写法：直接执行用户意图的原始指令
+# 用户说「清理下工作区」→ AI 直接跑：
+rm -rf node_modules/ build/ .cache/
+
+# ✅ 正确写法：先列清单等用户确认
+echo "将删除以下目录（请确认）："
+for d in node_modules build .cache; do
+  [ -d "$d" ] && du -sh "$d"
+done
+# 等用户明确说 yes 再执行
+```
+
+### 反例免疫：密钥进 git
+
+```python
+# ❌ 错误写法：把密钥硬编码进代码 / 配置
+API_KEY = "sk-xxxxxx..."                       # 进 git 历史无法彻底清除
+
+# ❌ 错误写法：从 .env 读但忘了加 .gitignore
+# .env 文件本身被 git add 进仓库
+
+# ✅ 正确写法：密钥仅从环境变量读，代码和 .env 模板分离
+import os
+API_KEY = os.environ["API_KEY"]                # 代码不含密钥
+
+# .env.example 进 git（空值模板）
+# .env 进 .gitignore（实际值）
+```
+
 ## 改一处，查所有同类
 
 修改某个函数/模式时，**立即** grep 搜索项目中所有使用同一模式的位置，确认是否需要同步修改。

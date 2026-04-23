@@ -132,7 +132,7 @@ def _render_index(
         "- **task-lifecycle 规则**指示 AI 在开始新任务时默认读取本文件（而非 "
         "lessons.md / task-log.md 全量），避免上下文膨胀。\n"
         "- 索引命中某话题 → 用 `/recall <关键词>` 技能或 `grep` 读取对应节。\n"
-        "- references/ 为 L2 温知识（a11y / perf / security / testing）"
+        "- references/ 为 L2 温知识（a11y / perf / security / testing / pitfalls）"
         "— 用 `/recall --refs` 按需查询。\n"
         "- 索引由 `/compound` 技能维护；也可运行 "
         "`harness memory rebuild .` 从现有 lessons/task-log/references 重建一次。\n"
