@@ -82,6 +82,25 @@ class StopHookBehaviorTests(unittest.TestCase):
             self.assertEqual(r.stdout.strip(), "",
                              f"Expected pass for 待验证 state, got: {r.stdout!r}")
 
+    def test_awaiting_user_confirmation_passes(self) -> None:
+        """方案已出、等用户确认需求方向 — 不该被误拦。"""
+        body = "# Current Task\n\n## 状态：待用户确认\n\n- [ ] 方案草稿\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = _prepare_project(Path(tmp), current_task_body=body)
+            r = _run_stop(proj)
+            self.assertEqual(r.returncode, 0)
+            self.assertEqual(r.stdout.strip(), "",
+                             f"Expected pass for 待用户确认 state, got: {r.stdout!r}")
+
+    def test_awaiting_requirement_confirmation_passes(self) -> None:
+        body = "# Current Task\n\n## 状态：待需求确认\n\n- [ ] 规格草稿\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = _prepare_project(Path(tmp), current_task_body=body)
+            r = _run_stop(proj)
+            self.assertEqual(r.returncode, 0)
+            self.assertEqual(r.stdout.strip(), "",
+                             f"Expected pass for 待需求确认 state, got: {r.stdout!r}")
+
     def test_unchecked_checkbox_blocks(self) -> None:
         body = "# Current Task\n\n- [x] 第1步\n- [ ] 第2步未完成\n- [ ] 第3步\n"
         with tempfile.TemporaryDirectory() as tmp:

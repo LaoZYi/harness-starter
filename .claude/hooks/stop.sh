@@ -4,7 +4,9 @@
 # 逻辑：
 #   1. 若存在 .agent-harness/.stop-hook-skip 文件 → 放行（人工开关，用户主动跳过）
 #   2. 若 current-task.md 不存在或为空 → 放行（无进行中任务）
-#   3. 若包含 "状态：待验证" → 放行（AI 已明确暂停等用户验证）
+#   3. 若包含以下任一"等用户"状态字面 → 放行（AI 已明确暂停等用户）：
+#      "状态：待验证"（完成态，等验证）/ "状态：待用户确认" / "状态：待需求确认"
+#      / "状态：待方向确认" / "状态：待确认"（通用兜底）
 #   4. 若包含 "- [ ]" 未打勾的 checkbox → **block**，要求 AI 先把进度写到 current-task.md
 #   5. 其他 → 放行
 #
@@ -38,15 +40,16 @@ block() {
 # 2. current-task 不存在或为空
 [ ! -s "$CUR_TASK" ] && pass
 
-# 3. AI 明确已进入"待验证"状态（进度已保存，等用户）
-grep -q "状态：待验证" "$CUR_TASK" && pass
+# 3. AI 明确已进入等用户状态（5 个同义字面）
+grep -qE "状态：待(验证|用户确认|需求确认|方向确认|确认)" "$CUR_TASK" && pass
 
 # 4. 存在未完成 checkbox
 if grep -qE '^\s*-\s*\[\s*\]' "$CUR_TASK"; then
   block "current-task.md 存在未完成的 checkbox（- [ ] 未勾选）。
 停止前请：
   1. 把已完成步骤勾选为 [x]
-  2. 若任务完结，在顶部标记 ## 状态：待验证
+  2. 若任务完结、等用户验证，标 ## 状态：待验证；
+     若任务规划/方案已出、等用户确认需求方向，标 ## 状态：待用户确认 / 待需求确认 / 待方向确认
   3. 若要强制跳过此检查，touch .agent-harness/.stop-hook-skip 后重试
 
 这是 Agent Harness 的会话保护 hook（Issue #13，吸收自 MemPalace）。"
