@@ -12,7 +12,18 @@
 - 关键决策：为什么选了这个方案（如有取舍）
 - 改了：涉及的文件列表
 - 完成标准：本次新通过的 checkbox
+- 指标（可选）：
+  - rework_count: N                 # 返工轮次（用户打回几次）
+  - review_p0_count: N               # multi-review / 用户反馈里的 P0 条数
+  - review_fp_rate: N%                # 评审误报率：非真 P0 / P0 候选总数（跨模型 CR 场景尤其重要）
+  - user_verify_first_pass: yes|no   # 首轮用户验证是否直接通过
+  - dialog_rounds: N                 # 本任务总对话轮次（粗估即可）
+  - docs_produced: N                  # 本任务产出的文档总数（spec/plan/ADR/report 等；超过阈值需警惕「文档爆炸」）
 ```
+
+> **指标字段说明**：5 个字段为**可选但推荐**，用于支撑 `/retro` 和 `/evolve` 做定量回顾；省略时按"未测量"处理，不影响其他字段。
+>
+> `review_fp_rate` 和 `docs_produced` 来源于腾讯 CDN LEGO 团队实践反思——单纯堆评审人和文档**反而**降低人工审查意愿（误报率 36%、8 需求生成 99 文件）；记录这两个值有助于 `/retro` 识别「评审过度」和「文档爆炸」两类反模式。
 
 返工/反馈记录格式：
 

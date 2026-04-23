@@ -15,6 +15,26 @@
 
 > 想全自动完成？运行 `/lfg` 一键串联上述全部阶段。
 
+## 双轮框架：交付 vs 治理
+
+本工作流的 32 个技能并行分布在两条互补链路上：
+
+| 轮 | 职责 | 典型技能 |
+|---|---|---|
+| **交付轮**（Delivery） | 把需求推进到发布：构思 → 规格 → 计划 → 执行 → 验证 → 沉淀 | `/ideate`、`/brainstorm`、`/spec`、`/adr`、`/write-plan`、`/plan-check`、`/execute-plan`、`/tdd`、`/debug`、`/verify`、`/multi-review`、`/request-review`、`/receive-review`、`/compound`、`/git-commit`、`/finish-branch`、`/lfg` |
+| **治理轮**（Governance） | 让知识库、技能和代码库持续健康：体检、回顾、安全、一致性 | `/health`、`/retro`、`/lint-lessons`、`/cso`、`/doc-release`、`/evolve`、`/careful`、`/source-verify` |
+
+两条链路**并行、互不替代**：
+
+- 只跑交付轮 → 短期快，但 lessons 会积矛盾、skills 会老化、在线故障会失控
+- 只跑治理轮 → 知识库整洁，但没有新交付喂养它，价值递减
+
+**触发时机**：
+- 交付轮：收到需求时进入（单条任务 / `/lfg` 全流程）
+- 治理轮：周期性或触发式（发布后 `/doc-release`、knowledge drift 时 `/lint-lessons`、重大改动前 `/cso`、回顾时 `/retro`、吸收外部最佳实践时 `/evolve`）
+
+> 灵感来源：腾讯技术工程在内容审核 AI 交付实践中提出的「交付驱动效率，治理保障质量」双轮驱动模型。
+
 ## 项目重点技能
 
 CLI 工具重点技能：`/tdd`（命令行为与退出码契约测试）、`/write-plan`（子命令与参数体系规划）、`/verify`（跨平台行为验证）、`/git-commit`（结构化提交）、`/debug`（管道集成排障）、`/multi-review`（用户视角可用性评审）
