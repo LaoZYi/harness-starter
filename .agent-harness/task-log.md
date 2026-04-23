@@ -1566,3 +1566,17 @@
   - ✅ 用户验证通过
 - 返工记录：
   - 初版白名单误放 `.claude/commands/` → dogfood 后 system-reminder 立刻暴露 `/ABSTRACT` `/OVERVIEW` 被注册为 slash command → 当场纠正改为 `.agent-harness/`，把反模式写入规则 + `test_rule_warns_against_claude_commands_dir` 回归锁定（见当日 lesson）
+
+## 2026-04-23 stop hook 认 5 个「等用户」同义字面
+
+- 需求：之前会话 OpenViking 任务里发现 stop.sh 只认「状态：待验证」字面，对「等需求确认」场景会误拦；用户让我后续扩展
+- 做了什么：
+  - `.claude/hooks/stop.sh` + tmpl：grep 改 `grep -qE "状态：待(验证|用户确认|需求确认|方向确认|确认)"`，同步注释 + block 提示
+  - `tests/test_hooks.py`：新增 2 条（待用户确认 / 待需求确认），原待验证保留作回归
+  - `docs/architecture.md` / `docs/release.md` / `CHANGELOG.md`：测试计数 612 → 614
+- 关键决策：列举 5 个字面而非 `待.*确认` 通用正则——显式清单化可选状态，便于未来按需增减；通用正则会吞掉不想匹配的词
+- 改了：6 个文件（dogfood + tmpl + tests + 3 处计数同步）
+- 完成标准：
+  - ✅ make ci 通过（614 测试）
+  - ✅ 用户验证通过
+  - ✅ commit 5165d26 已 push 到 origin + zjaf
