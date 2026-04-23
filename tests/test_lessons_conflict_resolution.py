@@ -150,6 +150,92 @@ class ADRStateTests(unittest.TestCase):
         self.assertIn(status, {"Proposed", "Accepted", "Deprecated", "Superseded"})
 
 
+class OpenVikingDedupDecisionTests(unittest.TestCase):
+    """GitHub #45：吸收 OpenViking Memory dedup 4 决策（skip/create/merge/delete）。
+
+    覆盖：
+
+    - R-001：`/compound` 新增 dedup 决策步骤（3.6），4 分支完整
+    - R-002：`/lint-lessons` 每对矛盾输出 resolution-type + dedup decision 双标签
+    - R-003：`knowledge-conflict-resolution.md` T3 章节升级为 4 决策 SOP
+    - R-007：`保留 A` 文本锚点保持（lessons.md:67 回归保护）
+    """
+
+    def test_t3_has_four_decision_sop(self) -> None:
+        """T3 段落必须含 4 决策关键词 skip/create/merge/delete。"""
+        text = RULE_TEMPLATE.read_text(encoding="utf-8")
+        t3_block = _extract_section(text, "T3")
+        self.assertTrue(t3_block, "未找到 T3 段落")
+        for keyword in ("skip", "create", "merge", "delete"):
+            self.assertIn(
+                keyword,
+                t3_block,
+                f"T3 段落缺少 dedup decision 关键词 `{keyword}`",
+            )
+
+    def test_compound_has_dedup_step_36_with_memory_search(self) -> None:
+        """`/compound` 必须新增第 3.6 步，调用 memory search --top 拿 top-K 相似条目。"""
+        text = COMPOUND_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("3.6", text, "compound 必须新增第 3.6 步")
+        self.assertIn(
+            "memory search",
+            text,
+            "compound 3.6 必须调用 memory search 做 BM25 预过滤",
+        )
+        self.assertIn(
+            "--top",
+            text,
+            "compound 3.6 必须用 --top 控制 top-K",
+        )
+        for keyword in ("skip", "create", "merge", "delete"):
+            self.assertIn(
+                keyword,
+                text,
+                f"compound 3.6 缺少 dedup decision 关键词 `{keyword}`",
+            )
+
+    def test_lint_lessons_has_dedup_decision_label(self) -> None:
+        """`/lint-lessons` 每对矛盾输出 resolution-type + dedup decision 双标签。"""
+        text = LINT_LESSONS_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn(
+            "resolution-type",
+            text,
+            "lint-lessons 缺少 resolution-type 标签(现有契约)",
+        )
+        self.assertIn(
+            "dedup decision",
+            text,
+            "lint-lessons 必须新增 dedup decision 标签",
+        )
+        # 输出格式示例必须同时出现两种标签
+        for keyword in ("skip", "create", "merge", "delete"):
+            self.assertIn(
+                keyword,
+                text,
+                f"lint-lessons 2.2.2 缺少 dedup decision 关键词 `{keyword}`",
+            )
+
+    def test_lint_lessons_preserves_keep_a_anchor(self) -> None:
+        """回归保护：lessons.md:67 教训——`保留 A` 文本锚点受 assertIn 锁定不能动。"""
+        text = LINT_LESSONS_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn(
+            "保留 A",
+            text,
+            "lint-lessons 4 裁决模板原文案『保留 A 删 B』必须保留"
+            "（test_lint_lessons_has_contradiction_detection 通过 assertIn 锁定）",
+        )
+
+    def test_compound_dedup_not_auto_execute(self) -> None:
+        """`/compound` 3.6 步必须保留『不自动执行』铁律（与现有冲突预检一致）。"""
+        text = COMPOUND_TEMPLATE.read_text(encoding="utf-8")
+        # 在 compound 全文中出现『不自动执行』或『不 block 写入』即可
+        self.assertTrue(
+            "不自动执行" in text or "不 block" in text or "人工裁决" in text,
+            "compound 3.6 dedup 决策必须声明非自动执行性质"
+            "（遵循 knowledge-conflict-resolution.md 铁律）",
+        )
+
+
 def _extract_section(text: str, heading_keyword: str) -> str:
     """截取以 `## <keyword>` 或 `### <keyword>` 开头的段落（到下一个同级标题前）。"""
     lines = text.splitlines()
