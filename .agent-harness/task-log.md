@@ -1430,3 +1430,139 @@
   - [x] make ci 全绿（598 tests，无 lint/typecheck 警告）
   - [x] dogfood 无漂移
   - [x] 历史 `test_user_content_preserved_in_three_way` / CLAUDE.md three_way 等回归测试不破
+
+## 2026-04-22 feat(workflow): 吸收腾讯 AI 全自动化文章 3 点
+
+- 需求：用户读完腾讯技术工程《从提需求到部署发布，全 AI 全自动化后》后问「有什么可以吸收的点」，对比后选 3 个高 ROI 点按 10 分→30 分→1 小时的顺序落地
+- 做了什么：
+  - **Step 1 · 双轮模型**：`superpowers-workflow.md.tmpl` 在「推荐工作流」后新增「双轮框架：交付 vs 治理」段——把 32 个技能按 Delivery（17 个）/ Governance（8 个）两轮分类，说明「只跑交付 → lessons 积矛盾」/「只跑治理 → 价值递减」的共生关系
+  - **Step 2 · 交付质量度量**：`task-log.md.tmpl` 任务记录格式新增 4 个**可选**指标（`rework_count` / `review_p0_count` / `user_verify_first_pass` / `dialog_rounds`），给 `/retro` 和 `/evolve` 提供真实数据源
+  - **Step 3 · 需求评分门禁**：`spec.md.tmpl` 阶段 1 新增 1.5 节「需求评分门禁」——5 维 × 20 分评分卡（背景/价值衡量/解决方案/影响范围/正文完整性）+ 三档硬规则（≥ 80 通过 / 60–79 补齐 / < 60 回 `/ideate`）+ 4 条反合理化 + 输出示例
+  - dogfood 同步 `.claude/rules/superpowers-workflow.md` + `.claude/commands/spec.md`（task-log.md.tmpl 不在 dogfood 同步范围，改动只影响未来 `harness init` 产物）
+- 关键决策：
+  - **分类先于动手**：把文章的点先分成「已覆盖 / 值得吸收 / 不适合」三类，再按 ROI 排序，避免过度工程化。原文 PRD-Agent / DDLMcp / LegoMcp / 三级成熟度模型 L1/L2/L3 / 执行清单模板化 5 项明确划入「不吸收」
+  - **评分门禁写进 spec.md 而非新建规则**：与现有「🔴 完成后展示规格 + 需求矩阵」对齐，升级为「规格 + 需求矩阵 + 评分卡」三件套，单点打击
+  - **4 个指标设为可选**：避免强制破坏现有 task-log 历史格式；省略按「未测量」处理
+  - **双轮模型纯文档化**：不动代码、不改技能文件归类，只在 rule 顶部 ratchet 语义——最低成本最高杠杆
+- 改了哪些文件：
+  - `src/agent_harness/templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl`
+  - `src/agent_harness/templates/common/.agent-harness/task-log.md.tmpl`
+  - `src/agent_harness/templates/superpowers/.claude/commands/spec.md.tmpl`
+  - dogfood 同步：`.claude/rules/superpowers-workflow.md`、`.claude/commands/spec.md`
+- 完成标准：
+  - [x] 3 个模板文件均更新，文本结构完整
+  - [x] `scripts/dogfood.py` 同步成功（2 个文件更新）
+  - [x] `make test` 598/598 全绿，无回归
+  - [x] 用户确认通过
+- 指标：
+  - rework_count: 0                   # 一次到位未返工
+  - review_p0_count: 0                # 纯文档 / 模板改动，未走 /multi-review
+  - user_verify_first_pass: yes       # 用户直接「确认」
+  - dialog_rounds: 5                  # 「框架是什么」→「吸收点」→「按顺序执行」→「确认」→「归档」
+
+## 2026-04-22 feat(workflow): 吸收腾讯 LEGO Harness Engineering 文章 5 点
+
+- 需求：用户读完腾讯 CDN LEGO 团队《Harness Engineering：AI 能在真正"出事会炸"的后端系统里写代码吗？》后问「有没有可以吸收的点」，对比后选 5 个增量点按 30min/1h/2h/1h/2h ROI 顺序落地（B → A → D → E → C）
+- 做了什么：
+  - **Step B · 不确定性输出规则（门禁 5）**：`anti-laziness.md.tmpl` 新增**门禁 5**——事实性断言必须 observed（有文件路径/命令输出）或 uncertain（挂 `⚠️ 待核实`）二选一，禁止「大概率 / 应该是 / 据我所知」模糊副词规避；含 3 条反合理化驳斥
+  - **Step A · 13 类问题 + 5 根因 references**：新建 `templates/common/.agent-harness/references/ai-coding-pitfalls.md.tmpl`（L2 温知识）——5 根因（R1「不会说我不知道」位列最高 + R2 幻觉 + R3 改不全 + R4 模式匹配代验证 + R5 缺乏环境意识）+ 13 类典型问题分 Critical/High/Medium 三组 + 三件套通用预防模式；登记到 `scripts/check_repo.py:REQUIRED_FILES`；`memory.py` 索引说明扩展 pitfalls 类别
+  - **Step D · 跨模型对抗 CR 协议**：`multi-review.md.tmpl` 模式表新增 **cross-model** 第 4 模式 + 文末用「跨模型对抗通道」专段替换原「未来方向」——三盲区分析（知识 / 注意力 / 确认偏差） + 前置工具清单（≥ 2 模型 CLI，否则降级） + 4 轮协议（并行独立 → 交叉验证 → 辩论 → 自动收敛） + 置信度表输出格式 + 两种执行方式 + 容错策略
+  - **Step E · 误报率 + 文档爆炸保护**：`task-log.md.tmpl` 指标字段从 4 扩到 6（新增 `review_fp_rate` 评审误报率 + `docs_produced` 文档总数）；`write-plan.md.tmpl` 自审清单加「文档爆炸门禁」一项 + 新增专段（≥ 10 非代码文档暂停问用户合并 / 推迟 / 接受）
+  - **Step C · 代码级反例免疫**：`safety.md.tmpl` 在「输入信任边界」和「不可逆命令 / 密钥」两节追加 4 对 ❌ 错误写法 + ✅ 正确写法代码对（路径拼接 / shell 字符串拼接 / rm -rf 直执行 / 密钥进 git）
+  - dogfood 同步 `.claude/rules/anti-laziness.md` + `.claude/rules/safety.md` + `.claude/commands/multi-review.md` + `.claude/commands/write-plan.md`（4 文件）；`task-log.md.tmpl` + 新 references 文件不在 dogfood 同步范围，只影响未来 init 产物
+- 关键决策：
+  - **5 步互不耦合，单文件单点突破**：每步改 1-2 文件，可独立 revert；避免一次涉太多消费方
+  - **R1「不会说我不知道」单独成门禁**：腾讯文章把它列为 5 大根因里**最高**风险，因为 AI 自信语气会**直接削弱审查意愿**，让其他根因引发的错误更容易漏网。值得独立门禁而非塞进现有反合理化表
+  - **跨模型 CR 不强制启用**：默认仍是同模型多人格 review，cross-model 只在生产 / 架构 / 安全敏感场景显式启用，避免成本爆炸
+  - **文档爆炸阈值 10**：参考腾讯案例「8 需求 99 文件」反推，单任务 10 个非代码文档基本是上限；evolution 模式（吸收外部最佳实践 / 初次搭建知识库）显式可跳过
+  - **反例免疫只挑 3-4 条高频规则**：safety.md 已有 5 条规则，全部加代码对会膨胀；只挑路径 / 命令 / rm-rf / 密钥 4 个最常踩的
+  - **新 references 不放 dogfood 同步范围**：`scripts/dogfood.py:SYNC_PREFIXES` 只含 `.claude/`，`.agent-harness/references/` 走 init 路径，本仓库**不**自动有这个文件——但已登记到 check_repo 守卫所以 init 路径必发
+- 改了哪些文件：
+  - 新建：`templates/common/.agent-harness/references/ai-coding-pitfalls.md.tmpl`
+  - 模板：`templates/common/.claude/rules/anti-laziness.md.tmpl` + `templates/common/.claude/rules/safety.md.tmpl` + `templates/superpowers/.claude/commands/multi-review.md.tmpl` + `templates/superpowers/.claude/commands/write-plan.md.tmpl` + `templates/common/.agent-harness/task-log.md.tmpl`
+  - 工具：`scripts/check_repo.py`（REQUIRED_FILES 加 ai-coding-pitfalls.md.tmpl）+ `src/agent_harness/memory.py`（references 类别说明）
+  - dogfood：`.claude/rules/{anti-laziness,safety}.md` + `.claude/commands/{multi-review,write-plan}.md`
+- 完成标准：
+  - [x] 5 个模板文件按步骤更新
+  - [x] `scripts/dogfood.py` 同步成功（4 文件）
+  - [x] `make test` 598/598 全绿
+  - [x] `make check` 通过（含新 references 守卫）
+  - [x] `harness lfg audit` 10/10 保持，无维度掉分
+  - [x] 用户确认通过
+- 指标：
+  - rework_count: 0                   # 一次到位未返工
+  - review_p0_count: 0                # 纯模板 / 文档改动，未走 /multi-review
+  - review_fp_rate: n/a                # 未走评审，无误报数据
+  - user_verify_first_pass: yes       # 用户直接「确认」
+  - dialog_rounds: 4                  # 「打开文章」→「评估吸收点」→「按顺序落地」→「确认」
+  - docs_produced: 1                   # 仅 current-task.md 一份过程文档（无新建 spec/plan/ADR/review 报告）
+
+## 2026-04-22 feat(workflow): 吸收阿里云 Qoder CLI 文章 3 点
+
+- 需求：用户读完阿里云开发者《Qoder CLI + Harness Engineering 实战：构建 7×24h 无人值守用户反馈自动处理系统》后问「再看一下这篇文章」，评估后按 A/B/C ROI 顺序落地
+- 做了什么：
+  - **A · 模型分级指引**：`autonomy.md.tmpl` Trust Calibration 表新增「建议模型」列——微小→Haiku / 小→Haiku-Sonnet / 中→Sonnet / 大→Opus / 超大→orchestrator Opus + worker 按 capability。表下补 3 段：核心洞察（便宜模型反而浪费）、如何切换（`/model` / `settings.json` / 编排式场景）、模型 ID 漂移警告（只给类别不写 `claude-opus-4-7`）
+  - **B · 成本/循环硬限哲学**：`context-budget.md.tmpl` 新增**规则 4：单任务成本上限**——软限 4 指标（对话轮次 ~50 / 工具调用 ~100 / 读文件 ~30 / compact ~2）+ 硬限 2 指标（`--max-turns 80` / `timeout 1800s`） + 编排层必带硬限要求 + 与 StuckDetector / `/compact` / L0 静默恢复的协作表 + 反合理化 3 条 + 违反检测新项
+  - **C · 信心指数量化（门禁 5 升级）**：`anti-laziness.md.tmpl` 门禁 5 末尾新增「高风险动作的信心指数」段——6 类高风险动作清单（自动修复 / migration / 安全代码 / 生产配置 / 不可逆 / 外部写操作） + 0-100 分拆解格式示例 + 三档阈值（≥ 80 执行 / 60-79 人工确认 / < 60 回规划）+ 项目可配阈值 + 与 `⚠️ 待核实` 定性版的边界说明 + 反合理化 3 条
+  - dogfood 同步 `.claude/rules/{autonomy,context-budget,anti-laziness}.md`（3 文件）
+- 关键决策：
+  - **只写模型类别不写具体 ID**（Haiku / Sonnet / Opus）：Anthropic 模型 ID 随版本迭代频繁（Opus 4.7 → 4.8 → ...），硬写会让规则周期性过时。lessons 可吸收为通用经验
+  - **软限 vs 硬限二分**：软限面向 Claude Code 交互会话（达到后主动汇报），硬限面向编排场景（`/squad` / `/dispatch-agents` 子进程），两层互不替代
+  - **信心指数只在「高风险动作」触发**：全量挂分 = 噪音爆炸，与门禁 5 前半段「事实性断言挂 ⚠️」协同不冲突——日常走定性、关键动作走定量
+  - **阈值可配而非硬编码**：默认 80/60 是经验值，安全敏感项目可上调到 90；在 `docs/product.md` 或 `CLAUDE.md` 里声明覆盖
+  - **拒绝抽样巡检员 / task-retro.md 自动进化链路 / 动态时间窗口聚类**：业务 CI 场景才需要，本项目（脚手架）不需要——详见上下文评估
+- 改了哪些文件：
+  - `src/agent_harness/templates/common/.claude/rules/autonomy.md.tmpl`
+  - `src/agent_harness/templates/common/.claude/rules/context-budget.md.tmpl`
+  - `src/agent_harness/templates/common/.claude/rules/anti-laziness.md.tmpl`
+  - dogfood：`.claude/rules/{autonomy,context-budget,anti-laziness}.md`
+- 完成标准：
+  - [x] 3 个模板文件按 A/B/C 顺序更新
+  - [x] `scripts/dogfood.py` 同步 3 文件无漂移
+  - [x] `make test` 598/598 全绿
+  - [x] `make check` 通过
+  - [x] `harness lfg audit` 10/10 保持
+  - [x] 用户确认通过（「ok」）
+- 指标：
+  - rework_count: 0                   # 一次到位未返工
+  - review_p0_count: 0                # 纯 rules 文档改动，未走 /multi-review
+  - review_fp_rate: n/a                # 未走评审
+  - user_verify_first_pass: yes       # 用户直接「ok」
+  - dialog_rounds: 4                  # 「文章链接」→「评估吸收点」→「按顺序落地」→「ok」
+  - docs_produced: 1                   # 仅 current-task.md
+
+
+
+
+## 2026-04-23 吸收 OpenViking 的目录分层摘要（ABSTRACT/OVERVIEW）
+
+- 需求：深入分析 volcengine/OpenViking 并吸收设计思想；具体落地「ABSTRACT.md / OVERVIEW.md 双层导航」到本项目，并把另一个吸收点（Memory dedup 4 决策）提交成 GitHub Issue
+- 做了什么：
+  - `.claude/rules/documentation-sync.md`（+ tmpl）：新增「目录导航层」章节，白名单 `.agent-harness/` 和 `.agent-harness/references/`，定义长度上限（ABSTRACT ≤ 200 字符 / OVERVIEW ≤ 4000 字符）和反模式（不得放 `.claude/commands/`）
+  - `.claude/commands/recall.md`（+ tmpl）：新增 `--map` 参数 + 第 0 步 --map 独立分支 + 三段式检索说明 + 反合理化新条目
+  - 4 对示范产物（dogfood + tmpl 共 8 文件）：`.agent-harness/{ABSTRACT,OVERVIEW}.md` 和 `.agent-harness/references/{ABSTRACT,OVERVIEW}.md`
+  - `scripts/check_repo.py`：新增 `check_directory_maps()` 守卫（缺失 error / 空 error / 超长 warn）+ 4 个新 tmpl 加入 REQUIRED_FILES
+  - `tests/test_directory_maps.py`：14 条测试（规则 3 + recall 2 + 产物合规 3 + tmpl 存在 2 + 守卫场景 4），总测试 598 → 612
+  - `docs/product.md` 9.2 条目 + `docs/architecture.md` / `docs/release.md` / `CHANGELOG.md` 测试计数更新
+  - GitHub Issue #45：方案 2（Memory dedup 4 决策改 /compound 和 /lint-lessons）独立提交
+- 关键决策：
+  - 文件命名用大写 `ABSTRACT.md` / `OVERVIEW.md`（显式）而非 OpenViking 的隐藏文件 `.abstract.md` / `.overview.md`——与 AGENTS.md / CLAUDE.md / README.md 风格一致
+  - 规则扩到既有 `documentation-sync.md` 而非新建 `directory-map.md`——dev-map 所有权语义天然延伸
+  - 示范目录选 `.agent-harness/` + `.agent-harness/references/`，**不选** `.claude/commands/`——因为后者会被 Claude Code 自动注册为 slash command（见当日 lesson）
+  - 只吸收设计思想，不拷贝 AGPL-3.0 代码或 YAML schema；不引入向量依赖，复用现有 BM25
+- 改了：
+  - `.claude/rules/documentation-sync.md` + `src/agent_harness/templates/common/.claude/rules/documentation-sync.md.tmpl`
+  - `.claude/commands/recall.md` + `src/agent_harness/templates/common/.claude/commands/recall.md.tmpl`
+  - `.agent-harness/ABSTRACT.md` + `.agent-harness/OVERVIEW.md` + `.agent-harness/references/ABSTRACT.md` + `.agent-harness/references/OVERVIEW.md`（dogfood）
+  - 4 个对应 `.tmpl`（`src/agent_harness/templates/common/.agent-harness/` 下）
+  - `scripts/check_repo.py`
+  - `tests/test_directory_maps.py`（新）
+  - `docs/product.md` + `docs/architecture.md` + `docs/release.md` + `CHANGELOG.md`
+- 完成标准：
+  - ✅ `make ci` 通过（612 测试全绿）
+  - ✅ dogfood 无 drift
+  - ✅ `check_directory_maps()` 守卫启用
+  - ✅ Issue #45 已提交：https://github.com/LaoZYi/harness-starter/issues/45
+  - ✅ 用户验证通过
+- 返工记录：
+  - 初版白名单误放 `.claude/commands/` → dogfood 后 system-reminder 立刻暴露 `/ABSTRACT` `/OVERVIEW` 被注册为 slash command → 当场纠正改为 `.agent-harness/`，把反模式写入规则 + `test_rule_warns_against_claude_commands_dir` 回归锁定（见当日 lesson）

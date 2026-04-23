@@ -8,6 +8,7 @@
 
 <!-- 由 /compound 技能或 `harness memory rebuild` 维护。-->
 
+- 2026-04-23 [架构设计] `.claude/commands/` 下任何 .md 都会被 Claude Code 注册为 slash command
 - 2026-04-21 [架构设计] 入口技能 gap 先用工具量化再动手
 - 2026-04-14 [架构设计] 子 agent 产出要从自由日志升级到结构化制品
 - 2026-04-14 [架构设计] 角色权限分层要从文档约束升级到运行时强制
@@ -17,22 +18,23 @@
 - 2026-04-13 [架构设计] Harness 中"反偷懒"与"协作记忆"模块要解耦
 - 2026-04-13 [架构设计] 单入口技能 ≠ 能力接入完整
 - 2026-04-13 [流程] 评估报告前必须先查合约测试
-- 2026-04-13 [流程] 破坏性变更用后缀自动检测 + 精确迁移提示，比"兼容旧格式"更好
 
 ## 最近任务（保留最多 5 条）
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-23 吸收 OpenViking 的目录分层摘要（ABSTRACT/OVERVIEW）
+- 2026-04-22 feat(workflow): 吸收阿里云 Qoder CLI 文章 3 点
+- 2026-04-22 feat(workflow): 吸收腾讯 LEGO Harness Engineering 文章 5 点
+- 2026-04-22 feat(workflow): 吸收腾讯 AI 全自动化文章 3 点
 - 2026-04-21 fix(upgrade): 缺 base 基线时保护用户文档（GitLab Issue #23）
-- 2026-04-21 feat(lfg): knowledge-conflict-resolution 规则接入 /lfg 阶段 9
-- 2026-04-21 feat(lfg-audit): /lfg 威力释放度体检工具（10 维 scorecard）
-- 2026-04-21 feat(init): --scaffold-cmd 支持脚手架命令（第三种 scaffold 来源）
-- 2026-04-21 feat(init): --scaffold 支持远端 git URL
 
 ## 参考资料（.agent-harness/references/）
 
 <!-- L2 温知识层。按需通过 `/recall --refs 关键词` 加载。-->
 
+- `ABSTRACT.md` — ABSTRACT
+- `OVERVIEW.md` — References 导航
 - `accessibility-checklist.md` — 无障碍检查清单（Accessibility）
 - `performance-checklist.md` — 性能检查清单（Performance）
 - `requirement-mapping-checklist.md` — 需求 ↔ 测试 ↔ Plan Step 三元映射检查清单
@@ -51,5 +53,5 @@
 
 - **task-lifecycle 规则**指示 AI 在开始新任务时默认读取本文件（而非 lessons.md / task-log.md 全量），避免上下文膨胀。
 - 索引命中某话题 → 用 `/recall <关键词>` 技能或 `grep` 读取对应节。
-- references/ 为 L2 温知识（a11y / perf / security / testing）— 用 `/recall --refs` 按需查询。
+- references/ 为 L2 温知识（a11y / perf / security / testing / pitfalls）— 用 `/recall --refs` 按需查询。
 - 索引由 `/compound` 技能维护；也可运行 `harness memory rebuild .` 从现有 lessons/task-log/references 重建一次。
