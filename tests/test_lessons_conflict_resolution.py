@@ -216,13 +216,42 @@ class OpenVikingDedupDecisionTests(unittest.TestCase):
             )
 
     def test_lint_lessons_preserves_keep_a_anchor(self) -> None:
-        """回归保护：lessons.md:67 教训——`保留 A` 文本锚点受 assertIn 锁定不能动。"""
+        """回归保护：lessons.md:67 教训——铁律段 4 裁决模板完整文字受锁定。
+
+        不只检查"保留 A"字样(防止 4 模板整段被删,只剩例子里偶然出现的"保留 A"),
+        要求锁定至少 3 个连续模板并保留「合并为一条」关键词。
+        """
         text = LINT_LESSONS_TEMPLATE.read_text(encoding="utf-8")
+        # 锁长串:确保 4 模板段的原文案完整保留,单字"保留 A"通过就走不了
         self.assertIn(
-            "保留 A",
+            "**保留 A 删 B**",
             text,
-            "lint-lessons 4 裁决模板原文案『保留 A 删 B』必须保留"
-            "（test_lint_lessons_has_contradiction_detection 通过 assertIn 锁定）",
+            "4 模板原文案『**保留 A 删 B**』必须保留",
+        )
+        self.assertIn(
+            "**保留 B 删 A**",
+            text,
+            "4 模板原文案『**保留 B 删 A**』必须保留",
+        )
+        self.assertIn(
+            "**合并为一条**",
+            text,
+            "4 模板原文案『**合并为一条**』必须保留",
+        )
+
+    def test_lint_lessons_t4_t5_dedup_decision_marked_na(self) -> None:
+        """T4/T5 场景下 dedup decision 必须显式标 `N/A`(规则铁律 + 输出示例契约)。"""
+        text = LINT_LESSONS_TEMPLATE.read_text(encoding="utf-8")
+        # 规则:T4 矛盾和 T5 张力的示例中都必须出现 "dedup decision: N/A"
+        self.assertIn(
+            "resolution-type: T4 · dedup decision: N/A",
+            text,
+            "T4 示例缺少 `dedup decision: N/A` 标注",
+        )
+        self.assertIn(
+            "resolution-type: T5 · dedup decision: N/A",
+            text,
+            "T5 示例缺少 `dedup decision: N/A` 标注",
         )
 
     def test_compound_dedup_not_auto_execute(self) -> None:

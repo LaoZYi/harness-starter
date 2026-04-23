@@ -112,6 +112,10 @@ cat .agent-harness/lessons.md 2>/dev/null | grep -i "<关键词>"
 
 > 来源：volcengine/OpenViking 在记忆抽取时的「向量预过滤 + LLM 4 选 1」机制。本项目复用现有 `.agent-harness/bin/memory search` 的 BM25 做相似度预过滤，**不引入** embedding / vecdb / faiss 依赖，**不拷贝** OpenViking 代码（AGPL-3.0）。
 
+**触发作用域**：仅当 3.5 步判定为 **T3** 或**未命中冲突**（纯查重场景）时执行本步。T4（多 agent 不一致）走 3.5 的「两条都 tentative」路径，T5（任务风险警告）走 3.5 的「不写新条，current-task 记一次提醒」路径，**均不进入 3.6 dedup 决策**——避免与原处理路径职责重叠。
+
+**语境提示**：dedup decision 4 值在 `/compound` 和 `/lint-lessons` 语境下语义略有不同——本步是 `/compound` 语境（新 lesson 还未写，决策是否写 + 如何写）；`/lint-lessons` 语境（两条已存在的处置）见其 2.2.2 段。
+
 冲突预检完成后，**额外**对新 lesson 和已有 top-3 相似条目做 dedup 决策：
 
 **前置**：用 BM25 拿 top-3 相似条目。
