@@ -17,15 +17,28 @@
 
 ## 参数
 
-- `<关键词>`：必填。在目标文件中做不区分大小写的子串匹配
+- `<关键词>`：必填（`--map` 模式除外）。在目标文件中做不区分大小写的子串匹配
 - `--history`：可选。只搜索 task-log.md（跳过 lessons.md 和 references/）
 - `--lessons`：可选。只搜索 lessons.md（跳过 task-log.md 和 references/）
-- `--refs`：可选。只搜索 `.agent-harness/references/*.md`（四个 checklist + 用户添加的自定义参考文档）
+- `--refs`：可选。只搜索 `.agent-harness/references/*.md`（checklist + 用户添加的自定义参考文档）
+- `--map`：可选。**全项目目录导航模式**——不接关键词，扫描所有 `ABSTRACT.md` 给出整个项目的目录语义地图，供 AI 定位"该去哪个目录找"
 - `--all`：可选。返回所有匹配节的完整内容；不加时默认只返回匹配到的二级标题列表
 
-**默认搜索范围**：lessons.md + task-log.md + references/*.md（即"三合一"）。加 `--lessons` / `--history` / `--refs` 任一后，仅搜索该范围。
+**默认搜索范围**：lessons.md + task-log.md + references/*.md（即"三合一"）。加 `--lessons` / `--history` / `--refs` 任一后，仅搜索该范围。`--map` 独立模式，与关键词互斥。
 
 ## 执行步骤
+
+### 第 0 步：`--map` 模式（独立分支）
+
+若传 `--map`，走目录导航模式，忽略 lessons/task-log/references：
+
+1. 运行 `find . -name ABSTRACT.md -not -path '*/node_modules/*' -not -path '*/.git/*' | sort`
+2. 对每个 ABSTRACT 文件读取并输出：`<相对路径>：<ABSTRACT 内容一句话>`
+3. 若用户后续要深入某目录，建议读同目录的 `OVERVIEW.md` 做 L1 导航
+4. 若项目根全无 ABSTRACT.md：提示「本项目尚未维护目录地图，按 `/recall <关键词>` 走传统三合一检索」
+5. 若同时传了关键词：报错「`--map` 不接关键词，两种模式二选一」
+
+`--map` 模式到此结束，不进入后续步骤。
 
 ### 第 1 步：定位候选文件
 
@@ -86,15 +99,28 @@
 
 若返回结果很多（> 5 节）：建议用户细化关键词或加上 `--lessons`/`--history` 缩小范围。
 
+## 三段式检索（推荐）
+
+吸收自 [volcengine/OpenViking](https://github.com/volcengine/OpenViking) 的"文件系统即上下文"思想——用 ABSTRACT/OVERVIEW 把目录语义承载在数据层，AI 不再靠读全文猜目录用途。
+
+当你**不确定话题落在哪个目录**时，推荐按三段式检索：
+
+1. **L0 扫 ABSTRACT**：先跑 `/recall --map`，看哪个目录可能相关
+2. **L1 读 OVERVIEW**：对命中目录读其 `OVERVIEW.md`，按"关键文件列表"和"推荐阅读顺序"挑具体文件
+3. **L2 grep 原文**：在目标文件上跑 `/recall <关键词>` 或直接 Grep
+
+相比"默认三合一 grep"，三段式减少无效匹配和上下文浪费。适用范围见 `.claude/rules/documentation-sync.md` 的目录导航层白名单。
+
 ## 使用示例
 
 ```
-/recall 升级                # 搜 lessons + task-log + references（默认三合一）
-/recall 合并 --all          # 完整展开所有"合并"相关条目
-/recall memory --history    # 只搜 task-log
-/recall 三方合并 --lessons  # 只搜 lessons
-/recall CORS --refs         # 只搜 references（找 security-checklist 的 CORS 节）
-/recall LCP --refs          # 只搜 references（找 performance-checklist 的 LCP 节）
+/recall --map                # 扫全项目 ABSTRACT.md 给目录地图
+/recall 升级                 # 搜 lessons + task-log + references（默认三合一）
+/recall 合并 --all           # 完整展开所有"合并"相关条目
+/recall memory --history     # 只搜 task-log
+/recall 三方合并 --lessons   # 只搜 lessons
+/recall CORS --refs          # 只搜 references（找 security-checklist 的 CORS 节）
+/recall LCP --refs           # 只搜 references（找 performance-checklist 的 LCP 节）
 ```
 
 ## 反合理化
@@ -108,3 +134,4 @@
 | "随便取前 3 个就行" | 可能漏掉关键节；默认列全部标题让用户/AI 判断相关性 |
 | "中文关键词 Grep 不好用" | Grep 底层是 ripgrep，UTF-8 原生支持；直接用中文关键词即可 |
 | "Grep 没命中就是没有，不用再跑 BM25" | Grep 要完全一致；你可能用了同义词或错字。BM25 是必跑兜底，不是可选项 |
+| "我直接 grep 就行，不需要 `--map`" | 三段式是"不确定话题在哪里"时用的，已知目录时直接 grep 本身没错。但对新进项目 AI，`--map` 比挨个读 README 快 |

@@ -83,6 +83,11 @@ REQUIRED_FILES = [
     PKG / "templates" / "common" / ".agent-harness" / "references" / "performance-checklist.md.tmpl",
     PKG / "templates" / "common" / ".agent-harness" / "references" / "security-checklist.md.tmpl",
     PKG / "templates" / "common" / ".agent-harness" / "references" / "testing-patterns.md.tmpl",
+    PKG / "templates" / "common" / ".agent-harness" / "references" / "ai-coding-pitfalls.md.tmpl",
+    PKG / "templates" / "common" / ".agent-harness" / "ABSTRACT.md.tmpl",
+    PKG / "templates" / "common" / ".agent-harness" / "OVERVIEW.md.tmpl",
+    PKG / "templates" / "common" / ".agent-harness" / "references" / "ABSTRACT.md.tmpl",
+    PKG / "templates" / "common" / ".agent-harness" / "references" / "OVERVIEW.md.tmpl",
     PKG / "templates" / "common" / ".claude" / "hooks" / "session-start.sh.tmpl",
     PKG / "templates" / "common" / ".claude" / "hooks" / "stop.sh.tmpl",
     PKG / "templates" / "common" / ".claude" / "hooks" / "pre-compact.sh.tmpl",
@@ -347,6 +352,47 @@ def check_skill_documentation_coverage() -> None:
         raise SystemExit(f"技能文档覆盖不完整：\n{detail}")
 
 
+DIRECTORY_MAP_WHITELIST = (
+    ROOT / ".agent-harness",
+    ROOT / ".agent-harness" / "references",
+)
+ABSTRACT_MAX_CHARS = 200
+OVERVIEW_MAX_CHARS = 4000
+
+
+def check_directory_maps() -> None:
+    """Validate ABSTRACT.md and OVERVIEW.md in whitelisted dirs.
+
+    Inspired by volcengine/OpenViking's filesystem-as-context design. Whitelist
+    is mirrored from .claude/rules/documentation-sync.md 目录导航层. ABSTRACT
+    gives a one-liner for /recall --map, OVERVIEW lists key entries for L1 nav.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    for d in DIRECTORY_MAP_WHITELIST:
+        rel = d.relative_to(ROOT).as_posix() or "."
+        if not d.exists():
+            errors.append(f"  {rel}/ 目录不存在")
+            continue
+        for name, limit in (("ABSTRACT.md", ABSTRACT_MAX_CHARS), ("OVERVIEW.md", OVERVIEW_MAX_CHARS)):
+            fp = d / name
+            if not fp.exists():
+                errors.append(f"  {rel}/{name} 缺失")
+                continue
+            content = fp.read_text(encoding="utf-8").strip()
+            if not content:
+                errors.append(f"  {rel}/{name} 为空")
+            elif len(content) > limit:
+                warnings.append(f"  {rel}/{name} 过长 ({len(content)} > {limit} 字符)")
+    for w in warnings:
+        print(f"[warn] {w}", file=sys.stderr)
+    if errors:
+        detail = "\n".join(errors)
+        raise SystemExit(
+            f"目录导航层不合规（见 .claude/rules/documentation-sync.md 目录导航层章节）：\n{detail}"
+        )
+
+
 def main() -> None:
     check_required_files()
     check_agents_length()
@@ -361,6 +407,7 @@ def main() -> None:
     check_dogfood_drift()
     check_count_consistency()
     check_skill_documentation_coverage()
+    check_directory_maps()
     print("repository checks passed")
 
 
