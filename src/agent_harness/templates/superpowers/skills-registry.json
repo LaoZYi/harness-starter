@@ -12,9 +12,15 @@
       "name": "结构化构思",
       "category": "process",
       "one_line": "多角度生成候选方案",
-      "triggers": ["需要探索方向", "想要候选方案", "不确定怎么做"],
+      "triggers": [
+        "需要探索方向",
+        "想要候选方案",
+        "不确定怎么做"
+      ],
       "decision_tree_label": "需要探索方向？",
-      "lfg_stage": ["2 构思"],
+      "lfg_stage": [
+        "2 构思"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -22,9 +28,14 @@
       "name": "头脑风暴",
       "category": "process",
       "one_line": "结构化设计对话",
-      "triggers": ["不知道从哪开始", "需要理清需求"],
+      "triggers": [
+        "不知道从哪开始",
+        "需要理清需求"
+      ],
       "decision_tree_label": "不知道从哪开始？",
-      "lfg_stage": ["2 构思"],
+      "lfg_stage": [
+        "2 构思"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -32,9 +43,14 @@
       "name": "规格驱动开发",
       "category": "process",
       "one_line": "把模糊需求转为可测试的验收标准",
-      "triggers": ["需求模糊", "需要先定规格"],
+      "triggers": [
+        "需求模糊",
+        "需要先定规格"
+      ],
       "decision_tree_label": "需求模糊要先明确规格？",
-      "lfg_stage": ["2.5 规格"],
+      "lfg_stage": [
+        "2.5 规格"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -42,9 +58,14 @@
       "name": "架构决策记录",
       "category": "process",
       "one_line": "记录技术选型和设计决策的理由",
-      "triggers": ["面临架构决策", "技术选型要记录"],
+      "triggers": [
+        "面临架构决策",
+        "技术选型要记录"
+      ],
       "decision_tree_label": "面临架构决策要记录？",
-      "lfg_stage": ["3 计划"],
+      "lfg_stage": [
+        "3 计划"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -52,9 +73,14 @@
       "name": "编写实现计划",
       "category": "process",
       "one_line": "编写 2-5 分钟粒度的实现计划",
-      "triggers": ["任务复杂", "需要拆解"],
+      "triggers": [
+        "任务复杂",
+        "需要拆解"
+      ],
       "decision_tree_label": "任务复杂需要拆解？",
-      "lfg_stage": ["3 计划"],
+      "lfg_stage": [
+        "3 计划"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -62,9 +88,14 @@
       "name": "计划校验",
       "category": "process",
       "one_line": "8+1 维度结构化校验 + 最多 3 轮修订",
-      "triggers": ["计划写完要验质量", "复杂任务计划校验"],
+      "triggers": [
+        "计划写完要验质量",
+        "复杂任务计划校验"
+      ],
       "decision_tree_label": null,
-      "lfg_stage": ["3 计划"],
+      "lfg_stage": [
+        "3 计划"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -72,9 +103,15 @@
       "name": "Agent 设计体检",
       "category": "process",
       "one_line": "4 维度（F3/F5/F8/F10）体检涉及多 agent 的计划",
-      "triggers": ["设计 squad worker", "dispatch-agents 前校验", "agent 编排"],
+      "triggers": [
+        "设计 squad worker",
+        "dispatch-agents 前校验",
+        "agent 编排"
+      ],
       "decision_tree_label": "计划涉及多 agent？",
-      "lfg_stage": ["3 计划"],
+      "lfg_stage": [
+        "3 计划"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -82,9 +119,14 @@
       "name": "任务管理助手",
       "category": "process",
       "one_line": "结构化任务拆分和管理",
-      "triggers": ["管理多个子任务", "拆分待办"],
+      "triggers": [
+        "管理多个子任务",
+        "拆分待办"
+      ],
       "decision_tree_label": "需要管理多个子任务？",
-      "lfg_stage": ["3 计划"],
+      "lfg_stage": [
+        "3 计划"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -92,9 +134,15 @@
       "name": "系统化调试",
       "category": "process",
       "one_line": "4 阶段系统性排障（根因优先）",
-      "triggers": ["发现 bug", "测试失败", "异常行为"],
+      "triggers": [
+        "发现 bug",
+        "测试失败",
+        "异常行为"
+      ],
       "decision_tree_label": "发现了 bug？",
-      "lfg_stage": ["4 实施"],
+      "lfg_stage": [
+        "4 实施"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -102,9 +150,14 @@
       "name": "测试驱动开发",
       "category": "implementation",
       "one_line": "RED-GREEN-REFACTOR，先写失败测试再写实现",
-      "triggers": ["需要写代码", "测试先行"],
+      "triggers": [
+        "需要写代码",
+        "测试先行"
+      ],
       "decision_tree_label": "需要写代码？",
-      "lfg_stage": ["4 实施"],
+      "lfg_stage": [
+        "4 实施"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -112,9 +165,15 @@
       "name": "Source-Driven Verification",
       "category": "implementation",
       "one_line": "从官方文档验证 API，防止凭记忆编",
-      "triggers": ["写框架特定代码", "API 不确定", "防止幻觉"],
+      "triggers": [
+        "写框架特定代码",
+        "API 不确定",
+        "防止幻觉"
+      ],
       "decision_tree_label": "写框架/库特定代码？",
-      "lfg_stage": ["3 计划"],
+      "lfg_stage": [
+        "3 计划"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -122,9 +181,14 @@
       "name": "执行计划",
       "category": "implementation",
       "one_line": "按计划逐步执行",
-      "triggers": ["有计划要执行", "按步落地"],
+      "triggers": [
+        "有计划要执行",
+        "按步落地"
+      ],
       "decision_tree_label": null,
-      "lfg_stage": ["4 实施"],
+      "lfg_stage": [
+        "4 实施"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -132,9 +196,15 @@
       "name": "使用 Git Worktree",
       "category": "implementation",
       "one_line": "创建隔离开发环境，避免污染主工作区",
-      "triggers": ["需要隔离环境", "长任务", "并行任务"],
+      "triggers": [
+        "需要隔离环境",
+        "长任务",
+        "并行任务"
+      ],
       "decision_tree_label": "需要隔离环境？",
-      "lfg_stage": ["1 环境准备"],
+      "lfg_stage": [
+        "1 环境准备"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -142,9 +212,17 @@
       "name": "安全护栏",
       "category": "implementation",
       "one_line": "执行危险命令前的安全拦截",
-      "triggers": ["要执行危险命令", "rm -rf", "git reset --hard", "force push"],
+      "triggers": [
+        "要执行危险命令",
+        "rm -rf",
+        "git reset --hard",
+        "force push"
+      ],
       "decision_tree_label": "要执行危险命令？",
-      "lfg_stage": ["1 环境准备", "10 收尾回滚"],
+      "lfg_stage": [
+        "1 环境准备",
+        "10 收尾回滚"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -152,9 +230,16 @@
       "name": "按需检索历史知识",
       "category": "implementation",
       "one_line": "定向检索 lessons / task-log / references 历史",
-      "triggers": ["检索历史教训", "查参考清单", "/recall --refs"],
+      "triggers": [
+        "检索历史教训",
+        "查参考清单",
+        "/recall --refs"
+      ],
       "decision_tree_label": "需要定向检索历史/清单？",
-      "lfg_stage": ["0.2 历史加载", "7.3 穷举验证"],
+      "lfg_stage": [
+        "0.2 历史加载",
+        "7.3 穷举验证"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -162,9 +247,15 @@
       "name": "并行代理调度",
       "category": "implementation",
       "one_line": "一次性 map-reduce 短子任务",
-      "triggers": ["多个独立子任务", "短任务一次性", "map-reduce"],
+      "triggers": [
+        "多个独立子任务",
+        "短任务一次性",
+        "map-reduce"
+      ],
       "decision_tree_label": "多个独立子任务（短，一次性）？",
-      "lfg_stage": ["4 实施"],
+      "lfg_stage": [
+        "4 实施"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -172,9 +263,16 @@
       "name": "多 agent 常驻协作",
       "category": "implementation",
       "one_line": "tmux 多 worker + 角色分权 + 实时观察",
-      "triggers": ["长任务", "并行多 worker", "scout-builder-reviewer", "需角色分权"],
+      "triggers": [
+        "长任务",
+        "并行多 worker",
+        "scout-builder-reviewer",
+        "需角色分权"
+      ],
       "decision_tree_label": "长任务需常驻多 agent + 分权观察？",
-      "lfg_stage": ["4 实施"],
+      "lfg_stage": [
+        "4 实施"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -182,9 +280,14 @@
       "name": "子代理驱动开发",
       "category": "implementation",
       "one_line": "规划者/执行者角色分离",
-      "triggers": ["规划与执行分离", "多代理串行"],
+      "triggers": [
+        "规划与执行分离",
+        "多代理串行"
+      ],
       "decision_tree_label": "需要多代理串行开发？",
-      "lfg_stage": ["4 实施"],
+      "lfg_stage": [
+        "4 实施"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -192,9 +295,15 @@
       "name": "完成前验证",
       "category": "review",
       "one_line": "输出证据链：测试 + 检查 + 验收对照",
-      "triggers": ["实现完成", "完成前验证", "证明跑通"],
+      "triggers": [
+        "实现完成",
+        "完成前验证",
+        "证明跑通"
+      ],
       "decision_tree_label": "实现完成了？",
-      "lfg_stage": ["7 验证"],
+      "lfg_stage": [
+        "7 验证"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -202,9 +311,15 @@
       "name": "多视角代码评审",
       "category": "review",
       "one_line": "6 角色并行评审",
-      "triggers": ["多角度评审", "代码审查"],
+      "triggers": [
+        "多角度评审",
+        "代码审查"
+      ],
       "decision_tree_label": null,
-      "lfg_stage": ["5 评审", "6 修复"],
+      "lfg_stage": [
+        "5 评审",
+        "6 修复"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -212,9 +327,14 @@
       "name": "请求代码审查",
       "category": "review",
       "one_line": "整理变更摘要 + 决策 + 验收，形成评审材料",
-      "triggers": ["准备评审请求", "整理评审材料"],
+      "triggers": [
+        "准备评审请求",
+        "整理评审材料"
+      ],
       "decision_tree_label": null,
-      "lfg_stage": ["5 评审"],
+      "lfg_stage": [
+        "5 评审"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -222,9 +342,14 @@
       "name": "接收代码审查",
       "category": "review",
       "one_line": "结构化消化评审反馈：分类、排序、标记争议",
-      "triggers": ["收到评审反馈", "处理审查意见"],
+      "triggers": [
+        "收到评审反馈",
+        "处理审查意见"
+      ],
       "decision_tree_label": "收到评审反馈要处理？",
-      "lfg_stage": ["6 修复"],
+      "lfg_stage": [
+        "6 修复"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -232,9 +357,14 @@
       "name": "Git 提交助手",
       "category": "review",
       "one_line": "结构化 git 提交（conventional commits）",
-      "triggers": ["需要提交代码", "结构化 commit"],
+      "triggers": [
+        "需要提交代码",
+        "结构化 commit"
+      ],
       "decision_tree_label": "需要提交代码？",
-      "lfg_stage": ["10 收尾"],
+      "lfg_stage": [
+        "10 收尾"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -242,9 +372,14 @@
       "name": "知识复利",
       "category": "review",
       "one_line": "提取并沉淀经验教训到 lessons.md",
-      "triggers": ["想沉淀经验", "任务完成沉淀"],
+      "triggers": [
+        "想沉淀经验",
+        "任务完成沉淀"
+      ],
       "decision_tree_label": "想沉淀经验？",
-      "lfg_stage": ["9 沉淀"],
+      "lfg_stage": [
+        "9 沉淀"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -252,9 +387,15 @@
       "name": "首席安全官审计",
       "category": "review",
       "one_line": "OWASP + STRIDE + 供应链安全审计",
-      "triggers": ["需要安全审计", "发布前审计", "生产项目"],
+      "triggers": [
+        "需要安全审计",
+        "发布前审计",
+        "生产项目"
+      ],
       "decision_tree_label": "需要安全审计？",
-      "lfg_stage": ["7 验证"],
+      "lfg_stage": [
+        "7 验证"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -262,9 +403,14 @@
       "name": "发布后文档同步",
       "category": "review",
       "one_line": "检查 README / docs 是否需更新",
-      "triggers": ["发布后更新文档", "文档同步"],
+      "triggers": [
+        "发布后更新文档",
+        "文档同步"
+      ],
       "decision_tree_label": "发布后更新文档？",
-      "lfg_stage": ["10 收尾"],
+      "lfg_stage": [
+        "10 收尾"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -272,9 +418,14 @@
       "name": "完成开发分支",
       "category": "review",
       "one_line": "选合并/PR/保留/丢弃四种去向",
-      "triggers": ["分支工作结束", "合并或 PR"],
+      "triggers": [
+        "分支工作结束",
+        "合并或 PR"
+      ],
       "decision_tree_label": "分支工作结束？",
-      "lfg_stage": ["10 收尾"],
+      "lfg_stage": [
+        "10 收尾"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -282,9 +433,14 @@
       "name": "知识库健康检查",
       "category": "review",
       "one_line": "去重 / 矛盾 / 过时检测（lfg 阶段 9.3 用快速版 2 项）",
-      "triggers": ["知识库整理", "快速 lint"],
+      "triggers": [
+        "知识库整理",
+        "快速 lint"
+      ],
       "decision_tree_label": "知识库需要整理？",
-      "lfg_stage": ["9 沉淀"],
+      "lfg_stage": [
+        "9 沉淀"
+      ],
       "expected_in_lfg": true
     },
     {
@@ -292,7 +448,10 @@
       "name": "LFG 全自动流水线",
       "category": "meta",
       "one_line": "从需求到交付的全自动流水线（10 阶段 + 5 档复杂度）",
-      "triggers": ["想全自动完成", "一键端到端"],
+      "triggers": [
+        "想全自动完成",
+        "一键端到端"
+      ],
       "decision_tree_label": "想全自动完成？",
       "lfg_stage": [],
       "expected_in_lfg": false,
@@ -303,7 +462,10 @@
       "name": "技能选择引导",
       "category": "meta",
       "one_line": "技能选择器和决策树（与 /lfg 平级的 meta 入口）",
-      "triggers": ["不确定用哪个 skill", "需要技能路由"],
+      "triggers": [
+        "不确定用哪个 skill",
+        "需要技能路由"
+      ],
       "decision_tree_label": null,
       "lfg_stage": [],
       "expected_in_lfg": false,
@@ -314,7 +476,10 @@
       "name": "编写新技能",
       "category": "meta",
       "one_line": "创建新的 slash 命令技能",
-      "triggers": ["想创建新技能", "添加自定义命令"],
+      "triggers": [
+        "想创建新技能",
+        "添加自定义命令"
+      ],
       "decision_tree_label": "想创建新技能？",
       "lfg_stage": [],
       "expected_in_lfg": false,
@@ -325,7 +490,10 @@
       "name": "自我进化",
       "category": "meta",
       "one_line": "搜索新项目 → 评估 → 创建 Issue 提案",
-      "triggers": ["搜索可吸收项目", "自我进化"],
+      "triggers": [
+        "搜索可吸收项目",
+        "自我进化"
+      ],
       "decision_tree_label": "想搜索新的可吸收项目？",
       "lfg_stage": [],
       "expected_in_lfg": false,
@@ -336,7 +504,10 @@
       "name": "代码质量仪表盘",
       "category": "meta",
       "one_line": "0-10 综合评分（类型/lint/测试/死代码/shell lint）",
-      "triggers": ["需要质量评估", "周期性体检"],
+      "triggers": [
+        "需要质量评估",
+        "周期性体检"
+      ],
       "decision_tree_label": "需要质量评估？",
       "lfg_stage": [],
       "expected_in_lfg": false,
@@ -347,7 +518,10 @@
       "name": "工程回顾",
       "category": "meta",
       "one_line": "git 历史分析 + 工作模式 + 质量趋势",
-      "triggers": ["想做工程回顾", "周期性回顾"],
+      "triggers": [
+        "想做工程回顾",
+        "周期性回顾"
+      ],
       "decision_tree_label": "想做工程回顾？",
       "lfg_stage": [],
       "expected_in_lfg": false,
@@ -358,7 +532,10 @@
       "name": "处理产品需求笔记",
       "category": "meta",
       "one_line": "把杂乱产品笔记结构化",
-      "triggers": ["处理产品笔记", "需求笔记结构化"],
+      "triggers": [
+        "处理产品笔记",
+        "需求笔记结构化"
+      ],
       "decision_tree_label": null,
       "lfg_stage": [],
       "expected_in_lfg": false,
@@ -369,11 +546,30 @@
       "name": "需求讨论摘要",
       "category": "meta",
       "one_line": "把多人讨论的原始语音转文字记录转为结构化产物",
-      "triggers": ["讨论记录转任务", "会议纪要处理", "语音转文字后续处理"],
+      "triggers": [
+        "讨论记录转任务",
+        "会议纪要处理",
+        "语音转文字后续处理"
+      ],
       "decision_tree_label": null,
       "lfg_stage": [],
       "expected_in_lfg": false,
       "exclusion_reason": "meeting-transcript processing, upstream of /lfg (produces current-task.md as input, not a pipeline stage)"
+    },
+    {
+      "id": "pressure-test",
+      "name": "压力测试（Skill TDD）",
+      "category": "meta",
+      "one_line": "7 类压力 × 6 场景注入测试关键 skill 是否扛得住",
+      "triggers": [
+        "定期压测 skill",
+        "新反合理化条目添加后",
+        "怀疑门禁失守"
+      ],
+      "decision_tree_label": "定期压测 skill 是否扛得住？",
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "periodic skill TDD (monthly + on anti-rationalization table additions), orthogonal to /lfg single-task pipeline"
     }
   ]
 }

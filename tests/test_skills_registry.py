@@ -41,15 +41,16 @@ class RegistryLoadTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.registry = load_registry(SP_TEMPLATE)
 
-    def test_skill_count_is_36(self) -> None:
+    def test_skill_count_is_37(self) -> None:
         # +1 for digest-meeting (2026-04-16)
-        self.assertEqual(len(self.registry["skills"]), 36)
+        # +1 for pressure-test (2026-04-24, Issue #46)
+        self.assertEqual(len(self.registry["skills"]), 37)
 
     def test_in_lfg_count_matches_excluded(self) -> None:
         in_lfg = expected_in_lfg(self.registry)
         not_in = expected_not_in_lfg(self.registry)
-        self.assertEqual(len(in_lfg) + len(not_in), 36)
-        self.assertEqual(len(not_in), 8)  # 8 meta-excluded skills (+digest-meeting)
+        self.assertEqual(len(in_lfg) + len(not_in), 37)
+        self.assertEqual(len(not_in), 9)  # 9 meta-excluded skills (+pressure-test)
 
     def test_excluded_skills_have_reason(self) -> None:
         for skill in self.registry["skills"]:

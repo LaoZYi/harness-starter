@@ -22,7 +22,7 @@
 | 轮 | 职责 | 典型技能 |
 |---|---|---|
 | **交付轮**（Delivery） | 把需求推进到发布：构思 → 规格 → 计划 → 执行 → 验证 → 沉淀 | `/ideate`、`/brainstorm`、`/spec`、`/adr`、`/write-plan`、`/plan-check`、`/execute-plan`、`/tdd`、`/debug`、`/verify`、`/multi-review`、`/request-review`、`/receive-review`、`/compound`、`/git-commit`、`/finish-branch`、`/lfg` |
-| **治理轮**（Governance） | 让知识库、技能和代码库持续健康：体检、回顾、安全、一致性 | `/health`、`/retro`、`/lint-lessons`、`/cso`、`/doc-release`、`/evolve`、`/careful`、`/source-verify` |
+| **治理轮**（Governance） | 让知识库、技能和代码库持续健康：体检、回顾、安全、一致性 | `/health`、`/retro`、`/lint-lessons`、`/cso`、`/doc-release`、`/evolve`、`/careful`、`/source-verify`、`/pressure-test` |
 
 两条链路**并行、互不替代**：
 

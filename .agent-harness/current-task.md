@@ -1,6 +1,6 @@
 # Current Task
 
-## 状态：待用户确认
+## 状态：待用户确认（评审路径选择）
 
 ## LFG 进度
 
@@ -57,15 +57,16 @@
 - [x] 阶段 1 环境准备 — 分支 feat/kuaishou-pressure-test, HEAD 3441671, 基线 620 tests
 - [x] 阶段 2 构思(跳过,evolution 完整通道但方案已在 Issue body 明示)
 - [x] 阶段 2.5 规格(跳过,Issue body 已是规格)
-- [ ] 阶段 3 计划 — 待写 plan + plan-check 自检 + 用户确认
-- [ ] 阶段 4 实施
-  - [ ] 步骤 1 RED: 契约测试
-  - [ ] 步骤 2 新增 pressure-test.md.tmpl
-  - [ ] 步骤 3 skills-registry.json 注册
-  - [ ] 步骤 4 anti-laziness.md.tmpl 改(顶部 + 门禁 3 + 门禁 4 + 门禁 7)
-  - [ ] 步骤 5 autonomy.md.tmpl 3b orchestrator 疲劳门禁
-  - [ ] 步骤 6 make dogfood 同步
-  - [ ] 步骤 7 docs/product.md 9.1 之前 + 计数同步
-  - [ ] 步骤 8 make ci 全绿
-  - [ ] 步骤 9 memory rebuild --force
-- [ ] 阶段 5-10 评审/验证/沉淀/收尾
+- [x] 阶段 3 计划 — docs/superpowers/specs/2026-04-23-kuaishou-pressure-test-plan.md, 8 维度自检通过
+- [x] 阶段 4 实施 — 632/632 tests pass
+  - [x] 步骤 1 RED: 12 条契约测试(9 fail + 3 error, 全部预期)
+  - [x] 步骤 2 新增 pressure-test.md.tmpl(7 类压力 + 6 场景 + 4 默认作用域 + defensive-temporary 标记)
+  - [x] 步骤 3 skills-registry.json 注册(meta / expected_in_lfg=false / decision_tree_label)
+  - [x] 步骤 4 anti-laziness.md.tmpl 4 处改动(顶部 4→7 / 门禁 3 +3 借口 / 门禁 4 字段必填 / 门禁 7)
+  - [x] 步骤 5 autonomy.md.tmpl 3b orchestrator 疲劳硬门禁
+  - [x] 步骤 6 make dogfood(+1 新增 pressure-test.md,3 更新)
+  - [x] 步骤 7 docs/product.md 9.0 + 计数 32→33 技能 / 620→632 测试(7 文件)
+  - [x] 步骤 8 make ci 632/632 全绿 + skills lint 通过
+  - [x] 步骤 9 memory rebuild --force
+- [ ] 阶段 5 评审 — 待用户选路径 A 完整 / B 轻量 / C 跳过
+- [ ] 阶段 6-10 修复/验证/沉淀/收尾
