@@ -26,6 +26,52 @@
 
 ---
 
+## 2026-04-24 进化集成：快手 sec-audit-pipeline 反偷懒工程学（Issue #46）
+
+- **需求**：吸收快手安全 SRC 赵海洋《Harness Engineering 三层架构 × 形式化验证（下）》提出的「反偷懒工程学」到本框架，核心论点「声明规则 ≠ 门禁扛得住」——必须主动注入压力验证规则在真实压力下是否还被遵守，给 skill 做 TDD
+- **做了什么**：
+  1. **新增 `/pressure-test` skill** — 7 类压力（沉没成本/疲劳/时间压力/权威/经济/务实/复杂度回避）× 6 默认场景 × 5 默认作用域（/verify / /multi-review / /cso / /lfg / /squad）；归类 `meta`，不入 /lfg 主流程；闭环流程「违规 → 捕获借口 → 分类 → 写反驳 → 更新场景」；标记 `defensive-temporary`
+  2. **`anti-laziness.md.tmpl` 4 处改动**：
+     - 顶部声明 4 道 → **7 道**硬门禁
+     - **门禁 3 反合理化表新增 5 条借口**（3 快手原借口 + 2 评审补齐的「权威/经济」）：「Agent 写入失败手动接管后差不多」/「上下文太长不想 spawn 新 SubAgent」/「SKILL.md 太长精简后传给 SubAgent」/「CTO 说 ship it fast 跳过 /cso」/「再跑 /multi-review 烧几十 k token」
+     - **门禁 4 增强字段级必填** + 慎用纯行数阈值提示
+     - **门禁 7 新增压力测试**：适用触发 + 闭环流程 + T6 晋升衔接（双入口计数：月度压测 + 真实任务抓到）+ 场景库去重规则（同 skill × 同压力只保最新 1 条）
+  3. **`autonomy.md.tmpl` Trust Calibration 新增 3b** — orchestrator 疲劳硬门禁：派出 N=8 worker 后强制 spawn fresh orchestrator；mailbox handoff 事件 schema（type=handoff / reason=fatigue_gate / worker_count）；与 Context Budget 规则 4 通用上限形成 orchestrator 专属阈值双保险；回归验证由 `/pressure-test` 场景 5 月度跑
+  4. **13 条契约测试** — PressureTestSkillTests(4) / SkillsRegistryTests(1) / AntiLazinessRuleTests(5) / AutonomyRuleTests(3) 全覆盖 R-001..R-007 + 字段级 schema 锁定 + 锚点截断精确
+  5. **docs/product.md 9.0 持续演进条目** + 7 文件计数同步（32→33 技能 / 620→633 测试）
+- **关键决策**：
+  1. **零依赖原则**：只吸收方法论，不引入 Z3/SMT 形式化验证（违反零依赖）、不拷贝快手代码
+  2. **defensive-temporary 分类**：pressure-test skill / 门禁 7 / 3b 三处显式标记，遵循 lessons.md `反偷懒与协作记忆要解耦` — 未来模型对齐改善后可能冗余
+  3. **声明式 + 回归测试式双层叠加**：门禁 1-6 是声明层，门禁 7 是验证层，1:1 对应，缺任一层都不完整
+  4. **晋升计数双入口**（评审 Round 1 修正）：`/pressure-test` 月度 + 真实任务被 /verify / /multi-review / /receive-review 抓到同款借口都计入，避免「3 个月才晋升」的慢节奏
+  5. **场景库去重 vs 反合理化表不去重**：场景是回归保护（只保最新 1 条），借口原话值得作训练语料（不去重）
+  6. **/squad 纳入默认作用域**（评审 Round 1 修正）：场景 5 主语是 /squad orchestrator，作用域加 /squad 才准
+  7. **锚点截断精确**（评审 Round 1 修正）：`## 门禁 7` → `## 与现有机制` / `3b. orchestrator 疲劳` → `4. **信任升级` — 消除 2000/1500 字符滑动窗口的越段假阳性
+  8. **不吸收**：Z3/SMT / 20+ Agent 军团 / Opus+Codex 双模型对抗（已由 codex-plugin-cc 覆盖）/ 黑盒白盒迭代闭环（安全领域特化）
+- **改了**：
+  - 新增：`src/agent_harness/templates/superpowers/.claude/commands/pressure-test.md.tmpl` / `tests/test_pressure_test_absorb.py` / `docs/superpowers/specs/2026-04-23-kuaishou-pressure-test-plan.md`
+  - 修改：`src/agent_harness/templates/common/.claude/rules/anti-laziness.md.tmpl` / `src/agent_harness/templates/common/.claude/rules/autonomy.md.tmpl` / `src/agent_harness/templates/superpowers/skills-registry.json` / `tests/test_skills_registry.py`
+  - 同步：`.claude/commands/pressure-test.md` / `.claude/rules/anti-laziness.md` / `.claude/rules/autonomy.md` / `.claude/commands/lfg.md` / `.claude/commands/which-skill.md` / `.claude/rules/superpowers-workflow.md`
+  - 文档：`docs/product.md` / `docs/architecture.md` / `docs/usage-manual.md` / `docs/release.md` / `CHANGELOG.md` / `README.md` / `.agent-harness/project.json`
+  - 沉淀：`.agent-harness/lessons.md` / `.agent-harness/memory-index.md`
+- **完成标准**：
+  - [x] R-001..R-010 全 satisfied
+  - [x] make ci 全绿（633 tests）
+  - [x] 2 SubAgent 评审 Round 1 收敛（8 P1/P2：6 修 + 2 推迟）
+  - [x] 用户验证通过
+- **量化指标**：
+  - `rework_count`: 0
+  - `review_p0_count`: 0
+  - `review_p1_count`: 4（全部接受修）
+  - `review_p2_count`: 4（2 修 + 2 推迟）
+  - `user_verify_first_pass`: true
+  - `dialog_rounds`: ~8
+  - `docs_produced`: 1（plan）+ 14 处文档更新
+- **相关 commit**：`671fd94..7f448bb`（4 commits）
+- **相关 tag**：`lfg/i46-step-1` / `lfg/i46-step-9` / `lfg/i46-review-r1`
+
+---
+
 ## 2026-04-23 进化集成：volcengine/OpenViking Memory dedup 4 决策（Issue #45）
 
 - **需求**：把 OpenViking（AGPL-3.0, 22.8k ⭐）在记忆抽取时的「向量预过滤 + LLM 4 选 1」机制吸收到本项目的 lessons 维护链路，把 `knowledge-conflict-resolution.md` T3 章节从「转条件分支合并」模糊描述升级为可操作 SOP
