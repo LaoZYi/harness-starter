@@ -56,6 +56,13 @@ description: 操作权限分级和自治边界
    - **3a. 禁越界专业判断**（来自腾讯 JK Launcher 的踩坑经验）：orchestrator **只做路由 / 状态流转 / 打回判断**，不向 worker 输出需求修订、方案建议、代码改法、测试思路等专业结论。理由：orchestrator 站在流程中心，天然知道各阶段产物，很容易"顺手出意见"——但这类意见往往不专业，还会把整个流程带偏，让系统滑回「中央大脑说了算」
    - **orchestrator 拿不准时的正确动作**：① 拉专业 worker（scout/builder/reviewer）来做判断；② 还拿不准就**暂停流程等用户裁决**，不自行决定推进
    - **违反信号**：orchestrator 产出里出现「我觉得这个需求应该……」「这个方案可以改成……」「这段代码其实……」等专业判断用语 → 立即拦下，改为指派对应 worker
+   - **3b. orchestrator 疲劳硬门禁**（快手 sec-audit-pipeline 吸收，分类 `defensive-temporary`）：连续派出 **N 个** worker 后（默认 **N=8**）必须 spawn **fresh orchestrator** 接管，旧 orchestrator 在 mailbox 写 `handoff` 事件后退场——不允许「我还撑得住」继续拖下去
+     - **事故根因**：长上下文 orchestrator 会无法判断 SKILL.md 中哪些内容可省略——它省略的恰好是它不知道重要的防护层。Yandex Reasoning Shift 论文证明推理能力越强偷懒幅度越深（最强版自检率缩 40%）
+     - **与 Context Budget 规则 4 的区别**：规则 4 软限 ~50 轮是对**所有** agent 的通用上限；3b 是 **orchestrator 专属**阈值更低，因为编排角色在长上下文里更易漏判
+     - **handoff 流程**：旧 orchestrator 写 mailbox 事件 `type=handoff, reason=fatigue_gate, worker_count=<N>` → 新 orchestrator spawn 时读 mailbox 接管状态 → 旧 orchestrator 退场
+     - **阈值可配**：项目可在 `.agent-harness/squad/<task>/spec.json` 或 `.claude/settings.json` 里覆盖默认 N=8
+     - **反偷懒联动**：配合 `anti-laziness.md` 门禁 3 新增借口「上下文太长，不想 spawn 新 SubAgent」——3b 是硬门禁，借口清单是文字驳斥，双保险
+     - **回归验证**：本门禁由 `/pressure-test` 的默认场景 5「orchestrator 不 spawn fresh」做月度回归——即使 3b 因配置覆盖 / AI 误解 / 文档被精简而失效，压测能把问题抓回来
 4. **信任升级条件**：连续 3 次小任务成功后，同类任务的"谨慎操作"阈值可下调到"自由"（只在同一会话有效，不跨会话）
 
 这不是替代上面的三级基线，而是在其上加一层**任务级调节**：操作基线不变，但任务越简单越自主，任务越复杂越要求证据链（Explorer 验证）。

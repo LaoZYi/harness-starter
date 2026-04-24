@@ -198,6 +198,7 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/todo` — 任务管理 | ? |
 | `/doc-release` — 文档同步 | ? |
 | `/retro` — 工程回顾 | ? |
+| `/pressure-test` — 压力测试（Skill TDD） | ? |
 | `/lfg` — 全自主流水线 | ? |
 | `/write-skill` — 编写新技能 | ? |
 | `/which-skill` — 技能选择引导 | ? |

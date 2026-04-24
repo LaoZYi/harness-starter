@@ -441,7 +441,7 @@ harness sync --all
 
 **第 4 步：生成文件**
 - 渲染 common 模板（通用文档、规则、hooks）
-- 渲染 superpowers 模板（32 个技能命令）
+- 渲染 superpowers 模板（33 个技能命令）
 - 渲染类型专属模板（如 `backend-service` 的 API/数据库规则）
 - 渲染插件（`.harness-plugins/` 下的自定义内容）
 - 安装项目内嵌运行时（`.agent-harness/bin/`）
@@ -529,7 +529,7 @@ ls .agent-harness/backups/
 
 ### 技能总览
 
-32 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
+33 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
 
 #### 构思与设计阶段
 
@@ -600,6 +600,7 @@ ls .agent-harness/backups/
 | `/lint-lessons` | 知识库健康检查（去重、矛盾检测、过时标记） |
 | `/retro` | 工程回顾（基于 Git 历史分析） |
 | `/evolve` | 自我进化（搜索新项目 → 评估 → 创建 Issue 提案） |
+| `/pressure-test` | 压力测试（Skill TDD，7 类压力 × 6 场景，快手 sec-audit-pipeline 吸收） |
 
 #### 通用命令（不受 `--no-superpowers` 影响）
 

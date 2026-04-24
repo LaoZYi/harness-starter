@@ -938,7 +938,7 @@ fi
 | 9 沉淀 | `/compound`、`/lint-lessons` |
 | 10 收尾回滚 | `/careful` |
 | 10 收尾 | `/git-commit`、`/doc-release`、`/finish-branch` |
-| 元任务（非单任务流，不由 /lfg 驱动） | `/lfg`（self-reference would be infinite recursion）、`/which-skill`（meta skill-selector, peer to /lfg）、`/write-skill`（manually invoked when authoring new skills）、`/evolve`（periodic self-evolution, reverse-triggers /lfg via evolution Issues）、`/health`（periodic code-quality snapshot, not part of single-task flow）、`/retro`（periodic engineering retrospective）、`/process-notes`（product-notes processing, different domain）、`/digest-meeting`（meeting-transcript processing, upstream of /lfg (produces current-task.md as input, not a pipeline stage)） |
+| 元任务（非单任务流，不由 /lfg 驱动） | `/lfg`（self-reference would be infinite recursion）、`/which-skill`（meta skill-selector, peer to /lfg）、`/write-skill`（manually invoked when authoring new skills）、`/evolve`（periodic self-evolution, reverse-triggers /lfg via evolution Issues）、`/health`（periodic code-quality snapshot, not part of single-task flow）、`/retro`（periodic engineering retrospective）、`/process-notes`（product-notes processing, different domain）、`/digest-meeting`（meeting-transcript processing, upstream of /lfg (produces current-task.md as input, not a pipeline stage)）、`/pressure-test`（periodic skill TDD (monthly + on anti-rationalization table additions), orthogonal to /lfg single-task pipeline） |
 
 > 如果用户问"某某能力在 /lfg 里怎么用"，查本表；找不到说明这个能力不走 /lfg，按上表最后一行处理或直接用 CLI（`harness init/upgrade/doctor/export/stats/sync/memory rebuild/squad`）。
 > 一致性由 `harness skills lint .` 在 CI 中强制保证。

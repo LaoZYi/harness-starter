@@ -5,7 +5,7 @@
 本项目的核心论点与 [holaboss-ai/holaOS](https://github.com/holaboss-ai/holaOS) 的 "Environment Engineering" 同源：**与其优化 prompt，不如优化 Agent 运行的环境**（文件系统、工具集、记忆机制、规则约束）。
 
 具体而言：
-- **32 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
+- **33 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
 - **10 层通用规则**（safety / testing / autonomy / context-budget / task-lifecycle / agent-design / documentation-sync / error-attribution / api / database）= Agent 的行为约束，其中 api / database 仅对 backend-service / library 等相关类型生成
 - **三层记忆**（memory-index L1 / lessons+references L2 / task-log L3）= Agent 的持久化状态
 - **hooks**（session-start / stop / pre-compact / context-monitor）= Agent 的生命周期感知
@@ -65,7 +65,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：620 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（82 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归 + 17 个 Issue #19a 依赖触发契约 + 18 个 Issue #21 mailbox/watch 契约：WAL 模式验证、事件读写 + 过滤、state.py 签名兼容、cmd_watch 全 done 自动退出 + max_iterations 控制 + 自动 advance、cmd_dump JSONL 导出、gitignore 模板规则 + 19 个 Issue #22 watchdog 契约：sentinel skip、session_lost 一次性、worker_crashed 幂等、done/未 spawned 不误报、多 worker 同 tick crash、KNOWN_TYPES 注册 + 评审 5 条回归保护：重启场景退出独立于事件去重、sentinel 不强制退出 watch、session probe / list_windows 异常隔离）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）、security 输入校验（25 条：sanitize_name/path/content 覆盖正常、边界、路径遍历、符号链接逃逸、null 字节、控制字符、oversize）、GSD 吸收契约（18 条：StuckDetector 规则存在、/lint-lessons 矛盾检测、需求矩阵三元映射、/plan-check 8 维度 + 3 轮修订、context-monitor hook 端到端 + skip 开关、workflow 规则 + /lfg 整合）、目录导航层（14 条：documentation-sync.md 目录导航层章节、tmpl/dogfood 一致性、`/recall --map` 参数、2 个示范目录 ABSTRACT/OVERVIEW 存在性 + 长度、check_directory_maps 守卫正常/边界/错误路径——吸收自 OpenViking 的 filesystem-as-context）。
+- `tests/`：633 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（82 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归 + 17 个 Issue #19a 依赖触发契约 + 18 个 Issue #21 mailbox/watch 契约：WAL 模式验证、事件读写 + 过滤、state.py 签名兼容、cmd_watch 全 done 自动退出 + max_iterations 控制 + 自动 advance、cmd_dump JSONL 导出、gitignore 模板规则 + 19 个 Issue #22 watchdog 契约：sentinel skip、session_lost 一次性、worker_crashed 幂等、done/未 spawned 不误报、多 worker 同 tick crash、KNOWN_TYPES 注册 + 评审 5 条回归保护：重启场景退出独立于事件去重、sentinel 不强制退出 watch、session probe / list_windows 异常隔离）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）、security 输入校验（25 条：sanitize_name/path/content 覆盖正常、边界、路径遍历、符号链接逃逸、null 字节、控制字符、oversize）、GSD 吸收契约（18 条：StuckDetector 规则存在、/lint-lessons 矛盾检测、需求矩阵三元映射、/plan-check 8 维度 + 3 轮修订、context-monitor hook 端到端 + skip 开关、workflow 规则 + /lfg 整合）、目录导航层（14 条：documentation-sync.md 目录导航层章节、tmpl/dogfood 一致性、`/recall --map` 参数、2 个示范目录 ABSTRACT/OVERVIEW 存在性 + 长度、check_directory_maps 守卫正常/边界/错误路径——吸收自 OpenViking 的 filesystem-as-context）。
 
 ## 约束
 
@@ -117,7 +117,7 @@ Claude Code 支持三种技能形态，本项目使用第一种（Standalone Com
 
 **本项目选择 Standalone Commands 的原因**：
 
-- 32 个工作流技能（`/lfg`、`/tdd`、`/spec` 等）都是**用户主动触发**的——开发者明确知道自己想做什么（"开始全流程"、"测试驱动开发"），不需要模型自行猜测
+- 33 个工作流技能（`/lfg`、`/tdd`、`/spec` 等）都是**用户主动触发**的——开发者明确知道自己想做什么（"开始全流程"、"测试驱动开发"），不需要模型自行猜测
 - 模板渲染时注入项目特定内容（`{{project_name}}`、`{{test_command}}` 等），通过 `harness init` 适配目标项目；这意味着同一技能在不同项目中的渲染结果不同，不适合以固定 plugin 形式跨项目分发
 - Standalone Commands 不需要 namespace 前缀，用户直接 `/lfg` 而非 `/harness:lfg`，更简洁
 
