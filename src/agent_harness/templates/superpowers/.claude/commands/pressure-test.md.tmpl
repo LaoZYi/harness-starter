@@ -75,12 +75,13 @@
 
 ## 默认作用域
 
-默认对下列 4 个 skill 跑压力测试（覆盖 /lfg 主链 + 治理双轮关键节点）：
+默认对下列 5 个 skill 跑压力测试（覆盖 /lfg 主链 + 治理双轮关键节点 + squad 编排角色）：
 
 - `/verify` — 完成前验证
 - `/multi-review` — 多视角代码评审
 - `/cso` — 安全审计
 - `/lfg` — 主入口流水线
+- `/squad` — 多 agent 编排（场景 5「orchestrator 不 spawn fresh」的直接目标，配合 autonomy.md 3b 硬门禁做回归）
 
 用户可通过 `/pressure-test --targets /tdd,/compound,...` 扩展作用域到其他 skill。
 

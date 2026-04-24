@@ -62,6 +62,7 @@ description: 操作权限分级和自治边界
      - **handoff 流程**：旧 orchestrator 写 mailbox 事件 `type=handoff, reason=fatigue_gate, worker_count=<N>` → 新 orchestrator spawn 时读 mailbox 接管状态 → 旧 orchestrator 退场
      - **阈值可配**：项目可在 `.agent-harness/squad/<task>/spec.json` 或 `.claude/settings.json` 里覆盖默认 N=8
      - **反偷懒联动**：配合 `anti-laziness.md` 门禁 3 新增借口「上下文太长，不想 spawn 新 SubAgent」——3b 是硬门禁，借口清单是文字驳斥，双保险
+     - **回归验证**：本门禁由 `/pressure-test` 的默认场景 5「orchestrator 不 spawn fresh」做月度回归——即使 3b 因配置覆盖 / AI 误解 / 文档被精简而失效，压测能把问题抓回来
 4. **信任升级条件**：连续 3 次小任务成功后，同类任务的"谨慎操作"阈值可下调到"自由"（只在同一会话有效，不跨会话）
 
 这不是替代上面的三级基线，而是在其上加一层**任务级调节**：操作基线不变，但任务越简单越自主，任务越复杂越要求证据链（Explorer 验证）。

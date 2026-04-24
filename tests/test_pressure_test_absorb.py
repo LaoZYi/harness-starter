@@ -64,9 +64,9 @@ class PressureTestSkillTests(unittest.TestCase):
             )
 
     def test_pressure_test_tmpl_has_default_targets(self) -> None:
-        """默认作用域必须显式列出 /verify / /multi-review / /cso / /lfg。"""
+        """默认作用域必须显式列出 /verify / /multi-review / /cso / /lfg / /squad。"""
         text = PRESSURE_TEST_TMPL.read_text(encoding="utf-8")
-        for target in ("/verify", "/multi-review", "/cso", "/lfg"):
+        for target in ("/verify", "/multi-review", "/cso", "/lfg", "/squad"):
             self.assertIn(
                 target,
                 text,
@@ -160,17 +160,19 @@ class AntiLazinessRuleTests(unittest.TestCase):
         )
 
     def test_anti_laziness_gate_7_marks_defensive_temporary(self) -> None:
-        """R-007:门禁 7 必须标记 defensive-temporary(模型对齐改善后可能冗余)。"""
+        """R-007:门禁 7 必须标记 defensive-temporary,用下一章节锚点截断防假阳性。"""
         text = ANTI_LAZINESS_TMPL.read_text(encoding="utf-8")
-        # 顶部声明已有 defensive-temporary,本断言检查门禁 7 段也引用它
-        # 通过确认门禁 7 到"与现有机制的关系"之间有 defensive-temporary 字样
-        gate_7_start = text.find("门禁 7")
-        self.assertGreater(gate_7_start, 0, "未找到门禁 7")
-        gate_7_block = text[gate_7_start : gate_7_start + 2000]
+        # 找门禁 7 的"## 门禁 7" 而非全文首个"门禁 7"(避免命中引用)
+        gate_7_start = text.find("## 门禁 7")
+        self.assertGreater(gate_7_start, 0, "未找到 ## 门禁 7 标题")
+        # 用下一章节"## 与现有机制的关系"截断
+        next_section = text.find("## 与现有机制", gate_7_start)
+        self.assertGreater(next_section, gate_7_start, "未找到门禁 7 终止锚点")
+        gate_7_block = text[gate_7_start:next_section]
         self.assertIn(
             "defensive-temporary",
             gate_7_block,
-            "门禁 7 段必须显式引用 defensive-temporary 分类",
+            "门禁 7 段必须显式引用 defensive-temporary 分类(锚点精确截断)",
         )
 
 
@@ -191,16 +193,35 @@ class AutonomyRuleTests(unittest.TestCase):
             "3b 必须声明派出 N worker 后 spawn fresh orchestrator 接管",
         )
 
-    def test_autonomy_3b_marks_defensive_temporary(self) -> None:
-        """R-007: 3b 段必须标记 defensive-temporary。"""
+    def test_autonomy_3b_has_handoff_event_schema(self) -> None:
+        """R-006 字段级 schema 契约：3b 定义的 mailbox handoff 事件必须锁字段名。
+
+        下游 squad watchdog / mailbox reader 会按字段名解析。字段改了
+        (reason→cause / worker_count→n_workers) 文字契约过但运行时炸。
+        """
         text = AUTONOMY_TMPL.read_text(encoding="utf-8")
-        three_b_start = text.find("3b")
-        self.assertGreater(three_b_start, 0)
-        three_b_block = text[three_b_start : three_b_start + 1500]
+        for field in ("type=handoff", "reason=fatigue_gate", "worker_count"):
+            self.assertIn(
+                field,
+                text,
+                f"3b mailbox 事件 schema 字段 `{field}` 必须原样保留(下游按字段名解析)",
+            )
+
+    def test_autonomy_3b_marks_defensive_temporary(self) -> None:
+        """R-007: 3b 段必须标记 defensive-temporary，并用下一章节锚点截断防假阳性。"""
+        text = AUTONOMY_TMPL.read_text(encoding="utf-8")
+        three_b_start = text.find("3b. orchestrator 疲劳")
+        self.assertGreater(three_b_start, 0, "未找到 3b 段起始锚点")
+        # 用下一个同级标题(4. 信任升级条件 / ## 某节)截断，避免越段捞到别段的关键词
+        next_anchor = text.find("4. **信任升级", three_b_start)
+        if next_anchor < 0:
+            next_anchor = text.find("\n## ", three_b_start)
+        self.assertGreater(next_anchor, three_b_start, "未找到 3b 段终止锚点")
+        three_b_block = text[three_b_start:next_anchor]
         self.assertIn(
             "defensive-temporary",
             three_b_block,
-            "autonomy 3b 段必须显式引用 defensive-temporary 分类",
+            "autonomy 3b 段必须显式引用 defensive-temporary 分类(锚点精确截断)",
         )
 
 

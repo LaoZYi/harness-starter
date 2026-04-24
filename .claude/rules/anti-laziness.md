@@ -52,6 +52,8 @@ description: 反偷懒硬门禁——防 Agent 跳步、假判不适用、缩减
 | 「Agent 写入失败，手动接管后差不多了」 | **差不多 ≠ 完成**。手动接管只是救火，必须继续 spawn 新 SubAgent 按原流程走完——救火现场不是合规终点（来源：快手 sec-audit-pipeline 真实事故） |
 | 「上下文太长，不想 spawn 新 SubAgent」 | 上下文长**正是**该 spawn 的时机。fresh context 的判断准确率比污染 context 更高——短期偷懒换来长期错误累积（与 autonomy.md Trust Calibration 3b 联动） |
 | 「SKILL.md 太长，精简后传给 SubAgent」 | 你不知道删的是不是关键防护层——原作者为防特定场景写的条款，SubAgent 没读到就破防。**精简 = 擅自删减**，必须传完整 SKILL.md 或用 `allowed-tools` 精确约束 |
+| 「CTO 说 ship it fast，跳过 /cso 这步」 | 权威压力不能覆盖安全审计。CTO 的授权是「决定做什么」，不是「决定跳过哪条验证」。若真有例外走显式流程：在 current-task 写明授权来源 + 审计事后补做时间（对应 pressure-test 第 4 类压力「权威」） |
+| 「再跑一次 /multi-review 又要烧几十 k token，省省吧」 | Token 成本是**幻觉优化**。评审漏掉的 P0 修复成本远大于几十 k token。项目预算在评审上的投入是对「未来修复成本」的对冲，不是浪费（对应 pressure-test 第 5 类压力「经济」） |
 
 **扩展**：各 skill 可在自身文档中追加领域特异的反合理化条目，但不得删减本表中的通用条目。
 
@@ -247,7 +249,11 @@ diff /tmp/baseline-*.txt /tmp/after-*.txt
 4. **写反驳**：把借口 + 驳斥追加到门禁 3 反合理化表
 5. **更新压力测试场景**：补一条新场景作为回归保护
 
-**与 T6 晋升的衔接**：压力测试发现**反复失守**的门禁（连续 3 次压测被吞）→ 自动进入 T6 脚本化候选队列（见 `.claude/rules/knowledge-conflict-resolution.md`）：路径 A 脚本化 / 路径 B 升级 Rule / 路径 C 反合理化加料。
+**与 T6 晋升的衔接**：压力测试发现**反复失守**的门禁（连续 3 次被吞）→ 自动进入 T6 脚本化候选队列（见 `.claude/rules/knowledge-conflict-resolution.md`）：路径 A 脚本化 / 路径 B 升级 Rule / 路径 C 反合理化加料。
+
+**晋升计数通道（双入口）**：「连续 3 次被吞」的计数不限于 `/pressure-test` 月度运行——**真实任务**里被 `/verify` / `/multi-review` / `/receive-review` 抓到同款借口原话的，同样计入晋升计数。避免「每月 1 次压测 × 3 次 = 3 个月」的慢节奏让坏借口长期躺着。计数记录在 `.agent-harness/lessons.md` 对应条目的「触发次数」字段。
+
+**场景库去重规则**（防止无限膨胀）：同一 skill × 同一压力类型下，场景库只保留**最新 1 条**——压测场景是回归保护而非历史档案；发现更有效的新场景时替换旧场景，不累积。反合理化表则**不去重**——每条借口原话值得保留作为后续训练语料。
 
 **具体执行**：见 `/pressure-test` skill 模板。
 
