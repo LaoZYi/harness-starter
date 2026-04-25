@@ -613,3 +613,29 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - `mypy check_untyped_defs = true`（启用时 0 新 error，零成本收益）
 
 三项都接入 `make ci`。下次 `/health` 若得分 < 10 → 定位退化点与本基线对比。
+
+## 质量快照 — 2026-04-25
+
+`/health` 综合 **10.0/10 CLEAN**(代码层面)+ **`harness lfg audit` 10.00/10**(架构集成层面),首次双满分:
+
+| 维度 | 工具 | 得分 |
+|---|---|---|
+| 类型检查 | mypy(48 文件) | 10/10 — 0 errors |
+| Lint | ruff | 10/10 — All checks passed |
+| 测试 | unittest | 10/10 — 638/638 OK(25s) |
+| 死代码 | vulture --min-confidence 80 | 10/10 — 0 告警 |
+| Shell | shellcheck | SKIP(工具未装) |
+| **代码综合** | — | **10.0/10** |
+| **lfg audit(10 维)** | — | **10.00/10** — 11/11 rules + 28/28 skills + 全维度 1.0 |
+
+**本会话闭环价值**:这次 /health 触发了 5 个动作的串联收益——
+
+1. 修复 stop hook(commit 9cac85c)
+2. /lint-lessons 修缺失标题 + 加交叉引用(62bd82a)
+3. T6 晋升白名单反模式为 Rule(fb58ea6)+ 归档(135d570)
+4. T3 merge 4 条 SSOT/grep 同主题(e645b87)+ 归档(d0f993d)
+5. **/health 暴露了 architecture-patterns.md 未在 /lfg 引用的"债"**(对应 lessons 2026-04-13/2026-04-17"非技能能力 0 引用"教训),立即补上(本次 commit)
+
+→ **完整治理闭环**:lessons → /lint-lessons 检测 → T6 晋升 → T3 merge → /health 抓集成债 → 补 /lfg 引用 → lfg audit 10.0
+
+下次 /health 退步时与本基线对比定位。

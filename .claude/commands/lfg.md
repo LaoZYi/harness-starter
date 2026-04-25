@@ -412,6 +412,7 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 7. **如果任务可拆成多个 2-5 分钟粒度的子步骤**：在计划中生成对应的 `/todo` 清单，写到 current-task.md 的 Progress 段；执行阶段逐项勾选
 8. **标准/完整通道下**：计划生成后立即运行 `/plan-check` 做 8 维度结构化校验（需求覆盖 / 原子性 / 依赖排序 / 文件作用域 / 可验证性 / 上下文适配 / 缺口检测 / Nyquist 合规）+ 最多 3 轮修订循环。**快速/轻量通道跳过此步**
 9. **如果计划涉及多 agent 协作**（`/squad`、`/dispatch-agents`、`/subagent-dev`、自定义 worker prompt 或 capability 分权）：在 `/plan-check` 通过后额外运行 `/agent-design-check` 做 4 维度体检（F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents），对应 `plan-check` 的第 9 维度。来源：[12-factor-agents](https://github.com/humanlayer/12-factor-agents)。**非多 agent 场景跳过此步**
+10. **如果计划想引入硬编码字面/路径白名单**（如 `ALLOWED_X = [...]`、`KNOWN_PATHS = [...]`、特定状态字面清单等用于"边界守卫"决定允许/拒绝/触发/跳过）：先读 `.claude/rules/architecture-patterns.md` 反模式 1 的**三问决策树**（外部行为驱动？/ 不可机械证明完整性？/ 漏项静默退化？),三问全中即是反模式,优先选自动发现 / 字段标记 / 策略统一化,而非维护清单。教训来自 lessons.md 5 次反复触发(check_repo / _RUNTIME_MODULES / upgrade three_way / stop hook 5 字面 / stop hook 通用字段)
 
 #### 3.2 计划质量检查（必须通过才能继续）
 
