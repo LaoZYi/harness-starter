@@ -1732,3 +1732,22 @@
   - 关键发现:`scripts/dogfood.py` 用 `render_templates()` 自动发现所有模板,新建模板后**不要**手动 cp 到 dogfood,直接 `make dogfood`
 - P2 推迟:anti-laziness 借口里"5 个场景"严格说是"4 场景共 5 次触发",下次有相关任务时顺手精准化
 
+## 2026-04-25 T3 merge:4 条 SSOT/grep 同主题 lesson 合并为带 when: 四分支单条
+
+- 需求:/lint-lessons 体检发现 4 条同主题 lesson(2026-04-08 + 2026-04-13 + 2026-04-16 + 2026-04-20)实质讲同一元规则——改 SSOT/枚举/模板字符串前必须 grep 全量下游消费方。resolution-type T3 + dedup decision: merge,本次执行合并
+- 做了什么:
+  - 新合并条目 `## 2026-04-25 [流程] SSOT/枚举/模板字符串改动前必须 grep 全量下游消费方`(元规则 + 4 个 when: 适用分支 + 反合理化表 3 条)
+  - 4 条原 lesson 末尾加 `⚠️ deprecated 2026-04-25 → 指向 when:A/B/C/D`,**不物理删**
+  - 索引表新 anchor 加在流程行首位;旧 4 个 anchor 文本加 ⚠️deprecated 前缀但仍可点击(保历史链接)
+- 关键决策:T3 不删任一信息原则与 dedup decision: merge 协调——信息全部保留在新合并条目,旧条目作追溯锚点;索引表导航优先指向新版本
+- 改了:lessons.md(+58 行新合并 + 4 处 deprecated 标注 + 索引表更新)
+- 完成标准:
+  - ✅ 新条目带 4 个 when: 分支 + 反合理化表
+  - ✅ 4 条原条目全部加 deprecated 标注指向对应分支
+  - ✅ 索引表清晰区分活跃 vs deprecated
+  - ✅ make test 638/638 + memory rebuild ok
+  - ✅ commit e645b87 已落库
+  - ✅ 用户验证通过
+- 沉淀:无新 lesson(本次是 T6 晋升 5 步清单的 T3 merge 实战补充,不需独立沉淀)
+
+
