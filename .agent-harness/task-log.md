@@ -1692,3 +1692,43 @@
 - 沉淀:
   - lessons.md 新增 1 条:"守卫机制依赖严格字面白名单时 AI 遵循率不足,应改通用字段标记"(标 T6 晋升候选)
   - T6 晋升信号:此规则已在 5 个场景反复触发(2026-04-13 check_repo 守卫白名单 / 2026-04-13 user_docs whitelist / 2026-04-13 _RUNTIME_MODULES / 2026-04-23 stop hook 5 字面 / 2026-04-25 本次)。下次 `/lint-lessons` 应评估晋升为通用 Rule 条目或 anti-laziness 反合理化条目
+
+## 2026-04-25 /lint-lessons 体检三项无风险修复
+
+- 需求:用户跑 /lint-lessons 体检 lessons.md,发现 P0 问题:行 91/114 缺失标题(被 anchor 表引用但无 ## 头),还有 1 处兼容层 vs 破坏性变更适用边界张力
+- 做了什么:
+  - 修复 2 处缺失标题:加回 `## 2026-04-21 [架构设计] 策略默认值在边界场景必须显式处理不得静默退化` + `## 2026-04-21 [测试] 用户命令执行的 shell 元字符安全必须用 sentinel 文件证明`
+  - 互补教训加交叉引用:`2026-04-13 兼容层降低迁移成本`(内部 API)↔ `2026-04-13 破坏性变更要破而彻底`(面向用户)各加 1 行适用边界
+- 关键决策:操作 3(SSOT 4 条合并)和操作 5(T6 晋升)留给后续单独处理,影响面较大
+- 改了:lessons.md + memory-index.md
+- 完成标准:
+  - ✅ 标题恢复后有效条目 67 → 69
+  - ✅ /recall 和 memory rebuild 能识别这 2 条 lesson
+  - ✅ commit 62bd82a 已落库
+  - ✅ 用户验证通过
+
+## 2026-04-25 T6 晋升:硬编码白名单反模式从 lesson 升格为正式 Rule
+
+- 需求:5 次反复触发的元规则(check_repo 守卫白名单 / _RUNTIME_MODULES / upgrade three_way / stop hook 5 字面 / stop hook 通用字段)从 lessons 升格到 .claude/rules/,配套 anti-laziness 反合理化条目,4 条历史 lesson 加晋升标注
+- 做了什么:
+  - 新建 `.claude/rules/architecture-patterns.md`(tmpl + dogfood):反模式 1 标题 + 触发条件三问 + 不适用 3 类 + 4 个替代方案优先级 + 决策树 + 5 历史案例 + 反合理化表
+  - `anti-laziness.md` 门禁 3 反合理化表 +1 借口"反正只是再加一个字面/路径就行"(配 5 触发场景驳斥)
+  - 4 条历史 lesson 加`✅ 已晋升 2026-04-25 → ...`(2026-04-13 守卫白名单 / 2026-04-14 _RUNTIME_MODULES / 2026-04-21 策略默认值 / 2026-04-25 stop hook 通用字段)
+  - 2026-04-23 是 task 不是 lesson 不需要标
+- 关键决策:
+  - **新建独立规则文件而非塞进 safety.md**:主题专门 + 未来扩展空间
+  - **AGENTS.md 不显式索引**:.claude/rules/ 由 Claude Code 自动加载,惯例如此
+  - **不加新契约测试**:其他规则也无"必须存在"测试,加上会形成不一致;现有 dogfood 一致性测试已天然覆盖回归
+  - **2026-04-23 跳过晋升标注**:它是 task-log 记录(stop hook 1→5 字面扩展)不是 lesson,无对应位置可标
+- 改了:5 个文件,+154 行(2 个新建 + 3 个修改)
+- 完成标准:
+  - ✅ tmpl + dogfood 字节级一致(architecture-patterns + anti-laziness)
+  - ✅ 4 条 lesson 双向交叉引用闭环(lesson ↔ rule)
+  - ✅ make test 638/638 + make check 全过
+  - ✅ commit fb58ea6 已落库
+  - ✅ 用户验证通过
+- 沉淀:
+  - lessons.md 新增 1 条流程类:T6 晋升实战 5 步清单(供下次 T6 候选直接复用)
+  - 关键发现:`scripts/dogfood.py` 用 `render_templates()` 自动发现所有模板,新建模板后**不要**手动 cp 到 dogfood,直接 `make dogfood`
+- P2 推迟:anti-laziness 借口里"5 个场景"严格说是"4 场景共 5 次触发",下次有相关任务时顺手精准化
+

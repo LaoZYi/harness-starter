@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-25 T6 晋升:硬编码白名单反模式从 lesson 升格为正式 Rule
+- 2026-04-25 /lint-lessons 体检三项无风险修复
 - 2026-04-25 stop hook 状态识别从 5 字面白名单放宽为通用字段标记
 - 2026-04-23 stop hook 认 5 个「等用户」同义字面
 - 2026-04-23 吸收 OpenViking 的目录分层摘要（ABSTRACT/OVERVIEW）
-- 2026-04-22 feat(workflow): 吸收阿里云 Qoder CLI 文章 3 点
-- 2026-04-22 feat(workflow): 吸收腾讯 LEGO Harness Engineering 文章 5 点
 
 ## 参考资料（.agent-harness/references/）
 
