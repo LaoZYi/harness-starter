@@ -1670,3 +1670,25 @@
   - ✅ make ci 通过（614 测试）
   - ✅ 用户验证通过
   - ✅ commit 5165d26 已 push 到 origin + zjaf
+
+## 2026-04-25 stop hook 状态识别从 5 字面白名单放宽为通用字段标记
+
+- 需求:用户反馈"经常遇到 Stop hook 误拦"——`Ran 4 stop hooks ⎿ Stop hook error: current-task.md 存在未完成的 checkbox`。复盘 2026-04-23 上次扩展(1 字面 → 5 字面)效果不足,AI 在 /lfg 中段暂停沟通时仍频繁被拦
+- 做了什么:
+  - `.claude/hooks/stop.sh` + tmpl:grep 改 `^##[[:space:]]*状态[:：][[:space:]]*[^[:space:]]`,任何 AI 主动声明的状态字段(全角/半角冒号 + 任意非空值)都放行;空标记 `## 状态:` 仍 block(防偷懒)
+  - `tests/test_hooks.py`:新增 5 测试(半角冒号 / 自定义状态词 / 含描述长状态 / 调研中 / 空状态值仍 block);原 3 个字面回归测试保留
+  - 文档计数同步:`CHANGELOG.md` / `docs/architecture.md` / `docs/release.md` 633 → 638
+- 关键决策:
+  - **守卫的放行条件改基于"结构性标记存在性 + 非空"**(语义判定),而非"字面值清单"(词法白名单)。理由:严格白名单 AI 实际遵循率远低于"主动写状态字段"的概率,UX 反噬——本意防"AI 静默丢进度",实际拦"AI 主动汇报但没用规定词"
+  - 保留"空标记仍 block"的防偷懒铁律——防止 AI 写个 `## 状态:` 应付了事
+- 改了:6 个文件(dogfood + tmpl + tests + 3 处计数同步)
+- 完成标准:
+  - ✅ 5 个原字面回归继续 pass
+  - ✅ 4 条放宽场景测试通过
+  - ✅ 无状态/空状态仍 block(2 条 negative 测试)
+  - ✅ make test 638/638 + make check 通过
+  - ✅ commit 9cac85c 已落库
+  - ✅ 用户验证通过
+- 沉淀:
+  - lessons.md 新增 1 条:"守卫机制依赖严格字面白名单时 AI 遵循率不足,应改通用字段标记"(标 T6 晋升候选)
+  - T6 晋升信号:此规则已在 5 个场景反复触发(2026-04-13 check_repo 守卫白名单 / 2026-04-13 user_docs whitelist / 2026-04-13 _RUNTIME_MODULES / 2026-04-23 stop hook 5 字面 / 2026-04-25 本次)。下次 `/lint-lessons` 应评估晋升为通用 Rule 条目或 anti-laziness 反合理化条目
