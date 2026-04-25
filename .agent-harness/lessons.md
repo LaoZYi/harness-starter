@@ -33,6 +33,7 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 根因:守卫机制把"AI 是否主动声明状态"误读为"AI 是否使用了特定字面"。前者是语义判定(只要标了状态字段就算声明),后者是词法白名单(必须用 5 个之一)。AI 实际遵循严格字面清单的概率远低于"主动写状态字段"的概率,白名单方案在用户体验上反噬:本意是防"AI 静默丢进度",实际拦的是"AI 主动汇报但没用规定词"
 - 规则:守卫的"放行条件"应基于**结构性标记**(`^##\s*状态[:：]<非空>` 这样的字段存在性 + 非空校验),而非**字面值清单**。穷举不可行的白名单要么换成自动发现(2026-04-13 守卫白名单改自动发现的同款思路),要么换成"标记存在即放行 + 防偷懒兜底"(空标记仍 block)。新增类似守卫前问自己:这个清单将来会不会被反复加项?会 → 直接做通用模式
 - **T6 晋升候选**:此规则已在多个白名单场景反复出现(2026-04-13 check_repo 守卫白名单 / 2026-04-13 user_docs whitelist / 2026-04-13 _RUNTIME_MODULES 白名单 / 2026-04-23 stop hook 5 字面 / 2026-04-25 本次)。下次 `/lint-lessons` 时显式评估晋升路径——做成通用 Rule 条目"硬编码字面/路径白名单是反模式,优先用自动发现或字段标记",或加入 anti-laziness 反合理化表
+- ✅ **已晋升 2026-04-25**:见 `.claude/rules/architecture-patterns.md` 反模式 1 + `.claude/rules/anti-laziness.md` 门禁 3 反合理化表新增「反正只是再加一个字面/路径就行」借口
 
 ## 2026-04-24 [测试] 字符串段落抽取断言要用「下一章节锚点截断」而非固定字符窗口
 
@@ -96,6 +97,7 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
   2. 默认策略的**前提条件**有哪些？（`three_way` 的前提是 base 存在）
   3. 前提破产时，回到**核心目的**还是回到**最简单出路**？
   代码必须选 1。"最简单出路" 背后藏着用户数据损失。具体到 harness upgrade：缺 base 时不能用 overwrite 兜底，应改写旁路文件（`<file>.harness-new`）+ 警告，把决策权还给用户。策略通用化——不是维护"用户文档白名单"（列表永远不全），而是对所有 `three_way` 文件一视同仁。逃生口通过 `--force` 显式给出（用户明确知道"我要覆盖"）
+- ✅ **已晋升 2026-04-25**:本条的"策略通用化代替白名单"思想已纳入 `.claude/rules/architecture-patterns.md` 反模式 1 的推荐替代方案 #3 — 策略统一化
 
 ## 2026-04-21 [测试] 用户数据保护类 bug 修复必须覆盖五类场景不是单点复现
 
@@ -194,6 +196,7 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 错误：新增 `memory_search.py` 后，`src/agent_harness/memory.py` 通过 `from .memory_search import` 引用；dogfood 后 `.agent-harness/bin/_runtime/memory.py` 同步了，但 `_runtime/memory_search.py` 没同步 → 项目内嵌运行时 `.agent-harness/bin/memory search` 报 `ModuleNotFoundError: No module named '_runtime.memory_search'`
 - 根因：`src/agent_harness/runtime_install.py` 的 `_RUNTIME_MODULES` 是显式白名单（不是自动扫描），新增的运行时依赖模块必须手动加入
 - 规则：新增被 `.agent-harness/bin/*` 入口脚本（audit/memory/squad 等）间接依赖的 `src/agent_harness/*.py` 模块时，**同时**在 `runtime_install.py._RUNTIME_MODULES` 追加一行。检测手段：`test_runtime_only_imports_stdlib` 会捕获 stdlib 以外的导入；`test_memory_rebuild_creates_index` 类的 bin 端到端测试会捕获缺模块。两类测试二选一要过
+- ⚠️ **已晋升相关规则 2026-04-25**:本条**未根治**(仍是白名单 + 契约测试兜底),但同类反模式已晋升到 `.claude/rules/architecture-patterns.md` 反模式 1。下次有人重写 `runtime_install.py` 时,优先考虑改自动发现(扫 `.agent-harness/bin/_runtime` 引用图)而非维护清单
 
 ## 2026-04-14 [架构设计] 外部方法论吸收前必须做适用性裁剪
 
@@ -274,6 +277,7 @@ agent 开始任务前应快速浏览本文件，避免重蹈覆辙。
 - 错误：`squad/cli.py` 写到 303 行，超过 AGENTS.md 280 行硬规则，但 `make check` 一直显示 passed
 - 根因：`scripts/check_repo.py:check_module_sizes` 用硬编码路径白名单，只列了 9 个模块，新增的 `squad/` 子包（5 个文件）完全没被检查。白名单漂移是沉默的——新文件不进白名单就永远不被检查
 - 规则：硬规则守卫应该用自动发现（`rglob` / `walk`）而非白名单。可用豁免机制（跳过 `__init__.py`、`templates/` 等已知非代码目录）代替"只检查这些"。新增契约测试锁死该行为，防未来回归
+- ✅ **已晋升 2026-04-25**:本条的"自动发现代替白名单"思想已纳入 `.claude/rules/architecture-patterns.md` 反模式 1 的推荐替代方案 #1 — 自动发现
 
 ## 2026-04-08 [工具脚本] dogfood 命令展平
 
