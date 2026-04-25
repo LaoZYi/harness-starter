@@ -101,6 +101,61 @@ class StopHookBehaviorTests(unittest.TestCase):
             self.assertEqual(r.stdout.strip(), "",
                              f"Expected pass for 待需求确认 state, got: {r.stdout!r}")
 
+    # --- 通用状态字段放行(2026-04-25 扩展):
+    # 从 5 个字面白名单改为通用 `## 状态[:：]<非空>` 字段标记。
+    # 任何 AI 主动声明的状态都视为"已显式思考过当前阶段",放行。
+
+    def test_halfwidth_colon_state_passes(self) -> None:
+        """半角冒号 '状态:' 也应放行——AI 不一定记得用全角。"""
+        body = "# Current Task\n\n## 状态: 待验证\n\n- [ ] 收尾\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = _prepare_project(Path(tmp), current_task_body=body)
+            r = _run_stop(proj)
+            self.assertEqual(r.returncode, 0)
+            self.assertEqual(r.stdout.strip(), "",
+                             f"Expected pass for halfwidth-colon state, got: {r.stdout!r}")
+
+    def test_custom_state_word_passes(self) -> None:
+        """自定义状态词('等用户回复')也应放行——白名单穷举不可行。"""
+        body = "# Current Task\n\n## 状态:等用户回复\n\n- [ ] 草稿\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = _prepare_project(Path(tmp), current_task_body=body)
+            r = _run_stop(proj)
+            self.assertEqual(r.returncode, 0)
+            self.assertEqual(r.stdout.strip(), "",
+                             f"Expected pass for custom state word, got: {r.stdout!r}")
+
+    def test_state_with_description_passes(self) -> None:
+        """状态字段含空格和长描述也应放行。"""
+        body = "# Current Task\n\n## 状态: 暂停沟通,等待用户决策方向\n\n- [ ] 步骤\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = _prepare_project(Path(tmp), current_task_body=body)
+            r = _run_stop(proj)
+            self.assertEqual(r.returncode, 0)
+            self.assertEqual(r.stdout.strip(), "",
+                             f"Expected pass for state with description, got: {r.stdout!r}")
+
+    def test_state_research_passes(self) -> None:
+        """`状态:调研中` 之类的过程性状态也放行——只要 AI 主动声明阶段。"""
+        body = "# Current Task\n\n## 状态:调研中\n\n- [ ] 探索\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = _prepare_project(Path(tmp), current_task_body=body)
+            r = _run_stop(proj)
+            self.assertEqual(r.returncode, 0)
+            self.assertEqual(r.stdout.strip(), "",
+                             f"Expected pass for 调研中 state, got: {r.stdout!r}")
+
+    def test_empty_state_field_still_blocks(self) -> None:
+        """`## 状态:` 后只有空白不算标记——防偷懒,继续 block。"""
+        body = "# Current Task\n\n## 状态:   \n\n- [ ] 未完成\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = _prepare_project(Path(tmp), current_task_body=body)
+            r = _run_stop(proj)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            data = json.loads(r.stdout)
+            self.assertEqual(data["decision"], "block",
+                             "Empty state value must not be treated as a valid mark")
+
     def test_unchecked_checkbox_blocks(self) -> None:
         body = "# Current Task\n\n- [x] 第1步\n- [ ] 第2步未完成\n- [ ] 第3步\n"
         with tempfile.TemporaryDirectory() as tmp:
