@@ -1750,4 +1750,34 @@
   - ✅ 用户验证通过
 - 沉淀:无新 lesson(本次是 T6 晋升 5 步清单的 T3 merge 实战补充,不需独立沉淀)
 
+## 2026-04-26 二阶威力评估 4 批改进 + audit 加 5 个质量维度
+
+- 需求:用户跑完 /health 后让我"再评估一下 lfg",我做了二阶评估暴露 5 个 audit 测不到的暗角(引用密度 / 用户确认点过载 / 模板长度炸 context / 实际激活率 / 基础设施引用不平衡),然后用户说"做完所有",批 A/B/C/E 完成,批 D(三层骨架)推迟需先改 templating engine
+- 做了什么:
+  - 批 A:`/source-verify` + context-budget 在阶段 4 实施期再加引用(各 1→2 次)
+  - 批 B:加"用户确认点分级"段(必要/建议/可跳)+ 通道默认行为表;元引用 🔴 改为 STOP 字面降噪
+  - 批 C:抽 lfg.md.tmpl 中 squad 章节(148 行)到 `templates/common/.agent-harness/references/squad-channel.md.tmpl`,主模板留指针 + 速览(30 行);修 3 条契约测试改为联合检查主模板 + references
+  - 批 D:推迟 — templating engine 不支持 include,需先改基础设施
+  - 批 E:lfg audit 加 5 个新维度(11 引用深度 / 12 主模板长度 / 13 用户确认点密度 / 14 关键守卫多点 / 15 通道层级化),抽到 `lfg_audit_quality.py`(124 行,主 checks.py 削回 233 < 280),修 4 条 test_lfg_audit 测试
+- 关键决策:
+  - **新增维度暴露真实暗角而不是装饰满分** — 旧 10 维 audit 给 10.0 满分掩盖了 3 个真实弱点;新 15 维 audit 13.54/15(90.3%)暴露 Dim 11(0.64)、Dim 12(0.5)、Dim 13(0.4)三个具体可量化的债务,后续可直接对照分数追踪进度
+  - **批 D 推迟而非硬上** — 三层骨架需要先扩 templating engine,工作量翻倍且影响其他 tmpl 功能;隔离为单独任务更安全
+  - **抽离重构破坏契约测试时的应对** — squad 抽离破 3 测试,改为"主模板必含指针 + references 必含详细内容"的联合契约,而非死绑某一处
+- 改了:9 个文件,+553 / -269 行,2 个新文件(squad-channel.md.tmpl + lfg_audit_quality.py)
+- 完成标准:
+  - ✅ 主模板 930 → 848 行(-82 行净削)
+  - ✅ /source-verify + context-budget 引用 1→2 次
+  - ✅ squad 章节抽离 + references 索引
+  - ✅ audit 10 维 → 15 维,新维度立即生效暴露暗角
+  - ✅ make test 638/638 + make check 全过
+  - ✅ commit f40f0cc 已落库
+  - ✅ 用户验证通过
+- 沉淀:无新 lesson(关键元教训已在前期 lessons "能力集成度评估必须用量化扫描而非主观判断"覆盖,本次是同一思想的扩展应用)
+- 推迟项(下次任务):
+  - 批 D 三层骨架:需先改 templating engine 加 include 支持(中等复杂度,需独立 /lfg)
+  - Dim 11 引用深度仍 0.64(10 个浅集成 skill 待加深引用)
+  - Dim 12 主模板长度仍 848 行(批 D 完成后预期降到 500-600)
+  - Dim 13 确认点密度仍 1.83/50 行(需要主流程级再降 🔴 字面)
+
+
 
