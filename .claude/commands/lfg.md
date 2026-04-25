@@ -163,154 +163,68 @@
 
 ---
 
-## squad 通道（超大-可并行任务）
+## squad 通道（超大-可并行任务）— 详见 references/squad-channel.md
 
 **进入条件**：阶段 0.3 判定为"超大-可并行"档，用户确认拓扑。
 
-**核心思想**：`/lfg` 主会话扮演**协调员**——起 squad、实时翻译 mailbox 状态、关键节点拉用户介入。worker 在 tmux 后台并行干活。用户可随时 `tmux attach` 介入调试。
+> **完整工作流已抽到 `.agent-harness/references/squad-channel.md`**(148 行,含拓扑模板 / 介入点 1-6 / 失败兜底)。本主模板只保留概要 + 入口指针——非超大任务不必加载,降低主模板每次启动的 context 开销。
+>
+> **加载方式**:进入 squad 通道时,运行 `/recall --refs squad-channel` 加载完整工作流;或直接 `cat .agent-harness/references/squad-channel.md`。
 
-### 前置：`/lfg` 自动生成 spec.json 草稿
+**核心思想速记**:`/lfg` 主会话扮演**协调员**——起 squad、实时翻译 mailbox 状态、关键节点拉用户介入。worker 在 tmux 后台并行干活。用户可随时 `tmux attach` 介入调试。
 
-根据任务描述推断 worker 拓扑。默认模式（经典三段）：
+**6 个用户介入点速览**(详细见 references/squad-channel.md):
 
-```json
-{
-  "task_id": "<kebab-case 任务名，<= 31 字符>",
-  "base_branch": "<当前 master/main>",
-  "workers": [
-    {
-      "name": "scout",
-      "capability": "scout",
-      "prompt": "探索 <相关模块路径>，输出现状报告到 report.md（3 段：现有实现/痛点/建议切入点）"
-    },
-    {
-      "name": "builder",
-      "capability": "builder",
-      "depends_on": ["scout"],
-      "prompt": "读 scout 的 report.md + <任务规格>，按 TDD 实现：先写失败测试 → 实现 → 全过"
-    },
-    {
-      "name": "reviewer",
-      "capability": "reviewer",
-      "depends_on": ["builder"],
-      "prompt": "对 builder 的 worktree diff 跑 /multi-review，输出 review.md。所有 P0/P1 问题汇报到 .agent-harness/squad/<task_id>/workers/reviewer/review.md"
-    }
-  ]
-}
-```
+1. **拓扑确认**(🔴 必须):展示 worker 拓扑给用户,等"可以"再起
+2. **scout → builder 切换**(🔴 必须 + 强制 compact):scout 完成后展示制品,等用户确认
+3. **worker 失联**(watchdog 触发):重启 / 跳过 / 终止三选一
+4. **worker 卡死**:attach 调试 / 调整方向 / 跳过手工接管
+5. **reviewer PASS → 合并**(🔴 必须 + 强制 compact):合并 / 回退 / 手动检查
+6. **finish-branch 合并 + push**(🔴 必须):4 种去向
 
-**其他拓扑模板**（根据任务特征选）：
-- **多端点并行实现**：N 个 builder 各做一个端点，1 个 reviewer 统一审查（N+1 worker）
-- **重构 + 迁移**：scout 做调研 → 2 个 builder 分头改前端/后端（无强依赖）→ reviewer 审
-- **独立模块各自迁移**：N 个 builder，互不依赖
-- **四角色重型任务（Issue #30 吸收自 Danau5tin/multi-agent-coding-system）**：orchestrator + scout + builder + reviewer。`orchestrator` capability 在运行时 **完全 deny Edit/Write/MultiEdit/NotebookEdit**——只能用 Read/Grep/Glob/Task/TodoWrite 派工，连代码都不碰，专职战略协调。适用于：跨 3+ 模块且需要持续调度决策的任务（实施过程中 scout 发现新子方向需要动态派新 builder）。`capability.py` 运行时强制，不是软约束
-
-```json
-{
-  "task_id": "large-refactor",
-  "base_branch": "master",
-  "workers": [
-    { "name": "orchestrator", "capability": "orchestrator", "prompt": "读 spec 和 scout 产出，决定后续派发；发现新子任务时用 Task 派给 builder；自己不写代码" },
-    { "name": "scout-a", "capability": "scout", "prompt": "探索模块 A" },
-    { "name": "scout-b", "capability": "scout", "prompt": "探索模块 B" },
-    { "name": "builder-1", "capability": "builder", "depends_on": ["scout-a"], "prompt": "按 orchestrator 指令实现模块 A" },
-    { "name": "reviewer", "capability": "reviewer", "depends_on": ["builder-1"], "prompt": "多视角评审" }
-  ]
-}
-```
-
-### 介入点 1：拓扑确认（🔴 必须）
-
-```
-拟用 squad 通道执行，建议拓扑：
-- scout（scout capability）：探索 src/auth/ → report.md
-- builder（builder capability，depends on scout）：按 spec 实现
-- reviewer（reviewer capability，depends on builder）：做 multi-review
-
-预计：3 个 tmux 窗口 + 3 个 worktree，消耗 ~3x token
-
-确认？回复：
-- "可以" → 直接起 squad
-- "改成 <新拓扑>" → 修改 spec 重问
-- "不要并行，走单 agent" → 降级到完整通道
-```
-
-### 起 squad + watch
-
+**核心命令速览**:
 ```bash
-.agent-harness/bin/squad create spec.json
-.agent-harness/bin/squad watch &   # 后台常驻，自动 advance + watchdog
+.agent-harness/bin/squad create spec.json   # 起 squad
+.agent-harness/bin/squad watch &            # 后台 watchdog + advance
+.agent-harness/bin/squad stop all           # 中止保留 worktree
 ```
 
-`/lfg` 主会话保持运行，轮询 mailbox + 把重要事件翻译给用户。
+**硬规则回顾**:worker 内**不得**调用 `/squad create` / `/dispatch-agents` / 完整 `/lfg`(防递归资源爆炸)。详见 AGENTS.md。
 
-### 介入点 2：scout 完成，builder 可否继续（🔴 必须 + 强制 compact）
-
-> **PreCompact hook 自动化（Issue #13）**：本节以及介入点 5、阶段 5/9/10 调用 `/compact` 时，`.claude/hooks/pre-compact.sh` 会**自动**写一条 audit 检查点 + stderr 提示 AI 把关键决策持久化。你不需要手动追加审计——hook 已经做了。/lfg 的配合动作：调 `/compact` 前把待存的决策写进 current-task 或 lessons，让 hook 的"持久化提醒"有内容可捞。
-
-scout 写 `done` 事件后：
-1. **优先读结构化知识制品（Issue #30）**：运行 `harness agent aggregate scout` 看顶部 `## artifact` 段。`diary_append_artifact` 写入的制品包含 `type/summary/refs/content` 字段，比散落在 diary 里的自由日志更精炼。无 artifact 时再退回读 `report.md` 全文
-2. 告知用户："scout 完成。制品要点：<3 条摘要，优先展示 artifacts>。builder 可以照这个实现吗？"
-3. 用户确认后 `/compact`（控制 context 爆掉）继续
-4. watchdog + advance 会自动启动 builder
-
-### 介入点 3：worker 失联（watchdog 触发）
-
-`squad watch` 报 `session_lost` 或 `worker_crashed` 时：
-```
-⚠️ worker <name> 失联（<具体原因>）。选择：
-- "重启" → kill window → 重新 spawn
-- "跳过" → 标记 done，继续下游
-- "终止" → stop all + 回归单 agent 完整通道
-```
-
-### 介入点 4：worker 自己卡死
-
-通过 `squad dump | grep stuck`（或 tick 里的异常模式）检测：
-```
-worker <name> 在 <具体问题> 上连续 3 次 RED / 进度停滞 >10min。
-- "我 attach 看看" → 输出 `tmux attach -t squad-<task_id> \; select-window -t <name>`
-- "调整方向" → 给新 prompt 让 watchdog 重启
-- "跳过此 worker，手工接管" → 主会话接收该部分继续
-```
-
-### 介入点 5：reviewer PASS → 确认合并（🔴 必须 + 强制 compact）
-
-```
-✅ reviewer 结论 PASS（0 P0 / <N> P1）。
-各 worker 成果：
-- scout：report.md
-- builder：<改动摘要 + 关键 commit SHA>
-- reviewer：review.md
-
-所有 worker done。准备合并各 worktree 到 <base_branch>？
-回复 "合并" / "回退" / "让我先手动检查"
-```
-
-用户回 "合并" 后 `/compact`，进入介入点 6。
-
-### 介入点 6：finish-branch 合并 + push（🔴 必须）
-
-对每个 worker 的 worktree 跑 `/finish-branch`。行为与现有阶段 10 相同：选四种去向（直接合并 / 建 PR / 保留 / 丢弃）。
-
-### 失败兜底
-
-| 场景 | 回退策略 |
-|---|---|
-| spec 生成错（拓扑不合理） | 回介入点 1 重问 |
-| watchdog 报全部 worker 失联 | stop all → 降级到完整通道 |
-| reviewer FAIL 且连续 3 轮修不完 | stop all → 告知用户"建议人工介入"，保留 worktree |
-| 用户中途 Ctrl+C | `.agent-harness/bin/squad stop all` 保留 worktree，告知用户如何人工接管 |
-
-### 为什么 `/lfg` 主会话常驻而非一次性派发
-
-用户心智：**单一入口**。`/lfg` 主会话从头到尾负责协调，用户只在 6 个介入点出现时回答问题，不用记住"去哪看进度"。代价是 token 消耗——用**介入点 2/5 强制 `/compact`** 抵消。
-
-### worker 内不递归 lfg（硬规则回顾）
-
-AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispatch-agents`，也**不**跑完整 `/lfg` 流水线。worker 的 prompt 应直接指向其具体工作（scout 探索、builder TDD 实现、reviewer 审查），不要让 worker 自己再起子流程，资源会爆炸且 observability 崩坏。
+完整规格、拓扑模板(经典三段 / 多端点 / 重构迁移 / 四角色重型)、各介入点交互模板、失败兜底矩阵——见 `.agent-harness/references/squad-channel.md`。
 
 ---
+
+## 用户确认点分级(降密度,防疲劳)
+
+主模板有 18-20 个独立 STOP 确认点。不是所有都需要在每个通道都触发。按"必要 / 建议 / 可跳"分级:
+
+**必要(任何通道都不可跳,跳了会出事故)**:
+
+- ⚠️ 任务流转类:覆盖未完成任务(行 27)、Issue 元数据获取失败(行 42/48)、原始讨论记录误读(行 59)、任务描述模糊(行 90)
+- ⚠️ 安全/数据类:基线测试失败(行 359)、Critical/High 安全发现(行 625)、out-of-scope R-ID 确认(行 603)
+- ⚠️ 流程关键节点:计划摘要确认(行 431)、规格确认(行 394)、卡死/3 轮未收敛(行 501/555)、待验证(行 750)、收尾合并方式(行 695)
+- ⚠️ squad 通道介入点(行 222/247/277/292):4 个均必要
+
+**建议(可在轻量/快速通道默认跳过,但应在 commit 消息或完成报告中告知用户)**:
+
+- 构思方向选择(行 375):仅完整通道触发——轻量通道不进入此阶段
+- 复杂度评估展示(行 910):快速通道判定为"微小"时可不展示,直接进入
+
+**可跳(主模板 reminder 类,不是真"等用户"——AI 自我提醒即可)**:
+
+- 阶段 4 实施期双守卫提醒(行 463):是 reminder 不是 confirmation
+- 并行子 agent 隔离硬规则(行 476):是 reminder
+- 阶段 7.2 R-ID 三态(行 603):仅 missed 状态触发"等用户"
+
+**通道默认行为**:
+
+- **快速通道**:仅触发"必要"级确认 ≈ 1-2 个(任务流转 + 验证完成)
+- **轻量通道**:触发"必要" + 部分"建议" ≈ 3-5 个
+- **标准/完整通道**:触发全部"必要" + 全部"建议" ≈ 8-12 个
+- **squad 通道**:6 个介入点 + 完整阶段 ≈ 12-16 个
+
+如果某个 STOP 在适用通道里**未被显式触发**,AI 应**自己处理**(写完整报告 / 自检 / 跑工具),不询问用户。
 
 ## 快速通道（微小任务）
 
@@ -459,6 +373,10 @@ AGENTS.md 硬规则：worker 内**不得**再调用 `/squad create` 或 `/dispat
 > **Stop hook 守护（Issue #13）**：阶段 4 期间若 AI 试图停止但 `current-task.md` 仍有未勾选 checkbox，`.claude/hooks/stop.sh` 会 block 并要求先更新进度。若发现 `.agent-harness/.stop-hook-skip` sentinel 存在，**先询问用户**是否允许跳过——sentinel 残留会让守护机制失效。完成任务后务必删除 sentinel（`rm -f .agent-harness/.stop-hook-skip`），让下次任务重新受保护。
 
 #### 4.1 按步执行
+
+> **🔴 实施期双守卫提醒(必读)**:
+> - **API/CLI flag 幻觉守卫**:本阶段写代码若引用框架/库具体 API、CLI flag、配置项,且**计划阶段未跑 `/source-verify`**(快速/轻量通道常跳过),实施期**遇到第一处不确定的 API 调用立即跑 `/source-verify`**——AI 凭记忆写 API 是 1 类常见幻觉源。教训:lessons.md "CLI flag 假设在 plan 阶段必须 source-verify"
+> - **Context 预算守卫**:本阶段工具调用爆发(grep / Read / Bash)易爆 context。**单次输出 > 2k tokens 必须先 pipe**(`| head -N` / `| grep PATTERN` / `| jq '.关键字段'`),搜索/统计/过滤类任务先写脚本只返回结果(Think in Code)。详见 `.claude/rules/context-budget.md`
 
 对计划中的每一步：
 

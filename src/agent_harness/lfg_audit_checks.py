@@ -214,6 +214,10 @@ def check_context_budget(lfg_text: str, _repo_root: Path) -> DimensionScore:
     return DimensionScore(10, "Context Budget", score, checks)
 
 
+# 维度 11-15 抽到 lfg_audit_quality.py(实际威力暗角检测,2026-04-26)
+from .lfg_audit_quality import QUALITY_CHECKS  # noqa: E402
+
+
 DIMENSION_CHECKS: list[Callable[[str, Path], DimensionScore]] = [
     check_rules_coverage,
     check_skills_orchestration,
@@ -225,4 +229,5 @@ DIMENSION_CHECKS: list[Callable[[str, Path], DimensionScore]] = [
     check_doc_sync,
     check_knowledge_compound,
     check_context_budget,
+    *QUALITY_CHECKS,
 ]

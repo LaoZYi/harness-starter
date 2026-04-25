@@ -7,6 +7,9 @@
 - 降级出口（"不要并行" → 完整通道）存在
 - spec.json（不是 yaml）+ `.agent-harness/bin/squad` 调用
 - worker 不递归 lfg 的硬规则回顾
+
+2026-04-26 重构: squad 详细工作流抽到 references/squad-channel.md。
+契约测试同时检查主模板(必含指针)+ references(详细内容源)。
 """
 from __future__ import annotations
 
@@ -16,6 +19,13 @@ from agent_harness._shared import SUPERPOWERS_ROOT
 
 
 LFG_TMPL = SUPERPOWERS_ROOT / ".claude" / "commands" / "lfg.md.tmpl"
+SQUAD_REF_TMPL = (
+    SUPERPOWERS_ROOT.parent
+    / "common"
+    / ".agent-harness"
+    / "references"
+    / "squad-channel.md.tmpl"
+)
 
 
 class LfgSquadChannelContractTests(unittest.TestCase):
@@ -23,6 +33,8 @@ class LfgSquadChannelContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.text = LFG_TMPL.read_text(encoding="utf-8")
+        cls.ref_text = SQUAD_REF_TMPL.read_text(encoding="utf-8")
+        cls.combined = cls.text + "\n" + cls.ref_text
 
     def test_complexity_table_has_fifth_tier(self):
         self.assertIn("超大-可并行", self.text)
@@ -37,9 +49,12 @@ class LfgSquadChannelContractTests(unittest.TestCase):
         self.assertIn("## squad 通道（超大-可并行任务）", self.text)
 
     def test_six_intervention_points(self):
+        # 主模板含速览;详细内容在 references/squad-channel.md
+        self.assertIn("squad-channel.md", self.text,
+                      "主模板必须含 references/squad-channel.md 指针")
         for i in range(1, 7):
-            self.assertIn(f"介入点 {i}", self.text,
-                          f"缺少介入点 {i}")
+            self.assertIn(f"介入点 {i}", self.combined,
+                          f"缺少介入点 {i}(主模板速览或 references 详细)")
 
     def test_has_downgrade_exit(self):
         """拒绝 squad 时必须能降级到单 agent 完整通道。"""
@@ -63,14 +78,15 @@ class LfgSquadChannelContractTests(unittest.TestCase):
 
     def test_worker_no_recursion_rule_reminder(self):
         """worker 内不得再跑 lfg/squad/dispatch-agents 的硬规则要提醒到。"""
-        self.assertIn("worker 内不递归", self.text)
+        # 主模板速览 + references 详细任一处含即可
+        self.assertIn("worker 内**不得**", self.combined)
 
     def test_default_topology_is_scout_builder_reviewer(self):
         """默认拓扑模板必须是 scout → builder → reviewer 三段。"""
-        # JSON 草稿里应有这三个 capability 字符串
+        # JSON 草稿在 references/squad-channel.md(从主模板抽出)
         for cap in ("scout", "builder", "reviewer"):
-            self.assertIn(f'"{cap}"', self.text,
-                          f"spec 草稿缺少 capability: {cap}")
+            self.assertIn(f'"{cap}"', self.ref_text,
+                          f"references/squad-channel.md spec 草稿缺少 capability: {cap}")
 
     def test_failure_fallback_table_present(self):
         """失败兜底表必须存在（spec 拓扑错 / 全部失联 / reviewer FAIL / Ctrl+C）。"""

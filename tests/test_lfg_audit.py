@@ -1,4 +1,6 @@
-"""Tests for `harness lfg audit` — 10-dimension /lfg scorecard.
+"""Tests for `harness lfg audit` — 15-dimension /lfg scorecard.
+
+2026-04-26: 扩展 10 → 15 维(加引用深度 / 主模板长度 / 确认点密度 / 关键守卫多点 / 通道层级化)。
 
 Three categories required by `.claude/rules/testing.md`:
 - Normal: healthy repo scores near the top
@@ -48,18 +50,19 @@ def _clone_repo(dst: Path) -> Path:
 class NormalPathTests(unittest.TestCase):
     """正常路径：健康仓库跑出高分。"""
 
-    def test_healthy_repo_scores_at_least_7(self) -> None:
+    def test_healthy_repo_scores_at_least_baseline(self) -> None:
         card = audit(ROOT)
+        # 15 维基线: ≥ 10.5(70%);新增 5 维(11-15)是质量层,健康仓库应 >= 12
         self.assertGreaterEqual(
-            card.total, 7.0,
-            f"baseline score too low: {card.total}/10. "
+            card.total, 10.5,
+            f"baseline score too low: {card.total}/{card.max_total}. "
             f"Dims: {[(d.id, d.score) for d in card.dimensions]}",
         )
 
-    def test_has_exactly_ten_dimensions(self) -> None:
+    def test_has_exactly_fifteen_dimensions(self) -> None:
         card = audit(ROOT)
-        self.assertEqual(len(card.dimensions), 10)
-        self.assertEqual(len(DIMENSION_CHECKS), 10)
+        self.assertEqual(len(card.dimensions), 15)
+        self.assertEqual(len(DIMENSION_CHECKS), 15)
 
     def test_json_output_is_parseable(self) -> None:
         card = audit(ROOT)
@@ -67,8 +70,8 @@ class NormalPathTests(unittest.TestCase):
         # Roundtrip via json serialization
         text = json.dumps(payload, ensure_ascii=False)
         reloaded = json.loads(text)
-        self.assertEqual(reloaded["max_total"], 10)
-        self.assertEqual(len(reloaded["dimensions"]), 10)
+        self.assertEqual(reloaded["max_total"], 15)
+        self.assertEqual(len(reloaded["dimensions"]), 15)
         for d in reloaded["dimensions"]:
             self.assertIn("score", d)
             self.assertIn("checks", d)
@@ -115,9 +118,11 @@ class BoundaryTests(unittest.TestCase):
             lfg_path = repo / LFG_TMPL_REL
             lfg_path.write_text("# empty\n", encoding="utf-8")
             card = audit(repo)
+            # 空模板:维度 1-10 全 0;维度 12 长度因为短给 1.0;维度 13 密度因 0 个 🔴 给 1.0
+            # 总分约 2.0 左右,应远低于 5.0
             self.assertLess(
-                card.total, 2.0,
-                f"空模板总分应 < 2，实际 {card.total}",
+                card.total, 5.0,
+                f"空模板总分应 < 5，实际 {card.total}",
             )
 
     def test_opt_in_rules_not_counted_in_dim_1(self) -> None:
@@ -129,8 +134,8 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("database.md 被引用", check_names)
 
     def test_threshold_gate_fails_below(self) -> None:
-        # 健康分数 ~10.0，设阈值 11 必然 exit 1
-        rc = main(["--repo", str(ROOT), "--threshold", "11"])
+        # 15 维健康分数 ~13.5,设阈值 14.5 必然 exit 1
+        rc = main(["--repo", str(ROOT), "--threshold", "14.5"])
         self.assertEqual(rc, 1)
 
     def test_threshold_gate_passes_at_or_above(self) -> None:

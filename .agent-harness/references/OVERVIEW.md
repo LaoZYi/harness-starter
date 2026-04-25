@@ -11,6 +11,7 @@
 - `requirement-mapping-checklist.md` — R-ID 贯穿 `/spec` → `/write-plan` → `/verify` 的三元映射
 - `security-checklist.md` — OWASP Top 10 + 认证 / 加密 / CORS / 敏感数据日志
 - `testing-patterns.md` — AAA / given-when-then / 合约测试 / 夹具策略
+- `squad-channel.md` — /lfg squad 通道完整工作流(从主模板抽出,含 6 个介入点 / 4 种拓扑模板 / 失败兜底矩阵)
 
 ## 触发场景
 
@@ -20,6 +21,7 @@
 | API / 后端接口 | `security-checklist.md` |
 | 写测试或改测试策略 | `testing-patterns.md` |
 | 规划含多需求的任务 | `requirement-mapping-checklist.md` |
+| 进入 /lfg squad 通道(超大-可并行任务) | `squad-channel.md` |
 
 ## 使用方式
 
