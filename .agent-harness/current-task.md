@@ -1,6 +1,6 @@
 # Current Task
 
-## 状态:进行中
+## 状态:待验证
 
 ## LFG 进度
 
@@ -39,7 +39,18 @@
 - 加测试:`tests/test_check_repo.py` 或 `tests/test_lfg_audit.py`
 
 ### Artifacts touched(本次操作过的产物路径)
-(实施期填充)
+- 读: `src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl`、`src/agent_harness/templates/common/.claude/rules/{context-budget,anti-laziness}.md.tmpl`、`src/agent_harness/templates/common/.agent-harness/references/{lfg-progress-format,OVERVIEW,ai-coding-pitfalls}.md.tmpl`、`tests/test_lfg_squad_channel.py`、`scripts/dogfood.py`
+- 改:模板 5 个 + 本仓库 5 个 + 测试 1 个 + 文档 3 个 = 14 文件
+  - 新建:`templates/common/.agent-harness/references/context-degradation-patterns.md.tmpl`(190 行)
+  - 新建:`tests/test_lfg_context_degradation.py`(114 行,9 条契约)
+  - 新建:`.agent-harness/references/context-degradation-patterns.md`(从模板镜像 190 行)
+  - 改:`templates/common/.claude/rules/{context-budget,anti-laziness}.md.tmpl`
+  - 改:`templates/common/.agent-harness/references/{lfg-progress-format,OVERVIEW}.md.tmpl`
+  - 改:`templates/superpowers/.claude/commands/lfg.md.tmpl`
+  - 改 dogfood 同步:`.claude/commands/lfg.md`、`.claude/rules/{anti-laziness,context-budget}.md`
+  - 改 OVERVIEW:`.agent-harness/references/OVERVIEW.md`
+  - 改文档计数:`CHANGELOG.md`、`docs/{architecture,release}.md`
+- 删除: 无
 
 ### Progress(阶段进度)
 - [x] 0.1 任务理解 — evolution 模式自动完整通道
@@ -48,14 +59,14 @@
 - [—] 2 构思 — 跳过(Issue body 已含设计)
 - [—] 2.5 规格 — 跳过(Issue body 等价 spec)
 - [x] 3 计划 — 8 步,用户确认"走"
-- [ ] 4.1 步骤 1:新建 context-degradation-patterns.md.tmpl
-- [ ] 4.2 步骤 2:改 context-budget.md.tmpl
-- [ ] 4.3 步骤 3:改 anti-laziness.md.tmpl
-- [ ] 4.4 步骤 4:改 lfg-progress-format.md.tmpl
-- [ ] 4.5 步骤 5:改 lfg.md.tmpl 阶段 0.2 + 4.1
-- [ ] 4.6 步骤 6:改 OVERVIEW.md.tmpl
-- [ ] 4.7 步骤 7:加契约测试
-- [ ] 4.8 步骤 8:dogfood + make ci 验证
+- [x] 4.1 步骤 1:新建 context-degradation-patterns.md.tmpl
+- [x] 4.2 步骤 2:改 context-budget.md.tmpl
+- [x] 4.3 步骤 3:改 anti-laziness.md.tmpl
+- [x] 4.4 步骤 4:改 lfg-progress-format.md.tmpl
+- [x] 4.5 步骤 5:改 lfg.md.tmpl 阶段 0.2 + 4.1
+- [x] 4.6 步骤 6:改 OVERVIEW.md.tmpl
+- [x] 4.7 步骤 7:加契约测试
+- [x] 4.8 步骤 8:dogfood + make ci 验证
 - [ ] 5 评审 — /multi-review
 - [ ] 7 验证 — /verify
 - [ ] 9 沉淀 — /compound + memory rebuild
