@@ -1813,3 +1813,32 @@
 - 推迟项（下次任务可考虑）：
   - 维度 12 满分需 ≤ 600 行 — 仅在主模板被进一步优化或某阶段真正成熟到可抽离时再做
   - audit 自身可加"是否为 STOP 装饰 emoji"的扫描（防止后续又把 🔴 用回标题修饰）
+
+## 2026-04-26 health 满分化 + gstack 升级与 onboarding + 关闭 Issue #47
+
+- 需求：跑完 /health（10/10）后用户接受推荐"按 LOW 项做 + gstack 也处理"，然后 /lfg #47 时发现 Issue 验收已被前一批工作绕过达成 → 关闭
+- 做了什么：
+  - **health 第 5 维上线**：`brew install shellcheck`（0.11.0）+ 跑 `make shellcheck-hooks` 确认 .claude/hooks/*.sh 干净（之前因 shellcheck 未装，第 5 维一直是 SKIPPED，权重重分配掩盖了"hooks 没静态扫过"的事实）
+  - **CLAUDE.md ## Health Stack 段**：14 行映射 typecheck/lint/test/deadcode/shell/skills-lint/repo-guard 到具体命令，注明 SSOT 是 Makefile，本节是 gstack `/health` 兼容镜像，下次 /health 直接读不再 auto-detect
+  - **gstack 升级 0.15.15.1 → 1.13.0.0**：global-git 安装（~/.claude/skills/gstack/.git），git stash + reset --hard origin/main + ./setup，跑过 v1.0.0.0/v1.1.3.0 两个 migration（v1.1.3.0 移除了 stale /checkpoint，改用 native /rewind + /context-save）
+  - **gstack onboarding 4 项全选推荐默认**：lake intro 标 seen / telemetry off / proactive false / routing_declined true。理由：本项目有自己的 superpowers 工作流（/lfg /tdd /verify 等）+ .claude/hooks 生命周期感知 + .claude/rules SSOT，gstack proactive 和 routing 会与之重叠冲突
+  - **关闭 Issue #47**：/lfg #47 拉到 Issue 后发现验收标准全部已被 commit bcbebfa（lfg 第 5 批）达成（Dim 12 0.5→0.85、dogfood pass、总分 +1.31），templating engine include 支持是 YAGNI，gh issue close 47 + 详细评论说明
+- 关键决策：
+  - **gstack onboarding 选择"对抗整合"而非"默认接入"**：gstack 默认想往 CLAUDE.md 写自己的 routing 段、想 proactive 自动跑 skill —— 但本项目 CLAUDE.md 明确说"不要把新规则只写这里"，且 .claude/rules + superpowers-workflow.md 已有自己的 routing 系统。两套系统并存会让 AI 在调用 skill 时混淆，所以选择 routing_declined + proactive false，让 gstack 退化为"用户主动 / 输入"才用的辅助工具
+  - **shellcheck 装 vs 跳过的 ROI 翻转**：之前第 5 维 SKIPPED 时权重重分配让总分仍能 10/10，但这是"虚高"——hooks/*.sh 一直没被静态扫过。装上 shellcheck 后 make shellcheck-hooks 立即返回 ok，证明 hooks 历史代码本来就干净，只是没人证。从此第 5 维不再是"权重洗牌掩盖"
+  - **Issue #47 关闭而非保留 / 扩验收线**：用户在 Issue 创建时（task-log "2026-04-26 二阶威力评估"）把"批 D 三层骨架"标为推迟。第 5 批用更轻量的"抽段到 references/"绕过了对 templating engine 的需求。继续做 templating include 是为分而分（Dim 12 = 0.85 → 1.0 需 ≤ 600 行，但 99% 已是健康天花板）。选 A 关闭 + 写明 YAGNI 备注，未来真需要 include 时再做
+- 改了：
+  - `CLAUDE.md` 新增 ## Health Stack 段（commit 6e97d7a，已 push）
+  - `~/.gstack/.completeness-intro-seen` / `.telemetry-prompted` / `.proactive-prompted` 标记位
+  - `~/.gstack/config.yaml` proactive=false, routing_declined=true, telemetry=off
+  - `~/.claude/skills/gstack/` 升级到 1.13.0.0（外部依赖，不在仓库内）
+  - GitHub Issue #47 关闭并附详细说明
+- 完成标准：
+  - ✅ `make ci` 全过（638 tests + ruff + mypy + vulture + skills-lint + check_repo）
+  - ✅ `make shellcheck-hooks` ok（第 5 维上线）
+  - ✅ gstack `--version` = 1.13.0.0
+  - ✅ gstack-config get 4 项配置就位
+  - ✅ Issue #47 state=CLOSED + 详细 closing comment
+  - ✅ git 工作区干净 + 已 push
+- 沉淀：无新 lesson。本次的关键判断（"为分而分是反模式"、"工具链可疑'满分'要拆解后看"、"外部 skill 系统与项目自有系统冲突时选保护项目"）属于已有 anti-laziness 反合理化表 + autonomy Trust Calibration 的延伸应用，不重立条
+- 推迟项：无
