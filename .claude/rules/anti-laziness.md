@@ -6,6 +6,8 @@ description: 反偷懒硬门禁——防 Agent 跳步、假判不适用、缩减
 
 > **分类标记：`defensive-temporary`**——这些机制防的是模型在长上下文中主动减少自检的倾向（参见 Yandex Reasoning Shift 论文）。未来模型内部对齐改善后，部分门禁可能变冗余。与之对应的 `collaborative-permanent` 类机制（audit WAL、memory 分层、agent diary 隔离等）无论模型多强都需要。
 
+> **与 `simplicity.md` 的边界**(Issue #51 吸收):本规则防 AI **跳步偷懒**(跳验证 / 缩范围 / 假判不适用);`simplicity.md` 防 AI **过度膨胀**(写 200 行能搞定 50 行 / 顺手改邻居代码 / 加无用抽象)。两者**反向互补**——目标都是"刚刚好",一个防低于必要,一个防高于必要。看到 AI 想"再加一点保险 / 再抽象一层 / 顺手改一下"时,先想是 anti-laziness 还是 simplicity 适用。
+
 本规则定义 7 道硬门禁。各 skill 在自身文档中引用并落地具体检查逻辑。
 
 ## 门禁 1：数量门禁（Count Gate）
