@@ -1862,3 +1862,30 @@
 - 完成标准:Dim 13 ≥ 0.7 ✅ (1.00) | 批 B 必要级 STOP 保留 ✅ | make ci 全过 ✅ | 契约测试 test_lfg_squad_channel 不破 ✅
 - 沉淀:无新 lesson。同日第 3 次实践"Issue 验收被前期工作绕过达成时直接关闭"模式(Issue #47 → #48 → #49),已固化为操作惯例不重立条
 - 推迟项:无
+
+## 2026-04-26 吸收 muratcankoylan/Agent-Skills-for-Context-Engineering(Issue #50)
+
+- 需求:吸收 5 类 context degradation 诊断框架(lost-in-middle / poisoning / distraction / confusion / clash)+ tokens-per-task 优化目标 + Artifact Trail 字段
+- 做了什么:
+  - 新建 `templates/common/.agent-harness/references/context-degradation-patterns.md.tmpl`(190 行,5 类 pattern × 症状/根因/缓解策略/检测信号)+ 镜像到本仓库 references
+  - `context-budget.md.tmpl` 加规则 4「优化目标:tokens-per-task,不是 tokens-per-request」节(re-fetching frequency 信号)+ 文末「诊断侧:Context Degradation 5 类模式」节作 reference 入口
+  - `anti-laziness.md.tmpl` 反合理化表新增「压缩越狠越省 token」借口驳斥
+  - `lfg-progress-format.md.tmpl` Context 段后加 Artifacts touched 字段(读/改/删除三类)
+  - `lfg.md.tmpl` 阶段 0.2 第 12 条加 `/recall --refs context-degradation` 加载 + 阶段 4.1 Context 预算守卫加 tokens-per-task 提醒
+  - `OVERVIEW.md.tmpl` 加新 reference 索引行 + 触发场景行(同步本仓库)
+  - `tests/test_lfg_context_degradation.py`(114 行,9 条契约,全过)
+  - dogfood 同步 3 个 .claude/ 文件 + 测试计数 638→647 同步到 CHANGELOG/architecture/release
+- 关键决策:
+  - **3 个相邻 reference 视角正交不重合**——`ai-coding-pitfalls`(腾讯 LEGO)关注 AI 行为问题、`claude-code-internals`(Windy3f3f3f3f)关注 Claude Code 5 级压缩底层机制、新 `context-degradation-patterns`(muratcankoylan)关注 context window 内 attention 机制问题。三者在 OVERVIEW 边界节明确说明可同时加载
+  - **不实施 Anchored Iterative Summarization 工程**——只吸收方法论作 L2 reference,不写实际压缩代码(避免引入运行时复杂度)
+  - **Artifact Trail 不改 audit.jsonl**——只在 lfg-progress-format 加字段;audit.jsonl 是 WAL 不该膨胀
+  - **9 个 step commits + tags 保留**(lfg/i50-step-1 .. step-9)——便于精确回滚到任意 step,沿用 Issue #45/#46 evolution pattern,而非 squash
+- 改了:16 文件 +626/-6 行;模板 5 个 + 本仓库 5 个 + 测试 1 个 + 文档 3 个 + current-task 标记
+- 完成标准:
+  - ✅ R-001 新 reference 190 行 ≥ 130(达成)
+  - ✅ R-002 tokens-per-task 引入 context-budget + 反合理化表
+  - ✅ R-003 Artifacts touched 字段
+  - ✅ R-004 make ci exit 0(647 tests / mypy / ruff / vulture / skills-lint / shellcheck / check_repo 全过)
+  - ✅ R-005 dogfood 后 lfg audit 14.85/15 维持(Dim 12 仍 0.85,无退步)
+- 沉淀:无新 lesson(T5 模式)。"吸收外部学术化方法论时优先做成 L2 reference"已在 lessons.md 2026-04-23 条目覆盖,本次是第 N 次实践不立新条
+- 推迟项:无
