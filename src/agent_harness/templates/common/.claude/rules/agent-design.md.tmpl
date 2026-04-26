@@ -57,6 +57,8 @@ description: 多 agent 协作的设计硬约束（12-factor-agents 适配）
 
 **理由**：如果允许下游私改上游，整条流程就失去"某份产物由谁署名"的契约。出问题后没人能回放"上游当时给的是什么、下游在此之上做了什么"。产物所有权是 F5（Unified State）的前置保障——状态同步的前提是每份状态有明确的唯一作者。
 
+> **代码层面同源**:F11 跟 `simplicity.md` 准则 2「Surgical Changes — 改最少必要」是同一思想的两个层面——agent 层面"下游 agent 不擅改上游 agent 产出",代码层面"AI 不顺手改邻居代码 / 替换现有 style"。两者目标都是**保护署名契约**。Issue #51 吸收 Karpathy 4 原则。
+
 **违反检测**：
 
 - `/agent-design-check` F11 维度（新增）扫 worker prompt：是否出现「必要时直接补充上游文档」「遇到 spec 缺失自行补全后继续」等越权用语
