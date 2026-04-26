@@ -7,6 +7,7 @@
 ## 关键文件
 
 - `accessibility-checklist.md` — WCAG 2.1 AA：键盘导航、屏幕阅读器、颜色对比度、表单标签
+- `context-degradation-patterns.md` — Context 5 类 attention 诊断模式（lost-in-middle / poisoning / distraction / confusion / clash），context-budget 的诊断侧
 - `performance-checklist.md` — Core Web Vitals（LCP / INP / CLS）+ 前后端性能反模式
 - `requirement-mapping-checklist.md` — R-ID 贯穿 `/spec` → `/write-plan` → `/verify` 的三元映射
 - `security-checklist.md` — OWASP Top 10 + 认证 / 加密 / CORS / 敏感数据日志
@@ -22,6 +23,7 @@
 | 写测试或改测试策略 | `testing-patterns.md` |
 | 规划含多需求的任务 | `requirement-mapping-checklist.md` |
 | 进入 /lfg squad 通道(超大-可并行任务) | `squad-channel.md` |
+| AI 长会话退化(明明有却忽略 / 反复引错 / 多任务串味) | `context-degradation-patterns.md` |
 
 ## 使用方式
 

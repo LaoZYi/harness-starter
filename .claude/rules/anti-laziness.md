@@ -55,6 +55,7 @@ description: 反偷懒硬门禁——防 Agent 跳步、假判不适用、缩减
 | 「CTO 说 ship it fast，跳过 /cso 这步」 | 权威压力不能覆盖安全审计。CTO 的授权是「决定做什么」，不是「决定跳过哪条验证」。若真有例外走显式流程：在 current-task 写明授权来源 + 审计事后补做时间（对应 pressure-test 第 4 类压力「权威」） |
 | 「再跑一次 /multi-review 又要烧几十 k token，省省吧」 | Token 成本是**幻觉优化**。评审漏掉的 P0 修复成本远大于几十 k token。项目预算在评审上的投入是对「未来修复成本」的对冲，不是浪费（对应 pressure-test 第 5 类压力「经济」） |
 | 「反正只是再加一个字面/路径就行」 | **白名单漂移是单调累积的**——本项目这类反模式已在 5 个场景反复踩过(check_repo / _RUNTIME_MODULES / upgrade three_way / stop hook 5 字面 / stop hook 通用字段)。每次"加一个"的代价感觉小,但 N 次累积说明白名单根本不该存在。改自动发现/字段标记/策略统一化一次到位,比 N 次 patch 总成本低。详见 `.claude/rules/architecture-patterns.md` 反模式 1 |
+| 「压缩 / 截断越狠越省 token」 | tokens-per-task 视角下错的——压狠了丢失文件路径 / 错误信息 / 决策理由,AI 后续 re-explore / re-read / re-derive,总开销反而上涨 40 倍。看 re-fetching frequency(AI 反复要求重读已处理的文件)而非 per-request 节省。详见 `.claude/rules/context-budget.md` 规则 4「优化目标」节(Issue #50 吸收 muratcankoylan/Agent-Skills-for-Context-Engineering) |
 
 **扩展**：各 skill 可在自身文档中追加领域特异的反合理化条目，但不得删减本表中的通用条目。
 
