@@ -1967,3 +1967,41 @@
   - ✅ R-005 make ci 全绿(658 tests OK + mypy 49 files clean + ruff 0 issue)
 - 沉淀:无新 lesson(T5 模式)。本次教训"按数据类型分类选汇总 vs 精确召回"已固化为 context-budget.md 规则 1 Decision Matrix 本身;"长输出头尾保留防丢尾部错误"已固化为规则 2 Smart Truncation 子节本身。新规则就是新 lesson,不在 lessons 重复立条
 - 推迟项:无(本次范围已完整)
+
+
+## 2026-04-26 stop hook 范式革命: 行为信号取代内容形式识别(反模式 1 第 6 案例)
+
+- 需求:用户反馈 stop hook 的"current-task.md 存在未完成 checkbox"误拦还会出现。9cac85c(2026-04-25)已把 5 字面白名单放宽为通用 `## 状态[:：]<非空>` 字段,但**字段名「状态」本身仍是字面白名单**——AI 写「## 阶段:」/「## 进度:」/「Status:」/「### 状态:」/「**状态**:」/「> ## 状态:」/ BOM / 嵌套子 checkbox / 代码块示例等 8 类内容形式变体仍被 block。用户要求「不计代价不损失功能彻底解决」
+- 做了什么:
+  - 第 6 次范式革命:从「内容形式识别」(grep 字段)换轨到「行为信号」(transcript 解析 AI 是否写过文件)+ mtime 兜底
+  - `.claude/hooks/stop.sh` 重写为 8 重判断逻辑:skip → 空文件 → 占位符 → 状态字段(向后兼容) → 无未勾 → **transcript 行为信号(新)** → **mtime 兜底(新,默认 1800s,环境变量可覆盖)** → block
+  - python 解析 stdin.transcript_path,扫描 `Write/Edit/MultiEdit/NotebookEdit/Bash` tool_use 的 input,命中 `current-task.md` 即放行
+  - 模板 `stop.sh.tmpl` 同步
+  - `tests/test_hooks.py` +22 条测试(行为信号 5 + mtime 3 + 占位符 1 + 8 类历史误拦回归 + 降级路径 3 + 旧测试 mtime 适配 3)
+  - `architecture-patterns.md` 反模式 1 加第 6 案例 + 「元反模式:用内容形式识别捕获语义信号」节
+  - `lessons.md` 新增元教训"行为信号取代内容形式识别",2026-04-25 旧条目加 deprecated 指针
+  - 测试计数 658 → 680 同步到 CHANGELOG / docs/architecture.md / docs/release.md
+- 关键决策:
+  - **不再加同义词字面**(用户拒绝 A 方向)——会再次踩反模式 1,1-2 个月后第 7 次复现
+  - **不去掉 block**(用户拒绝纯审计化)——损失硬保护功能,违背「不损失功能」前提
+  - **行为信号 + mtime 兜底双层**——transcript 是首选证据(AI 实际改过文件),mtime 是跨会话续做兜底,都不满足才 block
+  - **状态字段识别保留向后兼容**——旧 current-task.md 含 `## 状态:` 仍认,不破 23 条旧测试语义
+  - **降级路径安全**——transcript 缺失/损坏/JSON 异常时 python sys.exit(1),走 mtime 兜底;mtime 也老 → block(不绕过保护)
+  - **30 分钟 mtime 阈值**——可配 `HARNESS_STOP_HOOK_MTIME_SECONDS`,有测试覆盖
+- 改了:10 文件
+  - `.claude/hooks/stop.sh` + `src/agent_harness/templates/common/.claude/hooks/stop.sh.tmpl`(生产 + 模板)
+  - `tests/test_hooks.py`(+22 测试 +3 适配)
+  - `.claude/rules/architecture-patterns.md` + `src/agent_harness/templates/common/.claude/rules/architecture-patterns.md.tmpl`(反模式 1 加案例 + 元反模式节)
+  - `.agent-harness/lessons.md`(元教训 + deprecated 标记)
+  - `CHANGELOG.md` / `docs/architecture.md` / `docs/release.md`(测试计数 658 → 680)
+  - `.agent-harness/current-task.md` / `task-log.md`
+- 完成标准:
+  - ✅ 8 类历史误拦 case 全部转为放行(transcript 命中即放行回归测试)
+  - ✅ 真保护场景仍 block(`test_unchecked_checkbox_blocks` / `test_old_mtime_no_transcript_blocks`)
+  - ✅ 降级路径安全(transcript 缺失/损坏 + mtime 老 → block)
+  - ✅ make ci 全绿(680 tests OK + All checks passed!)
+  - ✅ 模板与生产 hook 同步
+  - ✅ lessons / architecture-patterns / CHANGELOG 同步
+  - ✅ 用户验证通过
+- 沉淀:lessons.md 新增 1 条元教训「用内容形式识别捕获语义信号是元反模式 → 行为信号是唯一根治」;反模式 1 升级 5 案例 → 6 案例 + 增设「元反模式」节;前 5 次失败的根因从"白名单不够大"修正为"范式选错了"——任何"内容形式识别"都不能可靠捕获"语义信号"
+- 推迟项:无
