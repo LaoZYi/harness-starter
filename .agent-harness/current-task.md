@@ -1,6 +1,6 @@
 # Current Task
 
-## 状态:进行中
+## 状态:待验证
 
 ## LFG 进度
 
@@ -38,12 +38,12 @@
 - [x] 0.2 历史加载
 - [x] 1 环境准备 — feat/evolution-51-simplicity,基线 647 tests pass
 - [x] 3 计划 — 7 步,用户确认"走"
-- [ ] 4.1 步骤 1:新建 simplicity.md.tmpl
-- [ ] 4.2 步骤 2:改 agent-design.md.tmpl F11
-- [ ] 4.3 步骤 3:改 requirement-mapping-checklist.md.tmpl
-- [ ] 4.4 步骤 4:改 anti-laziness.md.tmpl 边界声明
-- [ ] 4.5 步骤 5:改 lfg.md.tmpl 3 处
-- [ ] 4.6 步骤 6:加契约测试
-- [ ] 4.7 步骤 7:dogfood + make ci
+- [x] 4.1 步骤 1:新建 simplicity.md.tmpl
+- [x] 4.2 步骤 2:改 agent-design.md.tmpl F11
+- [x] 4.3 步骤 3:改 requirement-mapping-checklist.md.tmpl
+- [x] 4.4 步骤 4:改 anti-laziness.md.tmpl 边界声明
+- [x] 4.5 步骤 5:改 lfg.md.tmpl 3 处
+- [x] 4.6 步骤 6:加契约测试
+- [x] 4.7 步骤 7:dogfood + make ci
 - [ ] 9 沉淀
 - [ ] 10 收尾
