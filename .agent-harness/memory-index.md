@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-26 补吸 mksglu/context-mode BENCHMARK 增量(Issue #54)
 - 2026-04-26 补吸 Karpathy Think Before Coding 缺口(Issue #53)
 - 2026-04-26 吸收 forrestchang/andrej-karpathy-skills(Issue #51)
 - 2026-04-26 吸收 muratcankoylan/Agent-Skills-for-Context-Engineering(Issue #50)
 - 2026-04-26 关闭 Issue #49(事实已完成)
-- 2026-04-26 关闭 Issue #48(事实已完成)
 
 ## 参考资料（.agent-harness/references/）
 

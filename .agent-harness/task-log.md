@@ -1943,3 +1943,27 @@
   - ⊘ R-006 EXAMPLES.md 选项 B(out-of-scope,push back 后用户授权缩范围)
 - 沉淀:无新 lesson(T5 模式)。本次任务的元洞察「push back 在 evolution-update 任务中可缩窄范围」已固化为 anti-laziness 门禁 5 + task-lifecycle 第 2 步规则本身,不在 lessons 重复立条。push back / Name confusing / 多解读呈现这 3 条 Karpathy 原则 1 缺口本身就是来自上游可吸收的 lesson 沉淀
 - 推迟项:Issue #53 新特性 2 EXAMPLES.md 选项 B 150 行 reference(out-of-scope,如未来 /multi-review 反复抓"过度膨胀"找不到具体案例,再独立提 issue 做)
+
+
+## 2026-04-26 补吸 mksglu/context-mode BENCHMARK 增量(Issue #54)
+
+- 需求:吸收 mksglu/context-mode BENCHMARK.md 的 2 项增量(Tool Decision Matrix + Smart Truncation 头尾保留),是 #29 的 12 天后续 evolution-update。Issue 创建于 2026-04-26
+- 做了什么:
+  - `context-budget.md.tmpl` 规则 1 加 Tool Decision Matrix——7 类数据类型分类学(文档/API refs/skills/lessons → 精确召回;日志/CSV/构建/snapshot → 脚本汇总),对位本项目工具栈(memory search BM25 + grep 精确,shell awk/jq 汇总)
+  - `context-budget.md.tmpl` 规则 2 加 Smart Truncation 头尾保留段——3 种 shell 模式(单文件 / tee + 管道 / 纯管道 awk)+ 3 场景判定表(错误日志必须头尾 / 文档用 offset+limit / 列表用 head 即可)
+  - 反模式速查表新增「找文档里某 API 用法」行——演示「精确召回」对位场景
+  - dogfood 同步 .claude/rules/context-budget.md
+- 关键决策:
+  - **不引入 60/40 split 算法**——上游用比例分割 + UTF-8 边界对齐,本项目用 shell `{ head -N; echo; tail -N; }` 已够(simplicity 准则:shell 一行能解决就不引入算法)
+  - **3 场景判定表防过度应用**——明确"不是所有长输出都需要头尾保留",列表型/文档型仍用原模式
+  - **`### Smart Truncation` 内嵌方式**——同 #53 立的 `### Push Back` 模式(同源主题用同一层级,内嵌 `## 规则 N` 主体后)
+  - **不开独立 SubAgent 评审**——同 #53 经验,纯文档变更 + ci 全绿,主会话 2 角色评审收益高于独立 6 角色 SubAgent
+- 改了:3 文件 +194/-3 行(1 .tmpl 源 + 1 .claude/rules/ 渲染产物 + current-task.md)
+- 完成标准:
+  - ✅ R-001 精确召回×6, 汇总型/脚本汇总×7, 新表 7 行
+  - ✅ R-002 Smart Truncation×2, 头尾保留×4, head/tail 模式×4
+  - ✅ R-003 BENCHMARK/FATAL/PRESERVED×3
+  - ✅ R-004 dogfood `~ .claude/rules/context-budget.md`
+  - ✅ R-005 make ci 全绿(658 tests OK + mypy 49 files clean + ruff 0 issue)
+- 沉淀:无新 lesson(T5 模式)。本次教训"按数据类型分类选汇总 vs 精确召回"已固化为 context-budget.md 规则 1 Decision Matrix 本身;"长输出头尾保留防丢尾部错误"已固化为规则 2 Smart Truncation 子节本身。新规则就是新 lesson,不在 lessons 重复立条
+- 推迟项:无(本次范围已完整)
