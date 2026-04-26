@@ -1781,3 +1781,35 @@
 
 
 
+
+## 2026-04-26 lfg 第 5 批威力评估（13.54 → 14.85 / 15）
+
+- 需求：用户说"评估 lfg"，我用 `harness lfg audit` 拿到 13.54/15 的基线，列出维度 11/12/13 三处弱点 + 改进路线（参考 commit f40f0cc 的二阶威力评估方法论），用户回"直接动手"
+- 做了什么：
+  - **维度 13（确认点密度）0.40 → 1.00**：31 🔴 砍到 13 个——删末尾"用户确认点汇总"表（与"确认点分级"段重复 −7）、5 个段落标题装饰 emoji 改文字"需确认"、4 个 squad 速览改文字"必须"、2 个 reminder 块改 ⚠️（模板第 214 行已说"是 reminder 不是 confirmation"）
+  - **维度 12（主模板长度）0.50 → 0.85**：849 → 756 行（−93）。抽 `progress 追踪格式` 53 行示例到 `references/lfg-progress-format.md`、抽 `GitLab 同步关闭脚本` 40 行到 `references/gitlab-issue-closure.md`，主模板留 1-2 行指针
+  - **维度 11（引用深度）0.64 → 1.00**：8 个浅集成 skill 各补 1 次有意义引用——`/adr` 阶段 9.2 显式串、`/agent-design-check` 阶段 5 评审 PASS 后串（验证 F3/F5/F8/F10/F11 执行期未漂移）、`/debug` 阶段 7.1 验证失败注脚、`/doc-release` 阶段 9.1 注脚（lessons vs release 文档分离）、`/execute-plan`+`/write-plan`+`/use-worktrees` 在"通道默认行为"段融合通道选择建议、`/receive-review` 评审结论表注明先消化反馈
+  - 修测试：`test_threshold_gate_fails_below` 原绑死阈值 14.5（基于 ~13.5 的硬编码假设），改为 15.5 表达"门禁失败路径"语义，不随分数漂移
+  - `make dogfood` 同步 `.claude/commands/lfg.md`
+- 关键决策：
+  - **抽离 vs 删减**：选抽长段到 references/ 而不是删——保留全部信息密度，主模板减负，符合维度 15"通道层级化"已建立的机制
+  - **停在 14.85 而非追 15.0**：维度 12 满分需 ≤ 600 行（再砍 156 行），但当前抽出去的两份 reference 是"低频但需详查"模板（高 ROI），继续抽要动核心阶段说明，损害单文件可读性。审计模块也只把 ≤ 600 标"优秀"而非"必须"——避免"为分而分"陷阱
+  - **🔴 emoji 不等于 STOP**：模板第 214 行已分类"必要 / 建议 / 可跳（reminder 不是 confirmation）"，本次让 emoji 使用与该分类对齐——只有真正 STOP 点保留 🔴；标题装饰、速览标记、reminder 都用文字替代
+  - **测试期望与实际值脱钩**：改 audit 阈值测试时不绑当前总分（绑死会让每次模板优化都触发失败），改用"超过满分必失败"的稳定语义
+- 改了：
+  - `src/agent_harness/templates/superpowers/.claude/commands/lfg.md.tmpl` 主模板（−93 行）
+  - `src/agent_harness/templates/common/.agent-harness/references/OVERVIEW.md.tmpl` 加 5 条索引
+  - `tests/test_lfg_audit.py` 修 threshold 测试
+  - `.claude/commands/lfg.md` dogfood 同步
+  - 新增 `templates/common/.agent-harness/references/gitlab-issue-closure.md.tmpl`
+  - 新增 `templates/common/.agent-harness/references/lfg-progress-format.md.tmpl`
+- 完成标准：
+  - ✅ `harness lfg audit` 总分 14.85/15（≥ 14.5）
+  - ✅ 维度 11 = 1.00（28/28），维度 12 = 0.85（756 行），维度 13 = 1.00（0.86/50）
+  - ✅ `pytest -q` 638/638 pass
+  - ✅ `scripts/check_repo.py` passed
+  - ✅ 用户确认通过
+- 沉淀：无新 lesson。本次踩的关键点（"emoji 装饰 ≠ STOP 触发"、"测试期望勿绑动态分数"）属于已有 lesson "能力集成度评估必须用量化扫描"的延伸应用，不重复立条
+- 推迟项（下次任务可考虑）：
+  - 维度 12 满分需 ≤ 600 行 — 仅在主模板被进一步优化或某阶段真正成熟到可抽离时再做
+  - audit 自身可加"是否为 STOP 装饰 emoji"的扫描（防止后续又把 🔴 用回标题修饰）
