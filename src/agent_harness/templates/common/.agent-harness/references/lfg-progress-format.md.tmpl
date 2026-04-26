@@ -34,6 +34,15 @@
 - `src/api/users.ts` — 无需修改
 - `tests/UserList.spec.ts` — 新增搜索测试
 
+### Artifacts touched（本次操作过的产物路径）
+> 来源:Issue #50 吸收 muratcankoylan/Agent-Skills-for-Context-Engineering 的 Artifact Trail Problem——压缩/摘要时显式保留产物列表,防 AI 在长会话里"忘了改过哪些文件"导致 re-explore,对应 context-budget.md 规则 4「优化目标:tokens-per-task」。
+>
+> 实施期边做边记,粒度到具体路径(不只是模块名),三类各列:
+
+- 读(只读浏览): `src/views/UserList.vue`、`src/api/users.ts`、`tests/UserList.spec.ts`
+- 改(write/edit): `src/views/UserList.vue`、`tests/UserList.spec.ts`
+- 删除: 无
+
 ### Quality Baseline（质量基线）
 - 测试：42 个，100% 通过
 - Lint：3 个警告
