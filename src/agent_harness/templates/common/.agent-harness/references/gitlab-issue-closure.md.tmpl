@@ -1,0 +1,47 @@
+# GitLab Issue 同步关闭
+
+> /lfg 阶段 10.6 收到 GitHub Issue 触发的任务后，必须同步关闭 GitLab 镜像 Issue。GitHub 和 GitLab 编号不同，必须按 `evolution` 标签 + 标题匹配定位。本节抽到 reference，主模板留指针。
+>
+> 加载方式：阶段 10.6 关闭 GitHub Issue 后，若任务由 `gh#N` / `#N` / `gl#N` 触发，`/recall --refs gitlab-issue-closure` 或直接执行下面脚本。
+
+## GitHub 关闭
+
+```bash
+gh issue close <编号> --comment "✅ 已通过 /lfg 集成完成。提交：<首个SHA>..<末个SHA>"
+```
+
+## GitLab 同步关闭
+
+```bash
+# 第 1 步：按 evolution 标签列出 open Issue，用标题匹配找到对应编号
+GL_ISSUE=$(curl -sS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues?labels=evolution&state=opened&per_page=100" \
+  | python3 -c "
+import sys, json
+title_keyword = '<GitHub Issue 标题中的关键词>'
+issues = json.load(sys.stdin)
+for i in issues:
+    if title_keyword.lower() in i['title'].lower():
+        print(i['iid'])
+        break
+" 2>/dev/null)
+
+# 第 2 步：评论并关闭
+if [ -n "$GL_ISSUE" ]; then
+  curl -sS --request POST \
+    --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+    --header "Content-Type: application/json" \
+    --data '{"body":"✅ 已通过 /lfg 集成完成。提交：<首个SHA>..<末个SHA>"}' \
+    "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues/$GL_ISSUE/notes"
+  curl -sS --request PUT \
+    --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+    --header "Content-Type: application/json" \
+    --data '{"state_event":"close"}' \
+    "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues/$GL_ISSUE"
+fi
+```
+
+## 注意事项
+
+- **禁止**使用 GitLab API 的 `search=` 参数查找 Issue —— 该参数对中文标题和混合语言内容匹配不可靠。必须用 `labels` 过滤后在本地做标题匹配。
+- 如果 `GITLAB_TOKEN` 未设置或 API 调用失败，告知用户"GitHub Issue 已关闭但 GitLab 同步失败"，由用户手动收尾。

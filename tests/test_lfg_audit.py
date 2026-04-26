@@ -134,8 +134,9 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("database.md 被引用", check_names)
 
     def test_threshold_gate_fails_below(self) -> None:
-        # 15 维健康分数 ~13.5,设阈值 14.5 必然 exit 1
-        rc = main(["--repo", str(ROOT), "--threshold", "14.5"])
+        # 设阈值高于满分(15.5)必然 exit 1——表达"门禁失败路径"语义,
+        # 不绑定当前总分(随模板优化会变,绑定具体值会让回归测试随分数漂移)
+        rc = main(["--repo", str(ROOT), "--threshold", "15.5"])
         self.assertEqual(rc, 1)
 
     def test_threshold_gate_passes_at_or_above(self) -> None:

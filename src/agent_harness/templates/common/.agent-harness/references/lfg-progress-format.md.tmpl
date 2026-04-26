@@ -1,0 +1,59 @@
+# /lfg 进度追踪格式（中断恢复用）
+
+> /lfg 阶段执行期间，主会话在 `.agent-harness/current-task.md` 中维护结构化 LFG 进度块。本文件给出完整字段示例，主模板只留 1 行指针避免每次启动都加载整段。
+>
+> 加载方式：进入阶段 4 实施或恢复中断时，`/recall --refs lfg-progress-format` 或直接打开本文件复制结构。
+
+## 完整结构示例
+
+```markdown
+## LFG 进度
+
+### Goal（目标）
+给用户列表页增加搜索功能
+
+### Context（上下文）
+复杂度：中 | 通道：标准 | 基线 commit：abc1234 | 工作分支：feat/user-search
+
+### Assumptions（假设清单）
+- 假设：使用 REST API | 依据：现有接口均为 REST
+- 假设：搜索不需要全文索引 | 依据：数据量 <10k
+
+### Acceptance（验收标准）
+1. 用户列表页有搜索输入框
+2. 支持按姓名模糊搜索
+3. 支持按邮箱模糊搜索
+4. 搜索结果实时更新
+
+### Decisions（关键决策）
+- 使用前端过滤而非 API 搜索（数据量小，减少后端改动）
+- 历史参考：lessons.md "API 端点需注意分页参数验证"
+
+### Files（涉及文件）
+- `src/views/UserList.vue` — 新增搜索组件
+- `src/api/users.ts` — 无需修改
+- `tests/UserList.spec.ts` — 新增搜索测试
+
+### Quality Baseline（质量基线）
+- 测试：42 个，100% 通过
+- Lint：3 个警告
+
+### Progress（阶段进度）
+- [x] 理解与评估 — 复杂度：中，通道：标准
+- [x] 环境准备 — 分支 feat/user-search，基线测试通过
+- [x] 规格定义 — docs/superpowers/specs/2026-04-07-user-search-spec.md
+- [x] 计划 — docs/superpowers/specs/2026-04-07-user-search-plan.md（12 步）
+- [x] 实施 — 12/12 步完成，12 个 commit
+- [x] 自检 — 验收标准 4/4 通过，规则合规 5/5
+- [x] 评审 — 第 1 轮 PASS WITH CONDITIONS → /receive-review 修复 1 轮 → 第 2 轮 PASS
+- [x] 验证 — pytest ✓ (48/48), ruff ✓, 验收 4/4, 穷举验证 ✓
+- [x] 质量对比 — 测试 +6, Lint -1
+- [x] 沉淀 — /compound 写入 1 条教训，/adr 状态更新（或无 ADR），/lint-lessons 快速 3 项检查通过
+- [x] 完成报告 — 已生成
+- [x] 待验证 — 用户确认通过
+- [ ] 归档与收尾 — 待用户在 /finish-branch 选合并方式
+```
+
+## 中断恢复
+
+下次打开 Claude Code 时，AI 读取 `current-task.md` 中的 LFG 进度块，从最后一个未完成阶段继续。上下文包含验收标准、质量基线、计划路径等关键信息，确保无缝衔接。

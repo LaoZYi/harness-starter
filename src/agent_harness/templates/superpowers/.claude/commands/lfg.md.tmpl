@@ -175,12 +175,12 @@
 
 **6 个用户介入点速览**(详细见 references/squad-channel.md):
 
-1. **拓扑确认**(🔴 必须):展示 worker 拓扑给用户,等"可以"再起
-2. **scout → builder 切换**(🔴 必须 + 强制 compact):scout 完成后展示制品,等用户确认
+1. **拓扑确认**(必须):展示 worker 拓扑给用户,等"可以"再起
+2. **scout → builder 切换**(必须 + 强制 compact):scout 完成后展示制品,等用户确认
 3. **worker 失联**(watchdog 触发):重启 / 跳过 / 终止三选一
 4. **worker 卡死**:attach 调试 / 调整方向 / 跳过手工接管
-5. **reviewer PASS → 合并**(🔴 必须 + 强制 compact):合并 / 回退 / 手动检查
-6. **finish-branch 合并 + push**(🔴 必须):4 种去向
+5. **reviewer PASS → 合并**(必须 + 强制 compact):合并 / 回退 / 手动检查
+6. **/finish-branch 合并 + push**(必须):4 种去向（合并 / 创建 PR / 保留分支 / 丢弃）
 
 **核心命令速览**:
 ```bash
@@ -219,10 +219,10 @@
 
 **通道默认行为**:
 
-- **快速通道**:仅触发"必要"级确认 ≈ 1-2 个(任务流转 + 验证完成)
-- **轻量通道**:触发"必要" + 部分"建议" ≈ 3-5 个
-- **标准/完整通道**:触发全部"必要" + 全部"建议" ≈ 8-12 个
-- **squad 通道**:6 个介入点 + 完整阶段 ≈ 12-16 个
+- **快速通道**:仅触发"必要"级确认 ≈ 1-2 个(任务流转 + 验证完成)。改 1-2 文件无行为变化的微小任务直接 `/execute-plan` 推进
+- **轻量通道**:触发"必要" + 部分"建议" ≈ 3-5 个。明确行为变化的小任务用 `/tdd` + 简化 `/write-plan`(3-5 行步骤)
+- **标准/完整通道**:触发全部"必要" + 全部"建议" ≈ 8-12 个。`/write-plan` 全量 + `/plan-check` 8 维度
+- **squad 通道**:6 个介入点 + 完整阶段 ≈ 12-16 个;长任务建议先 `/use-worktrees` 隔离再起 squad
 
 如果某个 STOP 在适用通道里**未被显式触发**,AI 应**自己处理**(写完整报告 / 自检 / 跑工具),不询问用户。
 
@@ -280,7 +280,7 @@
 
 ---
 
-### 阶段 2：构思（🔴 需确认 | 仅完整通道）
+### 阶段 2：构思（需确认 | 仅完整通道）
 
 仅在**复杂度为"大"**时执行，标准通道跳过。
 
@@ -292,7 +292,7 @@
 
 ---
 
-### 阶段 2.5：规格定义（⚙️ 自动 → 🔴 需确认 | 标准+完整通道）
+### 阶段 2.5：规格定义（⚙️ 自动 → 需确认 | 标准+完整通道）
 
 满足以下**任一条件**时执行：
 - 需求描述超过两句话
@@ -311,7 +311,7 @@
 
 ---
 
-### 阶段 3：计划（🔴 需确认）
+### 阶段 3：计划（需确认）
 
 **通过门：计划存在 + 通过质量检查 + 用户确认**
 
@@ -374,7 +374,7 @@
 
 #### 4.1 按步执行
 
-> **🔴 实施期双守卫提醒(必读)**:
+> **⚠️ 实施期双守卫提醒(必读，AI 自我提醒，不停下等用户)**:
 > - **API/CLI flag 幻觉守卫**:本阶段写代码若引用框架/库具体 API、CLI flag、配置项,且**计划阶段未跑 `/source-verify`**(快速/轻量通道常跳过),实施期**遇到第一处不确定的 API 调用立即跑 `/source-verify`**——AI 凭记忆写 API 是 1 类常见幻觉源。教训:lessons.md "CLI flag 假设在 plan 阶段必须 source-verify"
 > - **Context 预算守卫**:本阶段工具调用爆发(grep / Read / Bash)易爆 context。**单次输出 > 2k tokens 必须先 pipe**(`| head -N` / `| grep PATTERN` / `| jq '.关键字段'`),搜索/统计/过滤类任务先写脚本只返回结果(Think in Code)。详见 `.claude/rules/context-budget.md`
 
@@ -387,7 +387,7 @@
    - 3+ 独立短子任务（无共享状态） → `/dispatch-agents`（一次性 map-reduce）
    - 长任务需角色分权 + 实时观察 + 多 worktree 并行 → **squad 通道已在阶段 0.3 自动选择**，见 `## squad 通道` 章节（用 `.agent-harness/bin/squad create spec.json`）
 
-   > **🔴 并行子 agent 隔离（硬规则）**：选 `/dispatch-agents` 或 `/subagent-dev` 时，主 agent **必须**先为每个子 agent 建立独立日志空间，禁止并发写共享 `current-task.md`：
+   > **⚠️ 并行子 agent 隔离（硬规则，AI 自我提醒）**：选 `/dispatch-agents` 或 `/subagent-dev` 时，主 agent **必须**先为每个子 agent 建立独立日志空间，禁止并发写共享 `current-task.md`：
    > ```bash
    > .agent-harness/bin/agent init <agent-id>          # id: ^[a-z0-9][a-z0-9-]{0,30}$
    > .agent-harness/bin/agent diary  <agent-id> "..."  # 子 agent 过程日志
@@ -448,8 +448,10 @@
 | 结论 | 下一步 |
 |------|--------|
 | **PASS**（无 P0/P1） | → 阶段 7（验证） |
-| **PASS WITH CONDITIONS**（有 P1） | → 阶段 6（修复） |
-| **FAIL**（有 P0） | → 阶段 6（修复） |
+| **PASS WITH CONDITIONS**（有 P1） | → 阶段 6（修复，先跑 `/receive-review` 结构化消化反馈） |
+| **FAIL**（有 P0） | → 阶段 6（修复，先跑 `/receive-review` 结构化消化反馈） |
+
+> **多 agent 任务复盘**：本次任务若走 squad 或 `/dispatch-agents`，评审 PASS 后建议再串一次 `/agent-design-check`，对照计划期的体检结果——验证 F3/F5/F8/F10/F11 在执行期是否漂移（worker 越权改上游产物 / orchestrator 越界专业判断 / 状态同步点漏接 等）。非多 agent 跳过。
 
 ---
 
@@ -498,6 +500,8 @@
 1. `{{test_command}}` — 全部测试通过（记录测试数、耗时、新增测试）
 2. `{{check_command}}` — 代码质量检查通过（记录警告数变化）
 3. `/verify` 还会产出结构化报告：验收标准对照 + 测试证据 + 未覆盖边界提示，作为阶段 7.2 的输入
+
+> 验证失败且原因不清 → 立刻串 `/debug` 定位根因（不要在不理解的情况下尝试修复，与阶段 4.2 同一原则）。
 
 #### 7.2 验收标准核验
 
@@ -577,6 +581,8 @@
 - sub-agent artifacts 里标记为 `tension` / `incident` / `decision` 类型的制品（优先沉淀）
 - 写入 `.agent-harness/lessons.md`
 
+> 与 `/doc-release` 联动：阶段 10.2 的文档同步只改对外 README/product/architecture；本步骤的 lessons 沉淀是对内的"为什么这样改"——两者是互补输出，不要把 lessons 内容塞进 release 文档。
+
 `/compound` 完成后**必须**两步闭环（不做的话下次 /lfg 读到的 L1 热索引是过时的、WAL 也缺一条）：
 
 ```bash
@@ -588,11 +594,12 @@
   --summary "/compound 写入 N 条教训：<标题关键词>"
 ```
 
-#### 9.2 ADR 状态维护
+#### 9.2 ADR 状态维护（/adr 收尾）
 
 浏览 `docs/decisions/` 目录，检查架构决策记录状态：
 - 如果有 `Proposed` 状态的 ADR 与本次任务相关（不论是阶段 3 创建的还是之前手动创建的）：确认是否应更新为 `Accepted`
 - 如果本次变更影响了已有 ADR 的前提条件：标记该 ADR 为 `Deprecated` 或创建 superseding ADR
+- **如果评审/实施中暴露了阶段 3 未捕捉到的隐性架构决策**（评审员追问"为什么用 X 不用 Y"时）→ 立即串 `/adr` 补登记，避免决策理由只留在评审 thread 里
 - 如果 `docs/decisions/` 为空或无相关 ADR：跳过此步骤
 
 #### 9.3 知识库健康检查
@@ -606,7 +613,7 @@
 
 ---
 
-### 阶段 10：收尾与文档（⚙️ 自动 → 🔴 需确认）
+### 阶段 10：收尾与文档（⚙️ 自动 → 需确认）
 
 #### 10.1 代码收尾
 
@@ -661,7 +668,7 @@ Lint：<之前> → <之后>（<变化>）
 — Environment Engineering 视角（Issue #34 / holaOS）
 ```
 
-#### 10.4 待验证（🔴 需确认）
+#### 10.4 待验证（需确认）
 
 在 current-task.md 顶部标记 `## 状态：待验证`，向用户展示上面的完成报告并等待确认。
 用户确认通过后，才执行 10.5（归档）和 10.6（关闭 Issue）。
@@ -689,97 +696,20 @@ Lint：<之前> → <之后>（<变化>）
 gh issue close <编号> --comment "✅ 已通过 /lfg 集成完成。提交：<首个SHA>..<末个SHA>"
 ```
 
-**GitLab Issue**（同步关闭）：
+**GitLab Issue 同步关闭**：完整脚本（按标签 + 标题匹配定位编号 → 评论 → 关闭）抽到 `.agent-harness/references/gitlab-issue-closure.md`。GitLab 触发的任务执行 `/recall --refs gitlab-issue-closure`，按脚本同步关闭。
 
-GitHub 和 GitLab 的 Issue 编号不同。必须先按标签 + 标题查找 GitLab 对应 Issue，再关闭：
-
-```bash
-# 第 1 步：按 evolution 标签列出 open Issue，用标题匹配找到对应编号
-GL_ISSUE=$(curl -sS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues?labels=evolution&state=opened&per_page=100" \
-  | python3 -c "
-import sys, json
-title_keyword = '<GitHub Issue 标题中的关键词>'
-issues = json.load(sys.stdin)
-for i in issues:
-    if title_keyword.lower() in i['title'].lower():
-        print(i['iid'])
-        break
-" 2>/dev/null)
-
-# 第 2 步：评论并关闭
-if [ -n "$GL_ISSUE" ]; then
-  curl -sS --request POST \
-    --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-    --header "Content-Type: application/json" \
-    --data '{"body":"✅ 已通过 /lfg 集成完成。提交：<首个SHA>..<末个SHA>"}' \
-    "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues/$GL_ISSUE/notes"
-  curl -sS --request PUT \
-    --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-    --header "Content-Type: application/json" \
-    --data '{"state_event":"close"}' \
-    "{{gitlab_api_url}}/projects/{{gitlab_project_path}}/issues/$GL_ISSUE"
-fi
-```
-
-> **禁止使用 GitLab API 的 `search=` 参数查找 Issue**——该参数对中文标题和混合语言内容匹配不可靠。必须用 `labels` 过滤后在本地做标题匹配。
+> **禁止使用 GitLab API 的 `search=` 参数**——该参数对中文标题不可靠，必须用 `labels` 过滤后在本地做标题匹配（详见 reference）。
 > 如果 `GITLAB_TOKEN` 未设置或 API 调用失败，告知用户"GitHub Issue 已关闭但 GitLab 同步失败"。
 
 ---
 
 ## 进度追踪与中断恢复
 
-在 `.agent-harness/current-task.md` 中实时记录完整上下文。使用以下结构化格式确保中断恢复时不丢失关键信息：
+在 `.agent-harness/current-task.md` 中实时记录完整上下文。完整结构化字段示例（含 Goal / Context / Assumptions / Acceptance / Decisions / Files / Quality Baseline / Progress 共 8 段）已抽到 `.agent-harness/references/lfg-progress-format.md`。
 
-```markdown
-## LFG 进度
+加载方式：进入阶段 4 实施或恢复中断时，运行 `/recall --refs lfg-progress-format` 复制结构。`/todo` 在阶段 3 生成的子步骤清单写入 Progress 段，逐项勾选。
 
-### Goal（目标）
-给用户列表页增加搜索功能
-
-### Context（上下文）
-复杂度：中 | 通道：标准 | 基线 commit：abc1234 | 工作分支：feat/user-search
-
-### Assumptions（假设清单）
-- 假设：使用 REST API | 依据：现有接口均为 REST
-- 假设：搜索不需要全文索引 | 依据：数据量 <10k
-
-### Acceptance（验收标准）
-1. 用户列表页有搜索输入框
-2. 支持按姓名模糊搜索
-3. 支持按邮箱模糊搜索
-4. 搜索结果实时更新
-
-### Decisions（关键决策）
-- 使用前端过滤而非 API 搜索（数据量小，减少后端改动）
-- 历史参考：lessons.md "API 端点需注意分页参数验证"
-
-### Files（涉及文件）
-- `src/views/UserList.vue` — 新增搜索组件
-- `src/api/users.ts` — 无需修改
-- `tests/UserList.spec.ts` — 新增搜索测试
-
-### Quality Baseline（质量基线）
-- 测试：42 个，100% 通过
-- Lint：3 个警告
-
-### Progress（阶段进度）
-- [x] 理解与评估 — 复杂度：中，通道：标准
-- [x] 环境准备 — 分支 feat/user-search，基线测试通过
-- [x] 规格定义 — docs/superpowers/specs/2026-04-07-user-search-spec.md（需求明确，已跳过/已完成）
-- [x] 计划 — docs/superpowers/specs/2026-04-07-user-search-plan.md（12 步）
-- [x] 实施 — 12/12 步完成，12 个 commit
-- [x] 自检 — 验收标准 4/4 通过，规则合规 5/5
-- [x] 评审 — 第 1 轮 PASS WITH CONDITIONS → 修复 1 轮 → 第 2 轮 PASS
-- [x] 验证 — pytest ✓ (48/48), ruff ✓, 验收 4/4, 穷举验证 ✓（涉及文件读写）
-- [x] 质量对比 — 测试 +6, Lint -1
-- [x] 沉淀 — 经验提炼完成，ADR 状态已更新（或无 ADR），快速 lint 通过
-- [x] 完成报告 — 已生成
-- [x] 待验证 — 用户确认通过
-- [ ] 归档与收尾 — 待用户选择合并方式
-```
-
-**中断恢复**：下次打开 Claude Code 时，AI 读取 `current-task.md` 中的 LFG 进度块，从最后一个未完成阶段继续。上下文包含验收标准、质量基线、计划路径等关键信息，确保无缝衔接。
+**中断恢复**：下次打开 Claude Code 时，AI 读取 `current-task.md` 中的 LFG 进度块，从最后一个未完成阶段继续。验收标准、质量基线、计划路径等关键信息从 Context 段恢复，确保无缝衔接。
 
 ---
 
@@ -812,29 +742,6 @@ fi
 如果回滚后发现不应该回滚，可以 `git reset --hard lfg/pre-rollback` 恢复到回滚前的状态。
 
 **绝不在主分支上执行 `git reset --hard`。** 如果在主分支工作且需要回滚，使用 `git revert` 逐个撤销 commit。
-
----
-
-## 用户确认点汇总
-
-| 阶段 | 自动/确认 | 何时停下 |
-|------|----------|---------|
-| 理解任务 | ⚙️ 自动 → 🔴 确认 | current-task 有未完成任务；任务描述模糊 |
-| 加载历史 | ⚙️ 自动 | 不停 |
-| 复杂度评估 | 🔴 确认 | 展示判断 + 假设清单，用户可覆盖 |
-| 环境准备 | ⚙️ 自动 | 基线测试失败 |
-| 构思 | 🔴 确认 | 用户选择方向 |
-| 规格定义 | ⚙️ 自动 → 🔴 确认 | 触发条件满足时展示规格等确认 |
-| 计划 | 🔴 确认 | 展示计划摘要等确认 |
-| 实施 | ⚙️ 自动 | 连续 3 步失败或遇阻 |
-| 自检 | ⚙️ 自动 | 验收标准或规则合规未满足时补做 |
-| 评审 | ⚙️ 自动 | 不停 |
-| 修复 | ⚙️ 自动 | 3 轮未收敛（绝对上限 6 轮） |
-| 验证 | ⚙️ 自动 | 穷举验证失败；安全审计 Critical/High |
-| 质量对比 | ⚙️ 自动 | 不停 |
-| 沉淀 + 知识维护 | ⚙️ 自动 | 不停 |
-| 待验证 | 🔴 确认 | 展示完成报告，等用户确认 |
-| 收尾 | 🔴 确认 | 选择合并方式 |
 
 ---
 
