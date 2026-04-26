@@ -1889,3 +1889,31 @@
   - ✅ R-005 dogfood 后 lfg audit 14.85/15 维持(Dim 12 仍 0.85,无退步)
 - 沉淀:无新 lesson(T5 模式)。"吸收外部学术化方法论时优先做成 L2 reference"已在 lessons.md 2026-04-23 条目覆盖,本次是第 N 次实践不立新条
 - 推迟项:无
+
+## 2026-04-26 吸收 forrestchang/andrej-karpathy-skills(Issue #51)
+
+- 需求:吸收 Karpathy 4 原则的 Simplicity First + Surgical Changes(反过度工程化),补足 anti-laziness 偏防偷懒缺反过度膨胀的另一极
+- 做了什么:
+  - 新建 `templates/common/.claude/rules/simplicity.md.tmpl`(105 行,4 准则 + 反合理化表 + 适用边界 + 修反模式例外)+ 镜像本仓库
+  - `agent-design.md.tmpl` F11 加 simplicity 准则 2「Surgical Changes」同源说明(F11 是 agent 层,simplicity 准则 2 是代码层,两者目标都是保护署名契约)
+  - `anti-laziness.md.tmpl` 顶部加与 simplicity 反向互补声明(防偷懒 vs 防膨胀,目标都是"刚刚好")
+  - `requirement-mapping-checklist.md.tmpl` 末尾加「模糊需求 → 可验证目标转换模板」7 类 pattern(Add validation / Fix bug / Refactor / Optimize / Migrate / Improve UX / Support Z),每条 R-ID 必须能用机械化命令产出 ✅/❌ 二元结果
+  - `lfg.md.tmpl` 3 处接入:阶段 0.1 第 3 步引用转换模板 + 阶段 4.2 表格新增'顺手改进邻居代码'禁止行 + 阶段 4.3 自检表加 simplicity 列
+  - `tests/test_lfg_simplicity_absorption.py`(125 行,11 条契约,全过)
+  - dogfood 同步 3 个 .claude/ 文件 + 测试计数 647→658 同步到 CHANGELOG/architecture/release
+- 关键决策:
+  - **simplicity 命名抽象化**——不命名 karpathy-principles.md(避免与外部项目耦合),抽为通用 simplicity.md。Karpathy 是来源,不是规则名
+  - **不吸收 Think Before Coding 原则**——已被 task-lifecycle 假设清单覆盖,不重复立条
+  - **修反模式例外明示**——Surgical Changes "Match existing style" 与本项目 stop hook 通用字段化教训(从字面白名单升级到结构化字段)看似冲突,实际不冲突。stop hook 升级是修反模式,在 simplicity.md 边界声明里明示"修反模式"是例外,需 commit 显式说明对照的 lesson 标题
+  - **不改 superpowers-workflow.md**——Issue body 提到的"项目规则清单"实际不存在(规则在 .claude/rules/ 目录自动加载),跳过该步
+- 改了:12 文件 +423/-6 行
+- 完成标准:
+  - ✅ R-001 simplicity.md 105 行 + 4 准则关键词全在
+  - ✅ R-002 anti-laziness 边界声明 + simplicity.md 边界节
+  - ✅ R-003 与 safety「改一处查所有同类」边界(扩散 vs 越界场景)
+  - ✅ R-004 7 类转换模板 + 反模式对照
+  - ✅ R-005 lfg.md 3 处引用都过契约测试
+  - ✅ R-006 make ci exit 0(658 tests / mypy / ruff / vulture / skills-lint / shellcheck / check_repo)
+  - ✅ R-007 lfg audit 14.85/15 维持(Dim 12 仍 0.85,759 行良好)
+- 沉淀:无新 lesson(T5 模式)。"吸收外部学术化方法论时优先做成 L2 reference / 抽象化命名"已在前两次 evolution 实践 + lessons.md 2026-04-23 条目覆盖,本次第 3 次实践不立新条
+- 推迟项:无
