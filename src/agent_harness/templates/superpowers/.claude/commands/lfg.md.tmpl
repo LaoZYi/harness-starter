@@ -109,6 +109,7 @@
 9. 如果 /recall 返回明确相关条目，**必须在计划中显式引用教训标题**，说明如何避免重蹈覆辙
 10. **BM25 兜底（二级检索）**：若 memory-index 未命中 + `/recall` 的 Grep 也返回空，`/recall` 技能会自动串 `.agent-harness/bin/memory search "<关键词>"` 做 BM25 相关性兜底（纯 stdlib，灵感自 [context-mode](https://github.com/mksglu/context-mode)）。这解决"关键词写错/用同义词"时 Grep 漏召的问题，是 /recall 的内置行为而非单独步骤
 11. **上下文预算告急时（Issue #33）**：若 context-monitor hook 提示工具调用计数接近阈值（50/100/150），或任务本身涉及大量工具输出，**运行 `/recall --refs claude-code-internals`** 展开 `.agent-harness/references/claude-code-internals.md`——了解 Claude Code 的 5 级渐进式压缩机制（L1 Tool Result Budget → L5 Autocompact）和 7 个 continue site，能让你提前用 Think in Code 规避 L1 被动截断，而不是等 L5 `/compact` 兜底丢失上下文
+12. **出现 context degradation 症状时(Issue #50)**:AI 自检"明明上下文有但回答忽略 / 反复引用错误结论 / 加载越多 reference 响应越泛 / 多任务串味 / 多源矛盾给折中"任一 → **运行 `/recall --refs context-degradation`** 加载 5 类 attention 诊断模式(lost-in-middle / poisoning / distraction / confusion / clash),按 pattern 找根因 + 缓解策略。本 reference 是 context-budget 的诊断侧补充(预防侧 = 规则 1-4,诊断侧 = 5 类 pattern)
 
 > **禁止**：直接全文读 `lessons.md` 或 `task-log.md`。违反分层加载会挤占 AI 上下文，把热知识（L1）、温知识（L2）、冷知识（L3）变成一锅粥。见 `docs/decisions/0001-layered-memory-loading.md`。
 >
@@ -376,7 +377,7 @@
 
 > **⚠️ 实施期双守卫提醒(必读，AI 自我提醒，不停下等用户)**:
 > - **API/CLI flag 幻觉守卫**:本阶段写代码若引用框架/库具体 API、CLI flag、配置项,且**计划阶段未跑 `/source-verify`**(快速/轻量通道常跳过),实施期**遇到第一处不确定的 API 调用立即跑 `/source-verify`**——AI 凭记忆写 API 是 1 类常见幻觉源。教训:lessons.md "CLI flag 假设在 plan 阶段必须 source-verify"
-> - **Context 预算守卫**:本阶段工具调用爆发(grep / Read / Bash)易爆 context。**单次输出 > 2k tokens 必须先 pipe**(`| head -N` / `| grep PATTERN` / `| jq '.关键字段'`),搜索/统计/过滤类任务先写脚本只返回结果(Think in Code)。详见 `.claude/rules/context-budget.md`
+> - **Context 预算守卫**:本阶段工具调用爆发(grep / Read / Bash)易爆 context。**单次输出 > 2k tokens 必须先 pipe**(`| head -N` / `| grep PATTERN` / `| jq '.关键字段'`),搜索/统计/过滤类任务先写脚本只返回结果(Think in Code)。**优化目标是 tokens-per-task,不是 tokens-per-request**——压缩 / 缩减 reference 时先想"删了会不会引发 re-explore",会的话不要删。详见 `.claude/rules/context-budget.md`
 
 对计划中的每一步：
 
