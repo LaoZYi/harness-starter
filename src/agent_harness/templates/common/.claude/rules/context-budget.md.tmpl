@@ -26,6 +26,28 @@ Claude Code 内部有 **5 级渐进式压缩流水线**（源自 [how-claude-cod
 
 ## 规则 1：Think in Code — 搜索/统计/过滤用脚本，不拉原始数据
 
+### Tool Decision Matrix（数据类型 → 处理方式分类学）
+
+> 来源：mksglu/context-mode BENCHMARK.md（21 真实场景验证 96% 上下文节省）。原话：「`'5 code blocks, 3 sections about cleanup'` → useless for coding；返回完整 `useEffect(() => {...}, [deps])` block → actually useful」——汇总和精确召回各有不可替代场景，错配比不处理更糟。
+
+按数据类型选处理方式，**不要全部一刀切「写脚本汇总」**：
+
+| 数据类型 | 处理方式 | 工具示例 | 为什么 |
+|---|---|---|---|
+| 文档 / API refs / 大型规则文件 | **精确召回**（返回完整片段） | `grep -A 20 "## 章节" rules.md` / `memory search "<关键词>"` BM25 | 需要完整代码块 / API 签名，汇总成 "5 sections about X" 对编码没用 |
+| 工具签名 / 函数定义 | **精确召回** | `grep -A 5 "^def funcname" src/` | 需要精确参数、返回类型 |
+| Skills / lessons / references 内容 | **精确召回** | `/recall <关键词>` 或 `memory search` | 完整教训内容，不是「这个 lesson 大概讲什么」 |
+| 日志 / 测试输出 / 编译错误 | **脚本汇总** | `grep ERROR \| awk '{print $3}' \| sort \| uniq -c \| head` | 需要聚合统计，不是逐行原文 |
+| CSV / 分析数据 | **脚本汇总** | `awk -F, '{sum+=$3} END{print sum}'` | 需要计算后的指标 |
+| 构建输出 | **脚本汇总** | `grep -c "error\|warning" build.log` | 需要错误数量，不是完整输出 |
+| Browser snapshot / DOM tree | **脚本汇总** | 写脚本提取关键结构 | 需要页面结构摘要 |
+
+**分类口诀**：
+- 「需要原文 / 完整代码 / 精确签名」 → 精确召回
+- 「需要计数 / 统计 / 聚合」 → 脚本汇总
+
+### 反模式速查表
+
 以下场景**禁止**把原始数据读进上下文窗口，必须先写脚本，只返回处理后的结果：
 
 | 场景 | ❌ 反模式 | ✅ 正确做法 |
@@ -35,6 +57,7 @@ Claude Code 内部有 **5 级渐进式压缩流水线**（源自 [how-claude-cod
 | 过滤大 JSON 取字段 | 读完整 JSON 再人工筛 | `jq '.items[] \| select(.status=="done") \| .id'` |
 | 对比两版文件差异 | 读两个文件全文再对比 | `diff -u a.md b.md \| head -50` |
 | 统计某函数被调用次数 | 读调用方源码人工数 | `grep -rn "foo(" src/ \| wc -l` |
+| 找文档里某 API 用法 | 让脚本汇总「有 N 个示例」 | **精确召回**：`grep -A 20 "useEffect" docs.md` 拿完整代码块 |
 
 判断口诀：**如果结果能在 1 行 shell 管道或 5 行 Python 脚本内得出，就一定不要读全量数据进上下文**。
 
@@ -44,12 +67,59 @@ Claude Code 内部有 **5 级渐进式压缩流水线**（源自 [how-claude-cod
 
 | 工具 | 预算超阈值时的处理 |
 |---|---|
-| `Bash`（`cat`、`curl`、`docker logs` 等） | 改成 `\| head -N`、`\| grep PATTERN`、`\| jq '.关键字段'`、`\| tail -N`，按需截取 |
+| `Bash`（`cat`、`curl`、`docker logs` 等） | 改成 `\| head -N`、`\| grep PATTERN`、`\| jq '.关键字段'`、`\| tail -N`，按需截取。**长错误日志 / 测试输出 / 编译错误**用 Smart Truncation 头尾保留（见下文） |
 | `Read`（大文件） | 传 `offset` + `limit` 参数只读目标行段，不默认全文 |
 | `Grep` | 用 `head_limit` 参数 + `output_mode=count` 或 `files_with_matches` 而非 `content` |
 | 自己写脚本 | 脚本末尾 `print()` 只输出汇总结论，不输出明细 |
 
 **例外**：结果本身就 < 2k tokens（如 `git log --oneline -10`）不受此限。
+
+### Smart Truncation：头尾保留（防丢尾部错误信息）
+
+> 来源：mksglu/context-mode BENCHMARK.md Part 3。原话：「Blindly keeps first N bytes / Error messages at end: **LOST**」 vs 「Keeps head + tail / Error messages: **PRESERVED**」。
+
+长错误日志 / 编译报错 / 测试输出的**关键信息几乎都在尾部**（`FATAL` / `exit 1` / `Stack trace`）。**单方向截断（仅 `| head`）等于扔掉诊断**——AI 看到的是「初始化正常」假象，无法定位真实错误。
+
+**反模式**：
+
+```bash
+make test 2>&1 | head -30      # ❌ 尾部 FAILED 行被丢，AI 以为通过
+docker logs <id> | head -50    # ❌ 尾部崩溃 stack trace 丢失
+```
+
+**正确做法**——用 shell 一行同时保留首尾：
+
+```bash
+# 长输出截断模板（单文件）
+{ head -30 big_output.log; echo "... [truncated middle] ..."; tail -30 big_output.log; }
+
+# 管道场景（用 awk 或临时文件）
+make test 2>&1 | tee /tmp/out.log
+{ head -30 /tmp/out.log; echo "... [truncated] ..."; tail -30 /tmp/out.log; }
+
+# 或纯管道（仅 GNU sed/awk 兼容时）
+make test 2>&1 | awk 'NR<=30 {print} NR==31 {print "... [truncated middle] ..."} END {}'
+```
+
+**典型场景**：
+
+```
+line 0-11: 初始化 / config 加载
+... [truncated middle] ...
+line 92: connection timeout
+line 95: Stack trace: Error at connect()
+line 96: exit code: 1
+```
+
+LLM 同时看到**初始上下文**和**真实错误**，不会被「初始化正常」误导。
+
+**判定**：
+
+| 输出类型 | 截断策略 |
+|---|---|
+| 错误日志 / 测试输出 / 编译报错 / docker logs | **必须**头尾保留（关键信息在尾部） |
+| 文档 / 长文本 / 配置文件 | 用 `Read offset+limit` 只读目标行段，不需要头尾保留 |
+| 列表型输出（`ls -la` / `git log --oneline`） | `head -N` 即可（首尾顺序无差） |
 
 ## 规则 3：会话连续性靠 memory-index + BM25 兜底，不靠回灌
 
