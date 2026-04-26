@@ -23,11 +23,11 @@
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
-- 2026-04-25 T3 merge:4 条 SSOT/grep 同主题 lesson 合并为带 when: 四分支单条
-- 2026-04-25 T6 晋升:硬编码白名单反模式从 lesson 升格为正式 Rule
-- 2026-04-25 /lint-lessons 体检三项无风险修复
-- 2026-04-25 stop hook 状态识别从 5 字面白名单放宽为通用字段标记
-- 2026-04-23 stop hook 认 5 个「等用户」同义字面
+- 2026-04-26 补吸 Karpathy Think Before Coding 缺口(Issue #53)
+- 2026-04-26 吸收 forrestchang/andrej-karpathy-skills(Issue #51)
+- 2026-04-26 吸收 muratcankoylan/Agent-Skills-for-Context-Engineering(Issue #50)
+- 2026-04-26 关闭 Issue #49(事实已完成)
+- 2026-04-26 关闭 Issue #48(事实已完成)
 
 ## 参考资料（.agent-harness/references/）
 
@@ -36,9 +36,11 @@
 - `ABSTRACT.md` — ABSTRACT
 - `OVERVIEW.md` — References 导航
 - `accessibility-checklist.md` — 无障碍检查清单（Accessibility）
+- `context-degradation-patterns.md` — Context Degradation 5 类诊断模式
 - `performance-checklist.md` — 性能检查清单（Performance）
 - `requirement-mapping-checklist.md` — 需求 ↔ 测试 ↔ Plan Step 三元映射检查清单
 - `security-checklist.md` — 安全检查清单
+- `squad-channel.md` — squad-channel
 - `testing-patterns.md` — 测试模式参考（Testing Patterns）
 
 ## 主题索引（可选，按关键词定位历史）

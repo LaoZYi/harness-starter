@@ -1917,3 +1917,29 @@
   - ✅ R-007 lfg audit 14.85/15 维持(Dim 12 仍 0.85,759 行良好)
 - 沉淀:无新 lesson(T5 模式)。"吸收外部学术化方法论时优先做成 L2 reference / 抽象化命名"已在前两次 evolution 实践 + lessons.md 2026-04-23 条目覆盖,本次第 3 次实践不立新条
 - 推迟项:无
+
+
+## 2026-04-26 补吸 Karpathy Think Before Coding 缺口(Issue #53)
+
+- 需求:吸收 forrestchang/andrej-karpathy-skills 原则 1 的 3 条缺口(多解读呈现 / Push back / Name what's confusing),补 #51 漏吸的部分。是 #51 的 12 天 evolution-update 增量
+- 做了什么:
+  - `task-lifecycle.md.tmpl` 第 1 步加多解读列表(仅模糊需求触发,锚定 5 类触发 + 3 类不触发)
+  - `task-lifecycle.md.tmpl` 第 2 步加 Name what's confusing(显式说明哪里不清楚)+ 主动提出更简单方案
+  - `anti-laziness.md.tmpl` 门禁 5 内嵌 Push Back 子节(主体后/信心指数前,因三者同源——AI 主动 surface 判断而非隐藏)
+  - Push Back 边界三维表(What/How/When)防反噬;明示「不推翻用户指令优先级」与 CLAUDE.md 兼容
+  - 反合理化新增 4 条:用户既然这么要求 / Push back 显得不配合 / 这次范围小 / 反复 push back 显得抬杠
+  - dogfood 同步 .claude/rules/ 2 文件
+- 关键决策:
+  - **push back 现场演示**——阶段 0.3 我对 Issue body 推荐的「选项 B 新建 150 行 references/simplicity-examples.md」push back,理由:违反 simplicity 准则 2 Surgical Changes(不是用户主动要求的扩展)。用户授权按推荐方案做,任务范围从「2 rule + 1 reference」缩到「2 rule」。这是新规则的第一个 dogfood
+  - **门禁 5 内嵌位置**——Push Back 子节插入门禁 5 主体后、信心指数前。理由:三者同源,都是「AI 应主动 surface 判断而非隐藏让用户被动接受」
+  - **不开独立 SubAgent 评审**——纯 Markdown 文档变更 + 已通过完整 ci,按 anti-laziness 门禁 2 例外条款主会话 2 角色评审,收益高于成本
+- 改了:5 文件 +188/-7 行(2 .tmpl 源 + 2 .claude/rules/ 渲染产物 + current-task.md)
+- 完成标准:
+  - ✅ R-001 多解读×3, 触发条件×3
+  - ✅ R-002 哪里不清楚/Name what×2, 更简单/simpler×2
+  - ✅ R-003 Push back×7, 边界×2, 反合理化新借口×2
+  - ✅ R-004 dogfood 同步 2 文件
+  - ✅ R-005 make ci 全绿(658 tests OK + mypy 49 files clean + ruff 0 issue)
+  - ⊘ R-006 EXAMPLES.md 选项 B(out-of-scope,push back 后用户授权缩范围)
+- 沉淀:无新 lesson(T5 模式)。本次任务的元洞察「push back 在 evolution-update 任务中可缩窄范围」已固化为 anti-laziness 门禁 5 + task-lifecycle 第 2 步规则本身,不在 lessons 重复立条。push back / Name confusing / 多解读呈现这 3 条 Karpathy 原则 1 缺口本身就是来自上游可吸收的 lesson 沉淀
+- 推迟项:Issue #53 新特性 2 EXAMPLES.md 选项 B 150 行 reference(out-of-scope,如未来 /multi-review 反复抓"过度膨胀"找不到具体案例,再独立提 issue 做)
