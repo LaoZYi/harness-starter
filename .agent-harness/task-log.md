@@ -2005,3 +2005,37 @@
   - ✅ 用户验证通过
 - 沉淀:lessons.md 新增 1 条元教训「用内容形式识别捕获语义信号是元反模式 → 行为信号是唯一根治」;反模式 1 升级 5 案例 → 6 案例 + 增设「元反模式」节;前 5 次失败的根因从"白名单不够大"修正为"范式选错了"——任何"内容形式识别"都不能可靠捕获"语义信号"
 - 推迟项:无
+
+## 2026-04-27 通用文档场景脚手架（D 方案：先抄 + 留 B 位置）
+
+- **需求**：把"上面那层 skill 框架"从只服务"写代码"扩展到能服务"任意场景"，标书是首个验证场景但本期只搭通用文档骨架不写业务内容
+- **做了什么**：
+  1. **5 个新 skill 模板**（`templates/superpowers/.claude/commands/`）：`/lfg-doc`（精简 ~250 行不复制 lfg.md.tmpl 758 行）+ `/outline-doc` + `/draft-doc` + `/review-doc`（4 人格）+ `/finalize-doc`（8 项必检不调 git）
+  2. **lfg-profiles 骨架**（`templates/common/.agent-harness/lfg-profiles/`）：`code.yaml.tmpl` + `doc.yaml.tmpl` + `README.md.tmpl`（描述用，本期不被运行时读取，给将来 B 阶段 AI 推断匹配档案留位置）
+  3. **document 项目类型**：`presets/document.json` + `templates/document/.claude/rules/document-conventions.md.tmpl`；`discovery.py` + `init_flow.py` 项目类型白名单加 `document`（10 类）
+  4. **registry 更新**：5 新 skill 注册（37 → 42 总计），全部 `expected_in_lfg=false`（走 `/lfg-doc` 不走 `/lfg`）+ `exclusion_reason` 解释
+  5. **14 条契约测试**（`tests/test_doc_scenario_scaffold.py`）：覆盖 18 R-ID（全 satisfied 无 out-of-scope），含 `test_lfg_skill_calls_unchanged`（A.1 baseline 守卫 R5 行为零退化）+ `_invoked_skills` invocation pattern 识别
+  6. **docs 同步**：8 处文件（product / architecture / runbook / usage-manual / release / README / CHANGELOG / project.json），计数同步 33→38、680→694；`test_skills_registry` 基线 37→42
+- **关键决策**：
+  - **D 方案 vs B 方案**：用户选 D（先抄 + 留位置）。理由——只有 1 个非代码场景在手时直接做 B 抽象容易设计错；D 方案下次做 B 时有现成档案数据
+  - **/lfg-doc 写精简版（~250 行）而非全盘复制 /lfg（758 行）**：lfg.md.tmpl 70% 是代码场景特化（Issue 解析 / squad 通道 / GitLab CI），下层规则由 `.claude/rules/` 自动加载不需内联；精简版易让 `/lfg` 与 `/lfg-doc` 并行演化不分裂
+  - **不调 git-commit / finish-branch**：用户原话"写文档的人用不上 git"；本 skill 完成 = "文档定稿"，git 是另一回事由用户决定
+  - **测试 yaml 用 grep 断言不引 PyYAML**：保持零依赖；schema 演化走 schema_version 升级
+  - **R5 放宽**：「行为零退化」(skill 调用集合不变) 而非「字节级零退化」，允许 lfg.md.tmpl 加非语义注释指向 lfg-profiles
+- **改了**：
+  - **新文件**：`tests/test_doc_scenario_scaffold.py` / `templates/superpowers/.claude/commands/{lfg-doc,outline-doc,draft-doc,review-doc,finalize-doc}.md.tmpl` / `templates/common/.agent-harness/lfg-profiles/{code.yaml,doc.yaml,README.md}.tmpl` / `templates/document/.claude/rules/document-conventions.md.tmpl` / `presets/document.json` / `docs/superpowers/specs/2026-04-27-doc-scenario-skeleton-{spec,plan}.md` + 5 dogfood 渲染产物
+  - **改文件**：`templates/superpowers/skills-registry.json`（+5 skill）/ `templates/superpowers/.claude/commands/evolve.md.tmpl` + `templates/superpowers/.claude/rules/superpowers-workflow.md.tmpl`（5 skill 提及）/ `discovery.py` + `init_flow.py`（白名单加 document）/ `tests/test_skills_registry.py`（基线 37→42）/ `docs/{product,architecture,runbook,usage-manual,release}.md` + `README.md` + `CHANGELOG.md` + `.agent-harness/project.json`
+- **完成标准**（全部 ✅）：
+  - [x] 18 R-ID 全部 satisfied（A.1 baseline + B.0-B.5 + C.1-C.3 + D.1-D.3 + E.1-E.6 + G.1-G.3 验证通过）
+  - [x] 现有 680 测试不退化（实测 694/694 含 14 新增）
+  - [x] `make ci` 全绿
+  - [x] `harness lfg audit ≥ 7.0`（实测 14.85/15）
+  - [x] docs 三件套（product/architecture/runbook）+ 5 处计数同步
+  - [x] `harness init --project-type document /tmp/...` 端到端产物正确（5 skill + 3 profile + lfg.md 仍渲染）
+  - [x] `/lfg.md.tmpl` 26 个 baseline skill 调用集合零退化
+- **量化指标**：
+  - rework_count: 0（plan-check 后无 P0 修订）
+  - dialog_rounds: ~30（含规格 + 计划 + 校验 + 执行 + 验证全流程）
+  - docs_produced: 2（spec + plan，未触发文档爆炸门禁 10 阈值）
+  - review_p0_count: 0（本任务未走 /multi-review，user 直接验收）
+- **沉淀**：lessons +2（架构设计 D 方案 / 测试 invocation pattern）

@@ -5,7 +5,7 @@
 本项目的核心论点与 [holaboss-ai/holaOS](https://github.com/holaboss-ai/holaOS) 的 "Environment Engineering" 同源：**与其优化 prompt，不如优化 Agent 运行的环境**（文件系统、工具集、记忆机制、规则约束）。
 
 具体而言：
-- **33 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
+- **38 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
 - **10 层通用规则**（safety / testing / autonomy / context-budget / task-lifecycle / agent-design / documentation-sync / error-attribution / api / database）= Agent 的行为约束，其中 api / database 仅对 backend-service / library 等相关类型生成
 - **三层记忆**（memory-index L1 / lessons+references L2 / task-log L3）= Agent 的持久化状态
 - **hooks**（session-start / stop / pre-compact / context-monitor）= Agent 的生命周期感知
@@ -55,8 +55,8 @@
 - `src/agent_harness/squad/`：多 agent 常驻协作（阶段 1 MVP + 阶段 2 Issue #19a 依赖触发 + Issue #21 mailbox/watch + Issue #22 watchdog + Issue #30 orchestrator 角色）— `spec.py`（YAML 解析/循环检测，allowed capabilities 含 orchestrator/scout/builder/reviewer 四种）、`capability.py`（orchestrator/scout/builder/reviewer 权限渲染；Issue #30 新增 orchestrator 为"战略协调"角色，deny 所有写工具 Edit/Write/MultiEdit/NotebookEdit + 危险 Bash，只允许 Read/Grep/Glob/Task/TodoWrite 派工，对齐 Danau5tin/multi-agent-coding-system 的严格角色分权哲学）、`tmux.py`（tmux 命令构造 + 可用性检查 + `list_windows` + `session_exists`）、`mailbox.py`（SQLite WAL 模式事件存储：`append_event / read_events / done_workers / pending_worker_info / dump_to_jsonl`；索引 event_type 和 worker；KNOWN_TYPES 含 `session_lost` / `worker_crashed`；Issue #21 引入，替代 JSONL）、`state.py`（manifest 持久化 + 旧 `append_status / done_workers / pending_worker_info` 签名兼容层，内部走 mailbox）、`worker_files.py`（worktree provision + settings/prompt 渲染 + 通用 run_check）、`watchdog.py`（Tier 0 watchdog：`detect_failures / run_watchdog_tick / watch_tick_with_report` 纯函数 + 依赖注入；事件去重从 mailbox 反查实现幂等，**但 watch 退出判定独立于事件去重**——直接探测 `session_exists`，避免 session_lost 幂等记录让重启 watch 死循环；`watch_tick_with_report` 整体 try/except 兜底——watchdog 是辅助监控，内部异常（SQLite/tmux）不传播到 cmd_watch 主调度；可通过 `.agent-harness/.watchdog-skip` sentinel 关闭（仅静默失联上报，watch 主循环不受影响），沿用 context-monitor 模式；Issue #22 + 评审两次修复）、`coordinator.py`（依赖推进：`find_squad / cmd_advance / cmd_done / derive_worker_state`；`cmd_watch` 常驻进程轮询 mailbox 自动 advance + done 检查优先于 watchdog 退出 + 每 tick 末尾跑 watchdog + session 失联立即退出 + SIGTERM 优雅退出；`cmd_dump` 导出 JSONL 调试）、`cli.py`（`harness squad create|status|attach|stop|advance|done|watch|dump` 子命令，只做 CLI 调度）。`cmd_create` 按拓扑序启动 wave 0，有 `depends_on` 的 worker 写 `pending` 事件由 `advance` 或 `watch` 触发。运行时状态写目标项目的 `.agent-harness/squad/<task_id>/mailbox.db`（WAL 副文件 `.db-wal` / `.db-shm` 由模板 `.gitignore` 排除）。
 
 ### 资源层
-- `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、4 个 common 命令（`/process-notes`、`/digest-meeting`、`/recall`、`/source-verify`）、文档、任务追踪、L2 参考清单目录（`.agent-harness/references/`）等。
-- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（32 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）和 3 个本地原创技能（lint-lessons、evolve、squad）。
+- `src/agent_harness/templates/common/`：生成到目标项目的通用模板。含规则、4 个 common 命令（`/process-notes`、`/digest-meeting`、`/recall`、`/source-verify`）、文档、任务追踪、L2 参考清单目录（`.agent-harness/references/`）、场景档案骨架目录（`.agent-harness/lfg-profiles/`，含 code.yaml / doc.yaml / README.md，描述各流水线 stage→skill 映射；本期不被运行时读取，给将来 B 阶段 AI 推断匹配档案留位置）等。
+- `src/agent_harness/templates/superpowers/`：结构化工作流技能模板（38 个命令 + 1 个规则），默认启用，可通过 `--no-superpowers` 关闭。融合了 obra/superpowers（14 个基础技能）、EveryInc/compound-engineering-plugin（6 个增强技能）、garrytan/gstack（5 个运维技能）、addyosmani/agent-skills（1 个吸收技能 + 反合理化增强）、joelparkerhenderson/architecture-decision-record（1 个吸收技能）、spencermarx/open-code-review（评审辩论方法论增强）、3 个本地原创技能（lint-lessons、evolve、squad）和 5 个文档场景技能（lfg-doc、outline-doc、draft-doc、review-doc、finalize-doc，2026-04-27 D 方案）。
 - `src/agent_harness/templates/meta/`：meta 项目类型专属模板（services/registry、dependency-graph、conventions、shared-plugins、business 领域知识骨架、BEST-PRACTICES 指南、/sync-meta 和 /populate-meta 命令）。
 - `src/agent_harness/templates/<type>/`：各项目类型的专属规则模板（backend-service、web-app、cli-tool、worker、mobile-app、monorepo、data-pipeline、library 各有 1 个专属规则文件）。
 - `src/agent_harness/presets/`：9 种项目类型的 JSON 预设，含 `workflow_skills_summary` 指定项目类型重点技能。
@@ -65,7 +65,7 @@
 - `scripts/dogfood.py`：框架自身生成产物同步工具。
 
 ### 测试层
-- `tests/`：680 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（82 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归 + 17 个 Issue #19a 依赖触发契约 + 18 个 Issue #21 mailbox/watch 契约：WAL 模式验证、事件读写 + 过滤、state.py 签名兼容、cmd_watch 全 done 自动退出 + max_iterations 控制 + 自动 advance、cmd_dump JSONL 导出、gitignore 模板规则 + 19 个 Issue #22 watchdog 契约：sentinel skip、session_lost 一次性、worker_crashed 幂等、done/未 spawned 不误报、多 worker 同 tick crash、KNOWN_TYPES 注册 + 评审 5 条回归保护：重启场景退出独立于事件去重、sentinel 不强制退出 watch、session probe / list_windows 异常隔离）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）、security 输入校验（25 条：sanitize_name/path/content 覆盖正常、边界、路径遍历、符号链接逃逸、null 字节、控制字符、oversize）、GSD 吸收契约（18 条：StuckDetector 规则存在、/lint-lessons 矛盾检测、需求矩阵三元映射、/plan-check 8 维度 + 3 轮修订、context-monitor hook 端到端 + skip 开关、workflow 规则 + /lfg 整合）、目录导航层（14 条：documentation-sync.md 目录导航层章节、tmpl/dogfood 一致性、`/recall --map` 参数、2 个示范目录 ABSTRACT/OVERVIEW 存在性 + 长度、check_directory_maps 守卫正常/边界/错误路径——吸收自 OpenViking 的 filesystem-as-context）。
+- `tests/`：694 个回归测试，覆盖探测、评估（含类型感知评分）、初始化、升级、CLI 集成、superpowers/compound/gstack 技能、决策树完整性、meta sync（领域分发、相对路径、安全校验、git 仓库验证、大文件跳过）、项目类型规则排除、类型专属规则生成、分层记忆加载（memory.py + /recall + memory-index）、L2 参考清单生成与升级保留（references/）、/source-verify 技能、lessons 分类前缀契约、squad 规格解析 / capability 渲染 / tmux 命令构造（82 个 squad 测试：spec/capability/tmux 单元 + 集成 dry-run 端到端，含 shell 注入防护回归 + 17 个 Issue #19a 依赖触发契约 + 18 个 Issue #21 mailbox/watch 契约：WAL 模式验证、事件读写 + 过滤、state.py 签名兼容、cmd_watch 全 done 自动退出 + max_iterations 控制 + 自动 advance、cmd_dump JSONL 导出、gitignore 模板规则 + 19 个 Issue #22 watchdog 契约：sentinel skip、session_lost 一次性、worker_crashed 幂等、done/未 spawned 不误报、多 worker 同 tick crash、KNOWN_TYPES 注册 + 评审 5 条回归保护：重启场景退出独立于事件去重、sentinel 不强制退出 watch、session probe / list_windows 异常隔离）、check_repo 守卫自动发现契约（4 条，回归保护 280 行硬规则不再依赖白名单）、security 输入校验（25 条：sanitize_name/path/content 覆盖正常、边界、路径遍历、符号链接逃逸、null 字节、控制字符、oversize）、GSD 吸收契约（18 条：StuckDetector 规则存在、/lint-lessons 矛盾检测、需求矩阵三元映射、/plan-check 8 维度 + 3 轮修订、context-monitor hook 端到端 + skip 开关、workflow 规则 + /lfg 整合）、目录导航层（14 条：documentation-sync.md 目录导航层章节、tmpl/dogfood 一致性、`/recall --map` 参数、2 个示范目录 ABSTRACT/OVERVIEW 存在性 + 长度、check_directory_maps 守卫正常/边界/错误路径——吸收自 OpenViking 的 filesystem-as-context）。
 
 ## 约束
 
@@ -117,7 +117,7 @@ Claude Code 支持三种技能形态，本项目使用第一种（Standalone Com
 
 **本项目选择 Standalone Commands 的原因**：
 
-- 33 个工作流技能（`/lfg`、`/tdd`、`/spec` 等）都是**用户主动触发**的——开发者明确知道自己想做什么（"开始全流程"、"测试驱动开发"），不需要模型自行猜测
+- 38 个工作流技能（`/lfg`、`/tdd`、`/spec` 等）都是**用户主动触发**的——开发者明确知道自己想做什么（"开始全流程"、"测试驱动开发"），不需要模型自行猜测
 - 模板渲染时注入项目特定内容（`{{project_name}}`、`{{test_command}}` 等），通过 `harness init` 适配目标项目；这意味着同一技能在不同项目中的渲染结果不同，不适合以固定 plugin 形式跨项目分发
 - Standalone Commands 不需要 namespace 前缀，用户直接 `/lfg` 而非 `/harness:lfg`，更简洁
 

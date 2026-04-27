@@ -76,6 +76,16 @@ harness init ./my-py --scaffold-cmd "poetry new ."
 不传任何 `--scaffold*` flag 时，`harness init <target>` 会弹出 4 选项：
 「否，空项目 / 是，指定本地框架路径 / 是，从远端 git 仓库拉取 / 是，通过脚手架命令创建」
 
+### 文档项目（document 类型）
+
+写文档为主、不含可执行代码的项目（标书 / 规范 / 白皮书 / 报告）走 `document` 类型：
+
+```bash
+harness init ./my-bid --project-type document --non-interactive
+```
+
+会生成 `/lfg-doc` + 4 个文档专用 skill（`/outline-doc` / `/draft-doc` / `/review-doc` / `/finalize-doc`）+ `lfg-profiles/{code,doc}.yaml` 骨架。**不**生成 git 相关流水线（写文档场景默认不调 `/git-commit` / `/finish-branch`）。
+
 ## 本地 git 全局配置与测试
 
 `make test` 里大量用例会在临时目录里 `git init` + 空 commit。如果开发者本机的

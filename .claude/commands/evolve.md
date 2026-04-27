@@ -204,6 +204,11 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/which-skill` — 技能选择引导 | ? |
 | `/evolve` — 自我进化 | ? |
 | `/squad` — 多 agent 常驻协作（tmux + worktree + capability 分权） | ? |
+| `/lfg-doc` — 写文档场景的端到端流水线 | ? |
+| `/outline-doc` — 拟文档大纲 | ? |
+| `/draft-doc` — 写文档草稿（两段法） | ? |
+| `/review-doc` — 文档评审（4 人格） | ? |
+| `/finalize-doc` — 文档定稿（8 项必检） | ? |
 
 **关键问题**：这个项目提供了什么我们**没有**的独特能力？
 

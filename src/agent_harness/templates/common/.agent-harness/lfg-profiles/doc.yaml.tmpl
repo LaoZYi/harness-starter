@@ -1,0 +1,43 @@
+# lfg-profiles/doc.yaml — 写文档场景的 /lfg-doc 流水线骨架描述
+#
+# 用途：本期仅作描述，不被任何命令运行时读取。
+# 未来：B 阶段会让 /lfg 在阶段 0 读取本文件，AI 推断匹配场景档案后用户确认。
+# 不要：手工编辑此文件来"配置 /lfg-doc"——本期 /lfg-doc 行为完全由 lfg-doc.md.tmpl 决定。
+
+schema_version: 1
+name: doc
+description: 写文档场景的流水线骨架（与 /lfg-doc 阶段对齐；适用标书/规范/白皮书/报告）
+
+stages:
+  - id: ideate
+    skill: ideate
+    description: 大类文档（白皮书等）才触发，标书/规范可跳过
+    optional: true
+
+  - id: spec
+    skill: spec
+    description: 文档验收标准 = R-ID 章节映射 + 完成度断言
+
+  - id: outline
+    skill: outline-doc
+    description: 拟章节大纲、字数估算、引用占位
+
+  - id: plan
+    skill: write-plan
+    description: 把章节拆成可执行写作步骤
+
+  - id: draft
+    skill: draft-doc
+    description: 两段法 outline-pass + draft-pass
+
+  - id: review
+    skill: review-doc
+    description: 4 人格并行评审（准确性 / 可读性 / 术语统一 / 完整性）
+
+  - id: finalize
+    skill: finalize-doc
+    description: 8 项必检定稿；不调 git-commit / finish-branch
+
+  - id: compound
+    skill: compound
+    description: 沉淀写作教训到 lessons.md

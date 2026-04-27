@@ -78,6 +78,11 @@ CLI 工具重点技能：`/tdd`（命令行为与退出码契约测试）、`/wr
 | `/recall` | 按需检索 lessons / task-log / references/ 历史（含 BM25 兜底） |
 | `/source-verify` | 从官方文档验证框架 API，防止凭记忆编 |
 | `/digest-meeting` | 把多人讨论的原始语音转文字记录转为结构化产物（`/lfg` 前置源头） |
+| `/lfg-doc` | 写文档场景的端到端流水线（标书 / 规范 / 白皮书 / 报告，与 `/lfg` 同源不同流水线） |
+| `/outline-doc` | 拟文档大纲（章节树 + 字数估算 + R-ID 覆盖 + 引用占位） |
+| `/draft-doc` | 写文档草稿（两段法：outline-pass + draft-pass） |
+| `/review-doc` | 文档评审（4 人格并行：准确性 / 可读性 / 术语统一 / 完整性） |
+| `/finalize-doc` | 文档定稿（8 项必检；不调 git-commit / finish-branch） |
 
 ## 何时使用哪个技能
 
@@ -105,6 +110,7 @@ CLI 工具重点技能：`/tdd`（命令行为与退出码契约测试）、`/wr
 - 需要检索历史教训 / 任务记录 / 参考清单 → `/recall`
 - 写框架/库特定代码前想防止 API 幻觉 → `/source-verify`
 - 收到多人讨论的原始语音转文字记录（idea 讨论 / 需求评审）→ `/digest-meeting`
+- 写文档场景（标书 / 规范 / 白皮书 / 报告）→ `/lfg-doc`（替代 `/lfg`）；阶段细分：拟提纲 `/outline-doc` → 写草稿 `/draft-doc` → 评审 `/review-doc` → 定稿 `/finalize-doc`
 
 ## 核心原则
 
