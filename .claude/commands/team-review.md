@@ -1,0 +1,184 @@
+# Team-Review — 评审编队
+
+铁律：**评审在独立上下文中进行，不被实施过程的判断锚定。安全发现优先级永远高于功能。**
+
+> **场景化预制流水线（吸收自 [Donchitos/Claude-Code-Game-Studios](https://github.com/Donchitos/Claude-Code-Game-Studios) `/team-*` 模式，Issue #55）**：
+>
+> 当任务进入「合并前评审」阶段时，按本流水线串联 `/multi-review` → `/cso` → `/receive-review`，避免 orchestrator 临时编排导致评审强度漂移。
+> 跟 `/lfg` 的关系：`/lfg` 是「需求 → 交付」全流程；`/team-review` 是只覆盖**评审那一段**的局部编队，可独立调用，也可被 `/lfg` 阶段 5-6 引用。
+> 走 D 方案：4 个 team-* skill 各自独立完整写一遍流水线，不抽共享 base（教训来自 lessons.md 2026-04-27）。
+
+当前项目：`Agent Harness Framework`（cli-tool / python）
+测试命令：`make test`
+检查命令：`make check`
+
+---
+
+## 参数检查
+
+如果 `$ARGUMENTS` 为空，输出：
+
+> 用法：`/team-review [可选：评审范围说明]` — 多视角评审 + 安全审计 + 结构化消化反馈。
+
+> 示例：`/team-review`（默认评审当前分支变更）、`/team-review HEAD~5..HEAD`（评审最近 5 个 commit）
+
+然后**立即停止**，不进入流水线。
+
+`$ARGUMENTS` 可空——空时默认评审当前分支自基分支以来的所有变更（`git diff <base>..HEAD`）。
+
+---
+
+## 适用场景
+
+- 实施完成准备合并前
+- 完整通道 / 标准通道走完阶段 4 实施
+- 代码改动涉及生产路径 / 安全敏感 / 架构决策
+- 用户显式请求"完整评审一遍"
+
+**不适用**：
+- 单行修复 / typo 改动 → 跳过编队，直接 `/git-commit`
+- 实施未完成 → 先 `/team-implement`
+- 紧急 hotfix（用户显式授权跳过评审）→ 直接 `/git-commit`，但 audit 必须记录
+
+---
+
+## 编队组成
+
+| 阶段 | 调用 skill | 产出 |
+|---|---|---|
+| 多视角评审 | `/multi-review` | 6 角色并行评审报告（正确性 / 测试 / 安全 / 性能 / 可维护 / 文档） |
+| 安全审计 | `/cso` | OWASP + STRIDE + 供应链审计报告（仅生产项目 / 安全敏感改动） |
+| 反馈消化 | `/receive-review` | 结构化分类（接受 / 质疑 / 推迟）+ 修复任务清单 |
+
+**注意**：`/cso` 是**条件触发**——读 `.agent-harness/project.json` 的 `has_production` / `sensitivity` 字段，或评审改动涉及认证 / 授权 / 加密 / 外部 API 时调用；纯文档 / 配置改动跳过。
+
+---
+
+## 流水线
+
+### 阶段 1：多视角评审
+
+调用 `/multi-review`，默认 `--mode review`（每个审查员独立上下文，防锚定）。
+
+模式选择：
+- **review**（默认）：每个审查员独立 SubAgent，互不可见
+- **challenge**：额外 spawn 挑战者尝试推翻所有 P0/P1 结论 — 用于安全 / 架构敏感
+- **consult**：共享上下文综合判断 — 用于复杂权衡
+- **cross-model**：跨模型并行（Claude + Codex + Gemini）— 用于生产关键路径
+
+`/multi-review` 产出：
+- 每个审查员的发现清单（带 P0/P1/P2 优先级）
+- 审查员之间的共识与分歧
+- verdict：PASS / PASS WITH CONDITIONS / FAIL
+
+**反偷懒门禁 #2（上下文隔离）**：每个审查员**必须**是独立 SubAgent，不能在主会话串行评审。本编队默认强制开启。
+
+### 阶段 2：安全审计（条件触发）
+
+读项目元信息：
+```bash
+cat .agent-harness/project.json 2>/dev/null | jq -r '.has_production, .sensitivity'
+```
+
+`has_production=true` 或 `sensitivity=high` 或评审改动涉及以下任一关键词 → 调用 `/cso`：
+- 认证 / authentication / login / token
+- 授权 / authorization / permission / role
+- 加密 / encrypt / crypto / hash
+- SQL / database / query
+- 文件读写 / file / upload / download
+- 外部 API / http / webhook
+- 反序列化 / deserialize / pickle / yaml.load
+
+不命中 → 跳过本阶段，输出说明「本次改动无安全敏感面，跳过 /cso」。
+
+`/cso` 产出：
+- OWASP Top 10 对照
+- STRIDE 威胁建模
+- 供应链审计（依赖更新 / 新增包审查）
+- Critical / High / Medium / Low 分级
+
+**🔴 Critical / High 发现 → 立刻停下告诉用户**，不进阶段 3 直接回阶段 1 修复（写入 `/team-implement` 的回退路径）。
+
+### 阶段 3：反馈消化
+
+调用 `/receive-review`，输入是阶段 1 + 阶段 2 的全部发现。
+
+`/receive-review` 产出：
+- 分类（接受 / 质疑 / 推迟），每条都必须明示状态（反偷懒门禁 #1 数量门禁）
+- 按 P0 → P1 → P2 排序
+- 有争议项标记 + 待用户裁决说明
+- 修复任务清单（带文件路径 + 预计工作量）
+
+**反偷懒门禁 #1（数量门禁）**：每条评审意见必须有「接受 / 质疑 / 推迟」三态之一，禁止批量 dismiss。
+
+### 阶段 4：签收
+
+收集三阶段产物，输出 verdict：
+
+```
+## Team-Review 编队报告
+
+评审范围：<$ARGUMENTS 或 git diff <base>..HEAD>
+模式：review / challenge / consult / cross-model
+
+### 阶段产出
+- /multi-review verdict：PASS / PASS WITH CONDITIONS / FAIL
+- /cso 状态：执行（发现 P0/P1/P2 各 N 条）/ 跳过（理由）
+- /receive-review 分类：接受 N 条 / 质疑 M 条 / 推迟 K 条
+
+### 关键发现（P0/P1）
+- [P0] file.py:42 — <描述> — <处理决策>
+- [P1] api.py:88 — <描述> — <处理决策>
+
+### 后续动作建议
+- PASS → `/git-commit` + `/finish-branch`
+- PASS WITH CONDITIONS → `/team-implement` 修 P1（不强求 0 P1）
+- FAIL → `/team-implement` 修 P0（必须修完才能合并）
+```
+
+---
+
+## 错误恢复协议
+
+任一阶段返回 BLOCKED / 错误 / 无法完成时：
+
+1. **立即上报**：`[<阶段>]: BLOCKED — <理由>`
+2. **始终产出部分报告**——评审编队尤其要避免「一个审查员失败导致整个评审作废」
+3. **三选一让用户决策**：
+   - **接受部分评审结果**：明示哪些视角缺失，由用户人工补
+   - **重试单个审查员**：缩窄范围 / 换 mode 重跑
+   - **停下解决**：技术性失败（如 sub-agent timeout）先修工具
+
+常见阻塞：
+- 阶段 1：某个审查员超时 / 报错 → 重试该审查员，其他视角已完成的不重跑
+- 阶段 2：`/cso` 报 Critical → **不**进阶段 3，直接回 `/team-implement` 修
+- 阶段 3：评审反馈相互矛盾 → 标 T3/T4 冲突类型（按 knowledge-conflict-resolution.md），等用户裁决
+
+---
+
+## 文件写入约定
+
+- 本编队**不**直接改业务代码——只产出评审报告 / 修复任务清单
+- 写入路径白名单：
+  - `docs/reviews/`（评审报告归档，如适用）
+  - `.agent-harness/current-task.md`（修复任务清单写入「待办」段）
+  - `.agent-harness/audit.jsonl`（评审完成记录）
+- 禁止写入：`src/`、`tests/`、任何业务代码（评审是只读阶段，修改由 `/team-implement` 处理）
+
+---
+
+## 输出
+
+**verdict 三态**：
+- **PASS** — 无 P0，P1 ≤ 3 且都被「接受」
+- **PASS WITH CONDITIONS** — 有 P1 待修但非阻塞合并
+- **FAIL** — 有 P0 必须修复才能合并
+
+---
+
+## 下一步建议
+
+- PASS → `/git-commit` + `/finish-branch`（合并到主分支或建 PR）
+- PASS WITH CONDITIONS → 视情况修 P1，或推迟到下一迭代（推迟必须写入 `lessons.md` 或 issue）
+- FAIL → 回 `/team-implement` 修 P0；P0 反复出现说明计划本身有问题 → 回 `/team-spec` 重审
+- 紧急合并跳过修复 → 必须用户显式授权 + audit 记录 + 后续补 issue 跟进

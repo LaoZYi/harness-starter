@@ -209,6 +209,10 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/draft-doc` — 写文档草稿（两段法） | ? |
 | `/review-doc` — 文档评审（4 人格） | ? |
 | `/finalize-doc` — 文档定稿（8 项必检） | ? |
+| `/team-spec` — 规格制定编队（spec → plan-check → adr） | ? |
+| `/team-implement` — 实施编队（write-plan → execute-plan/tdd → verify） | ? |
+| `/team-review` — 评审编队（multi-review → cso → receive-review） | ? |
+| `/team-doc` — 文档场景编队（outline → draft → review → finalize） | ? |
 
 **关键问题**：这个项目提供了什么我们**没有**的独特能力？
 

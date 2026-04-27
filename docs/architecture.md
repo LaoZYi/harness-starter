@@ -5,7 +5,7 @@
 本项目的核心论点与 [holaboss-ai/holaOS](https://github.com/holaboss-ai/holaOS) 的 "Environment Engineering" 同源：**与其优化 prompt，不如优化 Agent 运行的环境**（文件系统、工具集、记忆机制、规则约束）。
 
 具体而言：
-- **38 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
+- **42 个工作流技能** = Agent 的工具集（覆盖构思→设计→实施→评审→沉淀全生命周期）
 - **10 层通用规则**（safety / testing / autonomy / context-budget / task-lifecycle / agent-design / documentation-sync / error-attribution / api / database）= Agent 的行为约束，其中 api / database 仅对 backend-service / library 等相关类型生成
 - **三层记忆**（memory-index L1 / lessons+references L2 / task-log L3）= Agent 的持久化状态
 - **hooks**（session-start / stop / pre-compact / context-monitor）= Agent 的生命周期感知
@@ -117,7 +117,7 @@ Claude Code 支持三种技能形态，本项目使用第一种（Standalone Com
 
 **本项目选择 Standalone Commands 的原因**：
 
-- 38 个工作流技能（`/lfg`、`/tdd`、`/spec` 等）都是**用户主动触发**的——开发者明确知道自己想做什么（"开始全流程"、"测试驱动开发"），不需要模型自行猜测
+- 42 个工作流技能（`/lfg`、`/tdd`、`/spec` 等）都是**用户主动触发**的——开发者明确知道自己想做什么（"开始全流程"、"测试驱动开发"），不需要模型自行猜测
 - 模板渲染时注入项目特定内容（`{{project_name}}`、`{{test_command}}` 等），通过 `harness init` 适配目标项目；这意味着同一技能在不同项目中的渲染结果不同，不适合以固定 plugin 形式跨项目分发
 - Standalone Commands 不需要 namespace 前缀，用户直接 `/lfg` 而非 `/harness:lfg`，更简洁
 

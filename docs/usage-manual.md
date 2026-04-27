@@ -441,7 +441,7 @@ harness sync --all
 
 **第 4 步：生成文件**
 - 渲染 common 模板（通用文档、规则、hooks）
-- 渲染 superpowers 模板（38 个技能命令）
+- 渲染 superpowers 模板（42 个技能命令）
 - 渲染类型专属模板（如 `backend-service` 的 API/数据库规则）
 - 渲染插件（`.harness-plugins/` 下的自定义内容）
 - 安装项目内嵌运行时（`.agent-harness/bin/`）
@@ -529,7 +529,7 @@ ls .agent-harness/backups/
 
 ### 技能总览
 
-38 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
+42 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
 
 #### 构思与设计阶段
 
@@ -631,6 +631,19 @@ ls .agent-harness/backups/
 | `/draft-doc` | 写文档草稿（两段法：outline-pass + draft-pass） |
 | `/review-doc` | 文档评审（4 人格：准确性 / 可读性 / 术语统一 / 完整性） |
 | `/finalize-doc` | 文档定稿（8 项必检：占位符 / R-ID / 引用 / 术语 / 字数 / 评审 close / 格式 / 元信息）；**不**调 `/git-commit` / `/finish-branch` |
+
+#### 场景化预制流水线（吸收 CCGS team-* 模式，Issue #55）
+
+把多个原子 skill 串成预制流水线，用户显式调用替代 orchestrator 临时编排：
+
+| 命令 | 用途 |
+|------|------|
+| `/team-spec` | 规格制定编队（spec → plan-check → adr 串联） |
+| `/team-implement` | 实施编队（write-plan → execute-plan / tdd → verify 串联） |
+| `/team-review` | 评审编队（multi-review → cso → receive-review 串联） |
+| `/team-doc` | 文档场景编队（outline → draft → review → finalize 串联，跳过 lfg-doc 前置探索） |
+
+`team-*` 是 `/lfg` 部分阶段的独立调用入口，`expected_in_lfg=false`——不进 `/lfg` 单任务流。适合「已知阶段范围、不需跑全流水线」的场景。
 
 ### 推荐工作流
 

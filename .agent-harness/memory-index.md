@@ -9,6 +9,7 @@
 <!-- 由 /compound 技能或 `harness memory rebuild` 维护。-->
 
 - 2026-04-27 [测试] 检查「不调用 X」的契约测试要识别 invocation pattern 而非纯字符串 grep
+- 2026-04-27 [工具脚本] `.claude/rules/` 和 `.claude/commands/` 都是 dogfood 生成产物，源在 `templates/superpowers/`
 - 2026-04-27 [架构设计] 上层 skill 多场景化先走 D 方案（先抄 + 留位置），不要一上来 B 方案抽象
 - 质量快照 — 2026-04-25
 - 质量快照 — 2026-04-23
@@ -17,7 +18,6 @@
 - 2026-04-23 [架构设计] 安全规则要补代码反例免疫，仅文字约束模型容易"知道但做不到"
 - 2026-04-23 [架构设计] 吸收外部案例库优先做成 L2 references 而非改已有规则
 - 2026-04-23 [架构设计] `.claude/commands/` 下任何 .md 都会被 Claude Code 注册为 slash command
-- 2026-04-21 [架构设计] 入口技能 gap 先用工具量化再动手
 
 ## 最近任务（保留最多 5 条）
 

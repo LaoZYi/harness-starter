@@ -142,7 +142,7 @@
 
 ### Added — 12-Factor Agent Design 集成（Issue #28 / GitLab #12，2026-04-14）
 
-吸收 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)（19k+ ⭐）的方法论，裁剪为本项目真正适用的 4 条 Factor（F3/F5/F8/F10），落地为 1 个新技能 + 1 个新规则 + 2 处增量修改。技能总数 31 → 38 个工作流技能命令。
+吸收 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)（19k+ ⭐）的方法论，裁剪为本项目真正适用的 4 条 Factor（F3/F5/F8/F10），落地为 1 个新技能 + 1 个新规则 + 2 处增量修改。技能总数 31 → 42 个工作流技能命令。
 
 **新文件**：
 - `templates/superpowers/.claude/commands/agent-design-check.md.tmpl`：4 维度 Agent 设计体检（F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents）

@@ -55,6 +55,8 @@
 - `/debug` —— 4 阶段系统性排障（根因优先）
 - `/lfg-doc` —— 从需求到定稿的全自动文档流水线（标书/规范/白皮书/报告）
 - `/outline-doc` —— 根据 spec 拟章节大纲、字数估算、引用占位
+- `/team-spec` —— spec → plan-check → adr 串联编队（吸收 CCGS team-* 模式，Issue #55）
+- `/team-doc` —— outline → draft → review → finalize 串联编队（吸收 CCGS team-* 模式，Issue #55）
 
 ### 实现类（影响怎么执行）
 
@@ -68,6 +70,7 @@
 - `/squad` —— tmux 多 worker + 角色分权 + 实时观察
 - `/subagent-dev` —— 规划者/执行者角色分离
 - `/draft-doc` —— 基于 outline 写草稿（先 outline-pass 后 draft-pass）
+- `/team-implement` —— write-plan → execute-plan / tdd → verify 串联编队（吸收 CCGS team-* 模式，Issue #55）
 
 ### 收尾类（影响怎么完成）
 
@@ -83,6 +86,7 @@
 - `/lint-lessons` —— 去重 / 矛盾 / 过时检测（lfg 阶段 9.3 用快速版 2 项）
 - `/review-doc` —— 4 角度并行评审：准确性 / 可读性 / 术语统一 / 完整性
 - `/finalize-doc` —— 定稿前 8 项必检（无占位符 / R-ID 全覆盖 / 术语一致）+ 产出最终文件
+- `/team-review` —— multi-review → cso → receive-review 串联编队（吸收 CCGS team-* 模式，Issue #55）
 
 ## 决策树
 

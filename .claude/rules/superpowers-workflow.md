@@ -83,6 +83,10 @@ CLI 工具重点技能：`/tdd`（命令行为与退出码契约测试）、`/wr
 | `/draft-doc` | 写文档草稿（两段法：outline-pass + draft-pass） |
 | `/review-doc` | 文档评审（4 人格并行：准确性 / 可读性 / 术语统一 / 完整性） |
 | `/finalize-doc` | 文档定稿（8 项必检；不调 git-commit / finish-branch） |
+| `/team-spec` | 规格制定编队（spec → plan-check → adr 串联，吸收 CCGS team-* 模式） |
+| `/team-implement` | 实施编队（write-plan → execute-plan / tdd → verify 串联） |
+| `/team-review` | 评审编队（multi-review → cso → receive-review 串联） |
+| `/team-doc` | 文档场景编队（outline → draft → review → finalize 串联，跳过 lfg-doc 前置探索） |
 
 ## 何时使用哪个技能
 
@@ -111,6 +115,7 @@ CLI 工具重点技能：`/tdd`（命令行为与退出码契约测试）、`/wr
 - 写框架/库特定代码前想防止 API 幻觉 → `/source-verify`
 - 收到多人讨论的原始语音转文字记录（idea 讨论 / 需求评审）→ `/digest-meeting`
 - 写文档场景（标书 / 规范 / 白皮书 / 报告）→ `/lfg-doc`（替代 `/lfg`）；阶段细分：拟提纲 `/outline-doc` → 写草稿 `/draft-doc` → 评审 `/review-doc` → 定稿 `/finalize-doc`
+- 想用「场景化预制流水线」替代临时编排 → `/team-spec`（规格段）/ `/team-implement`（实施段）/ `/team-review`（评审段）/ `/team-doc`（文档段）。这些是 `/lfg` 部分阶段的独立入口，避免 orchestrator 临时拼装 skill 导致漂移（吸收 CCGS team-* 模式，Issue #55）
 
 ## 核心原则
 

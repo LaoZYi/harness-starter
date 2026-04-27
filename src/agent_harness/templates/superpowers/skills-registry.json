@@ -642,6 +642,62 @@
       "lfg_stage": [],
       "expected_in_lfg": false,
       "exclusion_reason": "doc-scenario skill, called from /lfg-doc not /lfg; replaces /verify+/git-commit+/finish-branch for doc"
+    },
+    {
+      "id": "team-spec",
+      "name": "规格制定编队",
+      "category": "process",
+      "one_line": "spec → plan-check → adr 串联编队（吸收 CCGS team-* 模式，Issue #55）",
+      "triggers": [
+        "需求规格化",
+        "拼装 spec 流水线"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "team-* 是局部场景化编队（吸收 CCGS team-* 模式，Issue #55），用户显式调用，不是 /lfg 阶段技能；功能上覆盖 /lfg 阶段 2.5-3 但作为独立入口存在"
+    },
+    {
+      "id": "team-implement",
+      "name": "实施编队",
+      "category": "implementation",
+      "one_line": "write-plan → execute-plan / tdd → verify 串联编队（吸收 CCGS team-* 模式，Issue #55）",
+      "triggers": [
+        "拼装实施流水线",
+        "已有规格要落地"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "team-* 是局部场景化编队（吸收 CCGS team-* 模式，Issue #55），用户显式调用，不是 /lfg 阶段技能；功能上覆盖 /lfg 阶段 3-4 但作为独立入口存在"
+    },
+    {
+      "id": "team-review",
+      "name": "评审编队",
+      "category": "review",
+      "one_line": "multi-review → cso → receive-review 串联编队（吸收 CCGS team-* 模式，Issue #55）",
+      "triggers": [
+        "拼装评审流水线",
+        "完整评审一遍"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "team-* 是局部场景化编队（吸收 CCGS team-* 模式，Issue #55），用户显式调用，不是 /lfg 阶段技能；功能上覆盖 /lfg 阶段 5-6 但作为独立入口存在"
+    },
+    {
+      "id": "team-doc",
+      "name": "文档场景编队",
+      "category": "process",
+      "one_line": "outline → draft → review → finalize 串联编队（吸收 CCGS team-* 模式，Issue #55）",
+      "triggers": [
+        "拼装文档流水线",
+        "已有规格写文档"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "team-* 是局部场景化编队（吸收 CCGS team-* 模式，Issue #55），跳过 /lfg-doc 前置探索阶段；用户显式调用，不进 /lfg 单任务流"
     }
   ]
 }
