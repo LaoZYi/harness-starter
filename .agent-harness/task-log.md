@@ -2039,3 +2039,33 @@
   - docs_produced: 2（spec + plan，未触发文档爆炸门禁 10 阈值）
   - review_p0_count: 0（本任务未走 /multi-review，user 直接验收）
 - **沉淀**：lessons +2（架构设计 D 方案 / 测试 invocation pattern）
+
+## 2026-04-27 吸收 CCGS team-* 场景化预制流水线（Issue #55 P0）
+
+- 需求：用户输入「分析这个 CCGS 项目，看看有什么可吸收的亮点」→ 创建 evolution Issue → /lfg 执行 P0 落地
+- 做了什么：新增 4 个 team-* skill（team-spec / team-implement / team-review / team-doc），把多 agent 编排从通用调度器升级为场景化预制流水线。每个 skill 串联 3-4 个现有原子 skill 形成 6 阶段固定流水线（含错误恢复协议 + 文件写入约定）
+- 关键决策：
+  - **scope 选 P0 only**（用户 push back 后裁决）—— Issue #55 7 项全做违反 simplicity，且 issue 自标"方法论吸收提案，需独立 PR + 拆 sub-issue"
+  - **D 方案：4 skill 各自独立写**（吸收 lessons.md 2026-04-27 教训）—— 不抽共享 base，符合"先抄 + 留位置"
+  - **`expected_in_lfg=false`** —— team-* 是 /lfg 部分阶段的独立入口，不进单任务流，避免双重编排
+- 改了：
+  - 新增（4）：templates/superpowers/.claude/commands/team-{spec,implement,review,doc}.md.tmpl
+  - registry：42 → 46 条
+  - 文档同步：superpowers-workflow.md.tmpl / evolve.md.tmpl / docs/usage-manual.md / docs/product.md（+ 8.10 项）
+  - 计数修复：批量 38 → 42（README / CHANGELOG / docs/architecture / docs/usage-manual / .agent-harness/project.json）
+  - 测试：test_skill_count_is_42 → test_skill_count_is_46（excluded 14 → 18）
+  - 同步产物：.claude/commands/team-*.md / .claude/rules/superpowers-workflow.md / .claude/commands/evolve.md / lfg.md / which-skill.md
+- 完成标准：
+  - [x] 4 个 .md.tmpl 文件存在 + 6 节骨架完整
+  - [x] registry 加 4 条（jq 验证 expected_in_lfg=false + exclusion_reason）
+  - [x] make dogfood 无漂移
+  - [x] make ci 全绿（694 tests pass / skills-lint OK / check_repo OK）
+  - [x] 文档同步 5 处
+  - [x] lessons 沉淀 + memory rebuild
+- **量化指标**：
+  - rework_count: 0（用户首轮验收即通过）
+  - review_p0_count: 0（本次未走 /multi-review，用户直接验收）
+  - dialog_rounds: ~12（push back 1 + 计划展示 + 实施 + 验证 + 沉淀 + 收尾）
+  - docs_produced: 1（current-task.md，未单独写 spec——任务范围明确不需要 /spec）
+  - user_verify_first_pass: yes
+- **沉淀**：lessons +1（工具脚本类：.claude/ 下文件都是 dogfood 产物源在 templates/）
