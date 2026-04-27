@@ -53,6 +53,8 @@
 - `/agent-design-check` —— 4 维度（F3/F5/F8/F10）体检涉及多 agent 的计划
 - `/todo` —— 结构化任务拆分和管理
 - `/debug` —— 4 阶段系统性排障（根因优先）
+- `/lfg-doc` —— 从需求到定稿的全自动文档流水线（标书/规范/白皮书/报告）
+- `/outline-doc` —— 根据 spec 拟章节大纲、字数估算、引用占位
 
 ### 实现类（影响怎么执行）
 
@@ -65,6 +67,7 @@
 - `/dispatch-agents` —— 一次性 map-reduce 短子任务
 - `/squad` —— tmux 多 worker + 角色分权 + 实时观察
 - `/subagent-dev` —— 规划者/执行者角色分离
+- `/draft-doc` —— 基于 outline 写草稿（先 outline-pass 后 draft-pass）
 
 ### 收尾类（影响怎么完成）
 
@@ -78,6 +81,8 @@
 - `/doc-release` —— 检查 README / docs 是否需更新
 - `/finish-branch` —— 选合并/PR/保留/丢弃四种去向
 - `/lint-lessons` —— 去重 / 矛盾 / 过时检测（lfg 阶段 9.3 用快速版 2 项）
+- `/review-doc` —— 4 角度并行评审：准确性 / 可读性 / 术语统一 / 完整性
+- `/finalize-doc` —— 定稿前 8 项必检（无占位符 / R-ID 全覆盖 / 术语一致）+ 产出最终文件
 
 ## 决策树
 
@@ -145,6 +150,8 @@
   +-- 想做工程回顾？---------------------> /retro
   |
   +-- 定期压测 skill 是否扛得住？-----------> /pressure-test
+  |
+  +-- 要写文档（非代码）？------------------> /lfg-doc
 ```
 
 ## 组合使用示例

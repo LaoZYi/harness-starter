@@ -1,0 +1,21 @@
+{
+  "behavior_change_definition": "任何会改变文档结构（章节）、术语规范、引用格式、定稿检查项的改动都算行为变化；下游读者和评审管道可能依赖这些约定。",
+  "architecture_focus": "优先描述章节结构（一级/二级/三级）、术语表位置、引用源管理、版本与变更记录。文档项目的产出是 markdown / docx 等，没有可执行代码。",
+  "release_checks": [
+    "确认每条 R-ID 在文档中可定位",
+    "确认无占位符（TODO / TBD / 待补充）残留",
+    "确认术语全文一致（含大小写归一）",
+    "确认引用占位全部解析为真实出处",
+    "确认评审 P0 / P1 反馈全部 close"
+  ],
+  "workflow_notes": "文档项目走 /lfg-doc 流水线（不是 /lfg），评审角度是准确性/可读性/术语统一/完整性（不是代码可读性/安全/性能）；定稿不自动 git commit，由用户决定是否进 git 流程。",
+  "default_done_criteria": [
+    "所有章节按 outline 字数估算 ±20% 内完成",
+    "每条 R-ID 在文档中至少出现 1 次且可定位",
+    "review-doc 4 人格评审 P0/P1 全部 close",
+    "finalize-doc 8 项必检全部 ✅ 或带理由 skipped",
+    "无 TODO / TBD / 待补充等占位符残留"
+  ],
+  "workflow_skills_summary": "文档项目重点技能：`/lfg-doc`（端到端文档流水线）、`/outline-doc`（拟提纲）、`/draft-doc`（两段法草稿）、`/review-doc`（4 人格评审）、`/finalize-doc`（8 项必检定稿）",
+  "exclude_rules": ["api.md", "database.md", "frontend.md"]
+}

@@ -1,0 +1,40 @@
+# LFG Profiles（场景档案）
+
+本目录存放"场景档案"骨架，描述不同场景下 `/lfg` / `/lfg-doc` 等流水线命令调用哪些 skill。
+
+## 当前状态：纯描述
+
+本期（D 方案）这些 yaml 文件**不被任何命令运行时读取**。`/lfg` 的行为完全由 `.claude/commands/lfg.md` 决定，`/lfg-doc` 同理。
+
+yaml 文件的唯一用途：让人读了知道"哪个流水线命令调了哪些 skill"，作为以后做"AI 推断场景档案 + 用户确认"（B 方案）的数据基础。
+
+## 当前的档案
+
+- `code.yaml` — `/lfg`（写代码）流水线
+- `doc.yaml` — `/lfg-doc`（写文档）流水线
+
+## Schema（最小可行版本）
+
+```yaml
+schema_version: 1
+name: <profile-id>
+description: <一句话描述>
+stages:
+  - id: <stage-id>
+    skill: <skill-name>
+    description: <这步在做什么>
+    optional: true   # 默认 false
+```
+
+## 未来方向（B 阶段）
+
+1. `/lfg` 启动时读 `lfg-profiles/*.yaml`
+2. AI 根据任务描述猜匹配哪份档案
+3. 跟用户确认 → 按档案执行
+4. 用户用熟后自己加新档案（如 `video.yaml`、`presentation.yaml`）
+
+## 不要做的事
+
+- **不要**通过编辑 yaml 来"配置 /lfg 的行为"——本期 /lfg 不读它
+- **不要**把档案当配置中心扩字段——schema 演化走 schema_version 升级（1 → 2）
+- **不要**手工生成与 `/lfg.md` / `/lfg-doc.md` 实际调用 skill 不一致的档案——契约测试会失败

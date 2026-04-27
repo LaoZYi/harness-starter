@@ -1,0 +1,48 @@
+# lfg-profiles/code.yaml — 写代码场景的 /lfg 流水线骨架描述
+#
+# 用途：本期仅作描述，不被任何命令运行时读取。
+# 未来：B 阶段会让 /lfg 在阶段 0 读取本文件，AI 推断匹配场景档案后用户确认。
+# 不要：手工编辑此文件来"配置 /lfg"——本期 /lfg 行为完全由 lfg.md.tmpl 决定。
+
+schema_version: 1
+name: code
+description: 写代码场景的流水线骨架（与 /lfg 阶段对齐）
+
+stages:
+  - id: ideate
+    skill: ideate
+    description: 多角度构思（仅"大"复杂度触发）
+    optional: true
+
+  - id: spec
+    skill: spec
+    description: 把模糊需求转为含 R-ID 的可测试验收标准
+
+  - id: plan
+    skill: write-plan
+    description: 2-5 分钟粒度的实施计划
+
+  - id: plan-check
+    skill: plan-check
+    description: 8+1 维度计划质量校验
+    optional: true
+
+  - id: execute
+    skill: tdd
+    description: RED-GREEN-REFACTOR
+
+  - id: verify
+    skill: verify
+    description: 完成前穷举验证（测试、lint、跨平台行为）
+
+  - id: review
+    skill: multi-review
+    description: 6 人格并行评审（正确性 / 测试 / 可读性 / 安全 / 性能 / 依赖）
+
+  - id: commit
+    skill: git-commit
+    description: 结构化原子 commit
+
+  - id: compound
+    skill: compound
+    description: 沉淀教训到 lessons.md

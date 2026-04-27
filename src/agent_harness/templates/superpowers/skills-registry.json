@@ -570,6 +570,78 @@
       "lfg_stage": [],
       "expected_in_lfg": false,
       "exclusion_reason": "periodic skill TDD (monthly + on anti-rationalization table additions), orthogonal to /lfg single-task pipeline"
+    },
+    {
+      "id": "lfg-doc",
+      "name": "LFG-Doc 文档场景流水线",
+      "category": "process",
+      "one_line": "从需求到定稿的全自动文档流水线（标书/规范/白皮书/报告）",
+      "triggers": [
+        "写文档",
+        "写标书",
+        "写规范",
+        "写白皮书"
+      ],
+      "decision_tree_label": "要写文档（非代码）？",
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "doc-scenario entrypoint, parallel to /lfg (code scenario); not part of /lfg pipeline"
+    },
+    {
+      "id": "outline-doc",
+      "name": "拟文档大纲",
+      "category": "process",
+      "one_line": "根据 spec 拟章节大纲、字数估算、引用占位",
+      "triggers": [
+        "拟提纲",
+        "文档结构"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "doc-scenario skill, called from /lfg-doc not /lfg"
+    },
+    {
+      "id": "draft-doc",
+      "name": "写文档草稿",
+      "category": "implementation",
+      "one_line": "基于 outline 写草稿（先 outline-pass 后 draft-pass）",
+      "triggers": [
+        "写草稿",
+        "起笔"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "doc-scenario skill, called from /lfg-doc not /lfg"
+    },
+    {
+      "id": "review-doc",
+      "name": "文档评审",
+      "category": "review",
+      "one_line": "4 角度并行评审：准确性 / 可读性 / 术语统一 / 完整性",
+      "triggers": [
+        "评审文档",
+        "审稿"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "doc-scenario skill, called from /lfg-doc not /lfg"
+    },
+    {
+      "id": "finalize-doc",
+      "name": "文档定稿",
+      "category": "review",
+      "one_line": "定稿前 8 项必检（无占位符 / R-ID 全覆盖 / 术语一致）+ 产出最终文件",
+      "triggers": [
+        "定稿",
+        "完成文档"
+      ],
+      "decision_tree_label": null,
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "doc-scenario skill, called from /lfg-doc not /lfg; replaces /verify+/git-commit+/finish-branch for doc"
     }
   ]
 }

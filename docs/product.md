@@ -7,7 +7,7 @@
 1. **探测**：扫描目标项目，产出结构化画像（语言、包管理器、命令、目录结构）。
 2. **评估**：根据画像产出接入评分、缺口和建议。
 3. **初始化**：根据项目类型和探测结果生成文档/配置文件。支持三种脚手架来源——`--scaffold <本地路径>`、`--scaffold <git URL>`（含 `--scaffold-ref` branch/tag + `--scaffold-subdir` 子目录）、`--scaffold-cmd "<命令>"`（执行 `npm create vite@latest . -- --template react` / `cargo init` / `django-admin startproject` 等主流脚手架）。`--scaffold` 与 `--scaffold-cmd` 互斥。交互式问答支持返回上一步和确认修改。
-4. **工作流技能**：默认生成 33 个结构化开发技能命令（融合 superpowers + compound-engineering + gstack + 12-factor-agents），覆盖构思、设计、计划、执行、评审、安全、沉淀、自我进化全生命周期。可通过 `--no-superpowers` 关闭。外加 4 个 common 层命令（`/process-notes`、`/digest-meeting`、`/recall`、`/source-verify`）不受 `--no-superpowers` 影响。其中 `/digest-meeting` 是研发流程的源头入口——把多人讨论的语音转文字原始记录转为框架可消费的结构化产物（init 模式填文档 / iterate 模式写 current-task）。
+4. **工作流技能**：默认生成 38 个结构化开发技能命令（融合 superpowers + compound-engineering + gstack + 12-factor-agents），覆盖构思、设计、计划、执行、评审、安全、沉淀、自我进化全生命周期。可通过 `--no-superpowers` 关闭。外加 4 个 common 层命令（`/process-notes`、`/digest-meeting`、`/recall`、`/source-verify`）不受 `--no-superpowers` 影响。其中 `/digest-meeting` 是研发流程的源头入口——把多人讨论的语音转文字原始记录转为框架可消费的结构化产物（init 模式填文档 / iterate 模式写 current-task）。
 5. **首次分析**：初始化后 current-task.md 预填分析任务，AI 打开项目自动补全文档。
 6. **升级**：对已接入的项目做增量升级，支持三方合并（保留用户内容）、diff 预览、选择性升级和自动备份。冲突时插入标记并醒目提示。
 7. **运维**：doctor（健康检查）、export（画像导出）、stats（任务统计）。
@@ -15,6 +15,8 @@
 9. **上游同步**：`make sync-superpowers` 从上游仓库拉取最新 skills 变更报告。
 
 ## 持续演进（按时间倒序，最新在顶)
+
+8.9. **通用文档场景脚手架（2026-04-27，D 方案）**：把"上面那层 skill 框架"从只服务"写代码"扩展到"写文档"，标书是首个验证场景但本期只搭骨架不写业务内容。新增 `document` 项目类型（第 10 种）+ 5 个文档专用 skill（`/lfg-doc` / `/outline-doc` / `/draft-doc` / `/review-doc` / `/finalize-doc`）+ `lfg-profiles/{code,doc}.yaml` + README 骨架（描述 stage→skill 映射，本期不被运行时读取，给将来"AI 推断场景档案 + 用户确认"——B 阶段——留位置）。**关键裁剪**：`/lfg-doc` 不调 `/tdd` / `/git-commit` / `/finish-branch` / `/multi-review` / `/verify` / `/debug` / `/health` / `/cso` / `/squad`（写文档不需要这些代码场景能力，写文档的人可能完全不用 git）。`/lfg.md.tmpl` 行为零退化（基线 26 个 skill 调用集合不变）。14 条契约测试（680 → 694）。**不吸收**：B 阶段的"AI 推断匹配档案 + 用户确认"——属后续任务，本期保持 D 方案的"先抄 + 留位置"原则，等积累 2-3 个非代码场景再做统一抽象。
 
 9.0. **快手 sec-audit-pipeline 反偷懒工程学（2026-04-24，吸收自快手安全 SRC）**：将「门禁 1-6 声明式 → 门禁 7 回归测试式」的反偷懒升级落地——新增 `/pressure-test` skill（7 类压力：沉没成本/疲劳/时间压力/权威/经济/务实/复杂度回避 × 6 默认场景，默认作用于 `/verify` + `/multi-review` + `/cso` + `/lfg`，归类 `meta` 不入 /lfg 主流程）；`anti-laziness.md` 顶部声明从 4 道升级为 7 道硬门禁 + 门禁 3 反合理化表新增 3 条借口（「Agent 写入失败手动接管后差不多了」/「上下文太长不想 spawn 新 SubAgent」/「SKILL.md 太长精简后传给 SubAgent」）+ 门禁 4 增强「字段级必填」（产出方声明必含字段 A/B/C 时下游必须逐字段 grep 校验）+ 新增门禁 7 压力测试定义 + 闭环流程；`autonomy.md` Trust Calibration 新增 **3b. orchestrator 疲劳硬门禁**（派出 N=8 worker 后强制 spawn fresh orchestrator 接管，mailbox 写 `handoff` 事件；与 Context Budget 规则 4 通用上限形成 orchestrator 专属阈值的双保险）。**硬约束**：3 处（pressure-test skill / 门禁 7 / 3b）均显式标记 `defensive-temporary` 分类，遵循 lessons.md `[架构设计] 反偷懒与协作记忆要解耦` 规则——未来模型对齐改善后可能冗余。**与 T6 晋升衔接**：压测反复失守的借口自动进入脚本化候选队列。**不吸收**：Z3/SMT 形式化验证（违反零依赖）、20+ Agent 军团（产品实例）、Opus+Codex 双模型对抗（已由 codex-plugin-cc 覆盖）、黑盒/白盒迭代闭环（安全领域特化）。12 条新测试（pressure-test skill / skills-registry / 7 道声明 / 门禁 3 三借口 / 门禁 4 字段级必填 / 3b orchestrator 疲劳门禁 / defensive-temporary 3 处标记），总 620 → 632。
 
@@ -26,7 +28,7 @@
 
 9.22. **CDN LEGO 57 案例的 AI 写码反思（2026-04-22，吸收自腾讯 CDN LEGO 团队）**：从 57 真实案例 + 13 类典型问题 + 5 大根因的工程化反思中提炼 5 点落地。（1）新增 `.agent-harness/references/ai-coding-pitfalls.md`（R1-R5 根因 + P-01..P-13 pitfalls 清单）作为 L2 温知识；`memory.py` 头部同步 pitfalls 类目。（2）`/multi-review` 新增 `--mode cross-model` 跨模型对抗通道（并行独立 → 交叉验证 → 辩论 → 自动收敛），补反偷懒门禁 2 上下文隔离。（3）`/write-plan` 新增「文档爆炸门禁」（≥ 10 文档暂停询问），防止 AI 为凑数产出低价值文档。（4）`.claude/rules/safety.md` 补充反例免疫代码片段（路径穿越 / 命令注入 / rm -rf / 密钥进 git），把文字约束升级为可对照修正的代码反例——文档规则教不会模型「在当下代码上下文识别违反」，代码反例才行。（5）lesson「吸收外部案例库优先做成 L2 references 而非改已有规则」落地分层加载的上下文经济学。
 
-9.23. **交付 vs 治理双轮框架 + PRD 需求评分门禁（2026-04-22，吸收自腾讯技术工程 AI 全自动化实践）**：`.claude/rules/superpowers-workflow.md` 新增「双轮框架」分类表，把 33 个工作流技能按并行互补的两条链路重新归类——交付轮（`/ideate` → `/spec` → `/write-plan` → `/execute-plan` → `/verify` → `/multi-review` → `/compound`）把需求推到发布，治理轮（`/health` / `/retro` / `/lint-lessons` / `/cso` / `/doc-release` / `/evolve`）让知识库/规则/代码库持续健康。`/spec` 新增 1.5 节「需求评分门禁」（5 维 × 20 分：背景/价值/方案/范围/完整性，< 80 禁止进入 `/write-plan`）+ 反合理化 4 条。`task-log.md.tmpl` 新增 6 个可选量化指标字段（rework_count / review_p0_count / review_fp_rate / user_verify_first_pass / dialog_rounds / docs_produced），让归档从"描述性"升级为"可分析"。lesson「只做交付会导致 lessons 堆矛盾和 skills 老化」落地双轮不可偏废。
+9.23. **交付 vs 治理双轮框架 + PRD 需求评分门禁（2026-04-22，吸收自腾讯技术工程 AI 全自动化实践）**：`.claude/rules/superpowers-workflow.md` 新增「双轮框架」分类表，把 38 个工作流技能按并行互补的两条链路重新归类——交付轮（`/ideate` → `/spec` → `/write-plan` → `/execute-plan` → `/verify` → `/multi-review` → `/compound`）把需求推到发布，治理轮（`/health` / `/retro` / `/lint-lessons` / `/cso` / `/doc-release` / `/evolve`）让知识库/规则/代码库持续健康。`/spec` 新增 1.5 节「需求评分门禁」（5 维 × 20 分：背景/价值/方案/范围/完整性，< 80 禁止进入 `/write-plan`）+ 反合理化 4 条。`task-log.md.tmpl` 新增 6 个可选量化指标字段（rework_count / review_p0_count / review_fp_rate / user_verify_first_pass / dialog_rounds / docs_produced），让归档从"描述性"升级为"可分析"。lesson「只做交付会导致 lessons 堆矛盾和 skills 老化」落地双轮不可偏废。
 
 9.3. **缺 base 基线时保护用户文档（GitLab Issue #23，2026-04-21）**：`harness upgrade apply` 遇到 `three_way` 文件但 `.agent-harness/.base/<file>` 不存在（共同祖先丢失）时，不再退化为 overwrite——改写 `<file>.harness-new` 旁路文件 + 警告，原文件保留不变。`UpgradeExecutionResult` 新增 `missing_base_files` 字段列出所有走保护分支的文件；`plan` 阶段 checklist 醒目提示"⚠️ N 个文件无基准版本，将写到 .harness-new 旁路文件保护用户内容"；用户可通过 `harness upgrade apply --only <file> --force` 强制刷新（逃生口）。保护策略对所有 `three_way` 文件通用（`docs/architecture.md` / `docs/product.md` / `CLAUDE.md` / `references/*` 等），不是维护白名单——策略的通用性比列表更可靠。10 条新测试（R-001..R-010）+ 5 场景 19 check 端到端穷举。`.agent-harness/backups/<ts>/` 兜底机制保持不变作为第二道防线。**根因**：原 `three_way` 分支在缺 base 时直接 `output_path.write_text(new_content)`，违反了策略表声明的默认合并语义——覆盖用户 500 行 NestJS 架构图这类核心资产。
 
@@ -37,7 +39,7 @@
 10. **Environment Engineering 设计哲学（Issue #34，2026-04-16，参考 holaboss-ai/holaOS）**：在 `docs/architecture.md` 顶部新增「设计哲学：Environment Engineering」段——明确本项目的方法论根基（优化 Agent 运行环境而非 prompt），对比 holaOS 的技术路径差异，消歧义 "Agent Harness" 一词在两个项目中的不同含义。纯文档增补，无代码变化。
 11. **Claude Code 内部机制对齐（Issue #33，2026-04-16，吸收自 Windy3f3f3f3f/how-claude-code-works）**：从 Claude Code 50 万行源码分析中提炼关键洞察，深化本项目规则。（1）`context-budget.md` 新增"5 级渐进式压缩"对照段——说明规则 2 的 ≤ 2k tokens 阈值是 L1 Tool Result Budget 之前的前置防线，`/compact` 对应 L5 Autocompact 是最后手段；（2）`task-lifecycle.md` StuckDetector 前新增"L0 静默恢复"层——区分可重试的瞬时失败（命令超时、工具截断、临时文件冲突、git 锁）vs 同根因 3 次才停，对齐 Claude Code 7 个 continue site 的分级恢复理念；（3）新增 L2 参考文件 `references/claude-code-internals.md`（5 级压缩 + 7 continue site + 工具预执行 + 参考链接）。**不吸收**：agent-design.md 的"工具预执行"增强（F8 Control Flow 已覆盖），具体代码实现（逆向分析可能因版本差异过时）。
 12. **git-cliff changelog 自动化（Issue #32，2026-04-16，吸收自 orhun/git-cliff）**：`/doc-release` 技能第 5 步新增 git-cliff 自动草稿生成——检测 `command -v git-cliff`，有则调用 `git-cliff --unreleased --strip header` 按 conventional commit 类型分组生成草稿供 AI 润色，无则提示安装并降级到手动整理。设计为**软依赖**（不违反零依赖原则），`docs/runbook.md` 新增安装说明和可选 `cliff.toml` 自定义配置示例。**不吸收**：不在 `harness init` 时自动生成 cliff.toml（内置配置足够用，用户需要自定义时自行创建）。
-13. **Anthropic Agent Skills spec 对齐（Issue #31，2026-04-16，吸收自 anthropics/skills）**：在 `docs/architecture.md` 明确本项目技能（standalone commands）与 Anthropic Agent Skills 三种形态（standalone commands / model-invoked SKILL.md / plugin marketplace）的关系。`/write-skill` 模板新增 SKILL.md 格式选项（遵循 [agentskills.io/specification](https://agentskills.io/specification)），开发者创建新技能时可选择 model-invoked 模式。**不吸收**：不把现有 33 个 command 改为 SKILL.md（它们是用户主动触发的工作流步骤，model-invoked 会导致 Claude 在不该用时误调用）；不创建 `.claude-plugin/plugin.json`（commands 经 `harness init` 渲染含项目特定内容，无法跨项目原样分发）。
+13. **Anthropic Agent Skills spec 对齐（Issue #31，2026-04-16，吸收自 anthropics/skills）**：在 `docs/architecture.md` 明确本项目技能（standalone commands）与 Anthropic Agent Skills 三种形态（standalone commands / model-invoked SKILL.md / plugin marketplace）的关系。`/write-skill` 模板新增 SKILL.md 格式选项（遵循 [agentskills.io/specification](https://agentskills.io/specification)），开发者创建新技能时可选择 model-invoked 模式。**不吸收**：不把现有 38 个 command 改为 SKILL.md（它们是用户主动触发的工作流步骤，model-invoked 会导致 Claude 在不该用时误调用）；不创建 `.claude-plugin/plugin.json`（commands 经 `harness init` 渲染含项目特定内容，无法跨项目原样分发）。
 14. **Multi-Agent 角色分权 + Context Store 吸收（Issue #30，2026-04-14，吸收自 Danau5tin/multi-agent-coding-system）**：TerminalBench #13 水平的"能力/权限分层 + 知识复利"方法论落地——（1）`squad/capability.py` 新增 `orchestrator` capability，运行时 `settings.local.json` 强制 deny Edit/Write/MultiEdit/NotebookEdit，对齐源项目"编排者连代码都不碰"的强约束；（2）`agent.py` 新增 `diary_append_artifact` / `extract_artifacts` API + `agent artifact` CLI 子命令，把 sub-agent 的发现从自由日志升级为结构化知识制品，`aggregate` 顶部集中展示供后续任务 refs 复用；（3）`common/rules/autonomy.md` 追加 Trust Calibration 段，把静态三级操作分类升级为"任务复杂度 × 操作基线"二维模型；（4）`squad.md.tmpl` 文档 4 种角色 + 三标准角色卡，`subagent-dev.md.tmpl` 追加三角色模式段。**不吸收**：源项目的 Python 运行时代码（独立 LLM 编排框架，与 Claude Code 脚手架架构不兼容）。
 15. **Context-Mode 方法论吸收（Issue #29，2026-04-14，吸收自 mksglu/context-mode）**：新增 `common/rules/context-budget.md` 规则（Think in Code 范式 + 工具输出预算双约束——搜索/统计/过滤任务优先脚本化、单次工具输出 > 2k tokens 必须先 pipe 处理）。新增 `memory_search.py` 模块 + `memory search <query>` CLI 子命令（纯 stdlib Okapi BM25，中英混合分词：英文 `\w+` 按词切、CJK 按字符 1-gram）。`/recall` 技能升级为二级兜底链路（Grep → BM25 兜底），解决"关键词写错或同义词"时 Grep 漏召的问题。`/lfg` 阶段 0.2 明确 Context Budget 约束 + BM25 兜底链路。**不吸收**：MCP server 本体（Node/SQLite 违反零依赖原则）。
 16. **12-Factor Agent Design 集成（Issue #28，2026-04-14，吸收自 humanlayer/12-factor-agents）**：新增 `/agent-design-check` 技能（4 维度：F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents），针对涉及 `/squad` / `/dispatch-agents` / `/subagent-dev` 的计划做 Agent 工程化体检。配套 `common/rules/agent-design.md` 规则（F8/F10 硬约束：worker 不得自持 retry/loop、单 worker ≤ 10 原子步骤）；`common/rules/task-lifecycle.md` 追加"Context Ownership"段（Factor 3）；`/plan-check` 扩到 8+1 维度（第 9 维度 Agent 工程化条件触发）；`/lfg` 阶段 3 在 `/plan-check` 后自动串联 `/agent-design-check`。**裁剪策略**：12-factor 中 F1/F2/F4/F6/F7/F9/F11/F12 预设自建 LLM 运行时不适用，只在新技能附录中作参考。
@@ -64,9 +66,9 @@
 26. **专业参考清单**：`.agent-harness/references/` 提供 4 个 checklist（accessibility / performance / security / testing-patterns），按需通过 `/recall --refs` 加载，给专业维度补覆盖盲区。
 27. **分层记忆加载**：`.agent-harness/memory-index.md` 作为 L1 热索引，`task-lifecycle` 规则默认只读它；`lessons.md` / `task-log.md` / `references/` 为 L2/L3，通过 `/recall` 技能或 `harness memory rebuild` 按需展开。避免知识积累挤占 AI 上下文窗口。
 
-## 支持的项目类型（9 种）
+## 支持的项目类型（10 种）
 
-backend-service、web-app、cli-tool、library、worker、mobile-app、monorepo、data-pipeline、meta
+backend-service、web-app、cli-tool、library、worker、mobile-app、monorepo、data-pipeline、meta、document
 
 每种类型在 `presets/` 下有独立的 JSON 预设，定义行为变化判定、架构关注点、发布检查项和默认完成标准。每种类型还有专属规则模板（`templates/<type>/.claude/rules/`），为 AI agent 提供类型相关的开发约束。评估（assessment）根据类型检查对应的项目结构信号并给出加分和建议。
 
@@ -89,6 +91,21 @@ meta 专属命令（统一 `meta-` 前缀）：
 - `/meta-populate` — 从已注册的代码仓库扫描推理，填充 meta 空缺（三阶段流水线：确定性提取 → LLM 解读 → 交叉验证）
 - `/meta-create-task` — 从会议纪要生成跨服务任务草稿（AI 生成 → 人工确认）
 - `/meta-activate-task` — 激活任务，创建 worktree 工作空间并注入 current-task.md
+
+### document 项目类型
+
+document 项目以文档（标书 / 规范 / 白皮书 / 报告等）为主要产物，不含可执行代码。走 `/lfg-doc` 端到端流水线（不是 `/lfg`），下层规则与代码场景共享但上层 skill 全部替换为文档专用版。
+
+5 个文档专用 skill：
+- `/lfg-doc` — 文档场景端到端流水线（spec → outline → plan → draft → review → finalize → compound）
+- `/outline-doc` — 拟章节大纲、字数估算、引用占位
+- `/draft-doc` — 写文档草稿（两段法：outline-pass + draft-pass）
+- `/review-doc` — 文档评审（4 人格并行：准确性 / 可读性 / 术语统一 / 完整性）
+- `/finalize-doc` — 文档定稿（8 项必检；不调 `/git-commit` / `/finish-branch`）
+
+**与 `/lfg`（写代码）的关键区别**：不调 `/tdd` / `/git-commit` / `/finish-branch` / `/multi-review` / `/verify` / `/debug` / `/health` / `/cso` / `/squad`。
+
+配套生成 `lfg-profiles/{code,doc}.yaml` 骨架（描述各自流水线 stage→skill 映射，本期不被运行时读取，给将来"AI 推断场景档案 + 用户确认"留位置）。
 
 ## CLI 命令清单
 

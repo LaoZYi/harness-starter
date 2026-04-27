@@ -8,6 +8,8 @@
 
 <!-- 由 /compound 技能或 `harness memory rebuild` 维护。-->
 
+- 2026-04-27 [测试] 检查「不调用 X」的契约测试要识别 invocation pattern 而非纯字符串 grep
+- 2026-04-27 [架构设计] 上层 skill 多场景化先走 D 方案（先抄 + 留位置），不要一上来 B 方案抽象
 - 质量快照 — 2026-04-25
 - 质量快照 — 2026-04-23
 - 2026-04-23 [架构设计] 交付链路和治理链路必须并行，只做交付会导致 lessons 堆矛盾和 skills 老化
@@ -16,18 +18,16 @@
 - 2026-04-23 [架构设计] 吸收外部案例库优先做成 L2 references 而非改已有规则
 - 2026-04-23 [架构设计] `.claude/commands/` 下任何 .md 都会被 Claude Code 注册为 slash command
 - 2026-04-21 [架构设计] 入口技能 gap 先用工具量化再动手
-- 2026-04-14 [架构设计] 子 agent 产出要从自由日志升级到结构化制品
-- 2026-04-14 [架构设计] 角色权限分层要从文档约束升级到运行时强制
 
 ## 最近任务（保留最多 5 条）
 
 <!-- 任务归档时顶部插入；超过上限时挤出最老。-->
 
+- 2026-04-27 通用文档场景脚手架（D 方案：先抄 + 留 B 位置）
+- 2026-04-26 stop hook 范式革命: 行为信号取代内容形式识别(反模式 1 第 6 案例)
 - 2026-04-26 补吸 mksglu/context-mode BENCHMARK 增量(Issue #54)
 - 2026-04-26 补吸 Karpathy Think Before Coding 缺口(Issue #53)
 - 2026-04-26 吸收 forrestchang/andrej-karpathy-skills(Issue #51)
-- 2026-04-26 吸收 muratcankoylan/Agent-Skills-for-Context-Engineering(Issue #50)
-- 2026-04-26 关闭 Issue #49(事实已完成)
 
 ## 参考资料（.agent-harness/references/）
 

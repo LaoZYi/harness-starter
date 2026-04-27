@@ -441,7 +441,7 @@ harness sync --all
 
 **第 4 步：生成文件**
 - 渲染 common 模板（通用文档、规则、hooks）
-- 渲染 superpowers 模板（33 个技能命令）
+- 渲染 superpowers 模板（38 个技能命令）
 - 渲染类型专属模板（如 `backend-service` 的 API/数据库规则）
 - 渲染插件（`.harness-plugins/` 下的自定义内容）
 - 安装项目内嵌运行时（`.agent-harness/bin/`）
@@ -529,7 +529,7 @@ ls .agent-harness/backups/
 
 ### 技能总览
 
-33 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
+38 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
 
 #### 构思与设计阶段
 
@@ -619,6 +619,18 @@ ls .agent-harness/backups/
 | `/which-skill` | 技能选择决策树（不确定用哪个技能时运行） |
 | `/use-worktrees` | Git worktree 隔离开发指导 |
 | `/write-skill` | 编写新的技能文档 |
+
+#### 文档场景流水线（与 `/lfg` 同源不同流水线）
+
+写文档（标书 / 规范 / 白皮书 / 报告等）走 `/lfg-doc`，**不**走 `/lfg`。两条流水线共享下层规则（反偷懒门禁 / 分层记忆 / context budget），但阶段顺序、调用 skill、验收语义按文档场景调整。
+
+| 命令 | 用途 |
+|------|------|
+| `/lfg-doc` | 文档场景端到端流水线（spec → outline → plan → draft → review → finalize → compound） |
+| `/outline-doc` | 拟章节大纲、字数估算、引用占位（替代代码场景的 `/tdd` 写测试） |
+| `/draft-doc` | 写文档草稿（两段法：outline-pass + draft-pass） |
+| `/review-doc` | 文档评审（4 人格：准确性 / 可读性 / 术语统一 / 完整性） |
+| `/finalize-doc` | 文档定稿（8 项必检：占位符 / R-ID / 引用 / 术语 / 字数 / 评审 close / 格式 / 元信息）；**不**调 `/git-commit` / `/finish-branch` |
 
 ### 推荐工作流
 
