@@ -205,6 +205,7 @@ gh issue list --label evolution-update --state all --json title,body,state --lim
 | `/evolve` — 自我进化 | ? |
 | `/squad` — 多 agent 常驻协作（tmux + worktree + capability 分权） | ? |
 | `/lfg-doc` — 写文档场景的端到端流水线 | ? |
+| `/lfg-slide` — 写幻灯片场景的端到端流水线（与 `/lfg-doc` 严格平行） | ? |
 | `/outline-doc` — 拟文档大纲 | ? |
 | `/draft-doc` — 写文档草稿（两段法） | ? |
 | `/review-doc` — 文档评审（4 人格） | ? |

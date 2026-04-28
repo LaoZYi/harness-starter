@@ -142,7 +142,7 @@
 
 ### Added — 12-Factor Agent Design 集成（Issue #28 / GitLab #12，2026-04-14）
 
-吸收 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)（19k+ ⭐）的方法论，裁剪为本项目真正适用的 4 条 Factor（F3/F5/F8/F10），落地为 1 个新技能 + 1 个新规则 + 2 处增量修改。技能总数 31 → 42 个工作流技能命令。
+吸收 [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)（19k+ ⭐）的方法论，裁剪为本项目真正适用的 4 条 Factor（F3/F5/F8/F10），落地为 1 个新技能 + 1 个新规则 + 2 处增量修改。技能注册条目从 31 升至 42 条（吸收当时累计数）。
 
 **新文件**：
 - `templates/superpowers/.claude/commands/agent-design-check.md.tmpl`：4 维度 Agent 设计体检（F3 Context Ownership / F5 State Unification / F8 Control Flow / F10 Small Focused Agents）
@@ -426,7 +426,7 @@
 
 ### Infrastructure
 
-- 694 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条、scaffold-from-git 17 条：is_git_url 8 + clone/ref/subdir 5 + git 未装 1 + subdir 路径遍历 2 + CLI 端到端 1；scaffold-from-cmd 14 条：run_scaffold_command 8 + shell 元字符安全 2 + CLI 互斥 1 + 交互选项 1 + shutil.which mock 1 + CLI 端到端 1）
+- 709 个回归测试（含技能存在性、占位符、决策树完整性、分层记忆、lessons 分类前缀契约、check_repo 自动发现契约、security 输入校验、Issue #22 squad watchdog 19 条契约：14 基础场景 + 5 评审修复回归保护、Issue #24 项目内嵌运行时 10 条端到端契约、/digest-meeting 12 条、GitLab #20 _resolve_answers 读 project.json + CLAUDE.md three_way + verify_upgrade sentinel 11 条、GitLab #21 测试 env 隔离用户全局 gitconfig 2 条、GitHub #43 / GitLab #22 Imprint 5 型冲突解析吸收 14 条、scaffold-from-git 17 条：is_git_url 8 + clone/ref/subdir 5 + git 未装 1 + subdir 路径遍历 2 + CLI 端到端 1；scaffold-from-cmd 14 条：run_scaffold_command 8 + shell 元字符安全 2 + CLI 互斥 1 + 交互选项 1 + shutil.which mock 1 + CLI 端到端 1）
 - `scripts/dogfood.py`：作用域化的自举同步（只同步 commands/rules/hooks/settings）
 - `scripts/sync_superpowers.py`：三上游源同步工具
 - `.github/workflows/daily-evolution.yml`：每日自动进化搜索

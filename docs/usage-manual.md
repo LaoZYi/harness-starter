@@ -441,7 +441,7 @@ harness sync --all
 
 **第 4 步：生成文件**
 - 渲染 common 模板（通用文档、规则、hooks）
-- 渲染 superpowers 模板（42 个技能命令）
+- 渲染 superpowers 模板（43 个技能命令）
 - 渲染类型专属模板（如 `backend-service` 的 API/数据库规则）
 - 渲染插件（`.harness-plugins/` 下的自定义内容）
 - 安装项目内嵌运行时（`.agent-harness/bin/`）
@@ -529,7 +529,7 @@ ls .agent-harness/backups/
 
 ### 技能总览
 
-42 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
+43 个技能命令（superpowers）+ 4 个通用命令（common），按开发生命周期分为 8 个阶段：
 
 #### 构思与设计阶段
 
@@ -631,6 +631,14 @@ ls .agent-harness/backups/
 | `/draft-doc` | 写文档草稿（两段法：outline-pass + draft-pass） |
 | `/review-doc` | 文档评审（4 人格：准确性 / 可读性 / 术语统一 / 完整性） |
 | `/finalize-doc` | 文档定稿（8 项必检：占位符 / R-ID / 引用 / 术语 / 字数 / 评审 close / 格式 / 元信息）；**不**调 `/git-commit` / `/finish-branch` |
+
+#### 幻灯片场景流水线（与 `/lfg-doc` 严格平行，复用底层 doc skill）
+
+写幻灯片（Marp / Reveal.js / 内部演示文稿）走 `/lfg-slide`，**不**走 `/lfg-doc`。两条流水线同样 4 阶段（outline → draft → review → finalize），底层调用相同的 doc skill；差异在 slide 特定提示（演讲稿 / 视觉留白 / 页数估算 / 信息密度上限）。
+
+| 命令 | 用途 |
+|------|------|
+| `/lfg-slide` | 幻灯片场景端到端流水线（spec → outline → plan → draft → review → finalize → compound） |
 
 #### 场景化预制流水线（吸收 CCGS team-* 模式，Issue #55）
 

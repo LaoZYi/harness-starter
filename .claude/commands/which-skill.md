@@ -54,6 +54,7 @@
 - `/todo` —— 结构化任务拆分和管理
 - `/debug` —— 4 阶段系统性排障（根因优先）
 - `/lfg-doc` —— 从需求到定稿的全自动文档流水线（标书/规范/白皮书/报告）
+- `/lfg-slide` —— 从需求到定稿的全自动幻灯片流水线（Marp / Reveal.js / 内部演示文稿）
 - `/outline-doc` —— 根据 spec 拟章节大纲、字数估算、引用占位
 - `/team-spec` —— spec → plan-check → adr 串联编队（吸收 CCGS team-* 模式，Issue #55）
 - `/team-doc` —— outline → draft → review → finalize 串联编队（吸收 CCGS team-* 模式，Issue #55）
@@ -156,6 +157,8 @@
   +-- 定期压测 skill 是否扛得住？-----------> /pressure-test
   |
   +-- 要写文档（非代码）？------------------> /lfg-doc
+  |
+  +-- 要写幻灯片（非代码非纯文档）？-------------> /lfg-slide
 ```
 
 ## 组合使用示例

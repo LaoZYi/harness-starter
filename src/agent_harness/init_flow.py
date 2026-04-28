@@ -18,7 +18,7 @@ SCAFFOLD_SKIP = {".git", "node_modules", ".venv", "__pycache__", ".DS_Store", ".
 
 PROJECT_TYPE_CHOICES = [
     "backend-service", "web-app", "cli-tool", "library",
-    "worker", "mobile-app", "monorepo", "data-pipeline", "meta", "document",
+    "worker", "mobile-app", "monorepo", "data-pipeline", "meta", "document", "slide-deck",
 ]
 SENSITIVITY_CHOICES = ["standard", "internal", "high"]
 

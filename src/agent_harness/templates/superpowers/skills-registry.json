@@ -588,6 +588,22 @@
       "exclusion_reason": "doc-scenario entrypoint, parallel to /lfg (code scenario); not part of /lfg pipeline"
     },
     {
+      "id": "lfg-slide",
+      "name": "LFG-Slide 幻灯片场景流水线",
+      "category": "process",
+      "one_line": "从需求到定稿的全自动幻灯片流水线（Marp / Reveal.js / 内部演示文稿）",
+      "triggers": [
+        "写幻灯片",
+        "写演示文稿",
+        "写 deck",
+        "写演讲"
+      ],
+      "decision_tree_label": "要写幻灯片（非代码非纯文档）？",
+      "lfg_stage": [],
+      "expected_in_lfg": false,
+      "exclusion_reason": "slide-scenario entrypoint, parallel to /lfg-doc (doc scenario); not part of /lfg pipeline"
+    },
+    {
       "id": "outline-doc",
       "name": "拟文档大纲",
       "category": "process",

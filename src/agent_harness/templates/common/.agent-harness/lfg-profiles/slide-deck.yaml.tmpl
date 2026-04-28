@@ -1,0 +1,47 @@
+# lfg-profiles/slide-deck.yaml — 幻灯片场景的 /lfg-slide 流水线骨架描述
+#
+# 用途：本期仅作描述，不被任何命令运行时读取。
+# 未来：B 阶段会让 /lfg 在阶段 0 读取本文件，AI 推断匹配场景档案后用户确认。
+# 不要：手工编辑此文件来"配置 /lfg-slide"——本期 /lfg-slide 行为完全由 lfg-slide.md.tmpl 决定。
+#
+# 与 /lfg-doc 的关系：严格平行（同样 4 阶段：outline → draft → review → finalize），
+# 底层调用相同的 doc skill；slide 特有提示（演讲稿 / 视觉留白 / 页数估算）写在
+# /lfg-slide.md.tmpl 注释中，不传 context 给底层 skill（D 方案精神）。
+
+schema_version: 1
+name: slide-deck
+description: 幻灯片场景的流水线骨架（与 /lfg-slide 阶段对齐；适用 Marp / Reveal.js / 内部演示文稿）
+
+stages:
+  - id: ideate
+    skill: ideate
+    description: 大型演讲（产品发布会 / 公开技术分享）才触发，内部 demo 可跳过
+    optional: true
+
+  - id: spec
+    skill: spec
+    description: 演讲验收标准 = R-ID 页面映射 + 听众理解度断言
+
+  - id: outline
+    skill: outline-doc
+    description: 拟页面树、页数估算、引用占位（slide 用页数不用字数）
+
+  - id: plan
+    skill: write-plan
+    description: 把页面拆成可执行写作步骤
+
+  - id: draft
+    skill: draft-doc
+    description: 两段法 outline-pass + draft-pass；每页 ≤ 5 要点 + 演讲稿必填
+
+  - id: review
+    skill: review-doc
+    description: 4 人格并行评审 + slide 3 维（视觉留白 / 演讲节奏 / 信息密度）
+
+  - id: finalize
+    skill: finalize-doc
+    description: 8 项必检定稿 + slide 加项（演讲稿全部填充 / 视觉占位全部解析）；不调 git-commit / finish-branch
+
+  - id: compound
+    skill: compound
+    description: 沉淀演讲教训到 lessons.md

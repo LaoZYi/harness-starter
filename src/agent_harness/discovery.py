@@ -18,7 +18,7 @@ from .models import ProjectProfile
 
 PROJECT_TYPES = (
     "backend-service", "web-app", "cli-tool", "library", "worker",
-    "mobile-app", "monorepo", "data-pipeline", "meta", "document",
+    "mobile-app", "monorepo", "data-pipeline", "meta", "document", "slide-deck",
 )
 SENSITIVITY_LEVELS = ("standard", "internal", "high")
 
