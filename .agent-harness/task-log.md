@@ -2069,3 +2069,31 @@
   - docs_produced: 1（current-task.md，未单独写 spec——任务范围明确不需要 /spec）
   - user_verify_first_pass: yes
 - **沉淀**：lessons +1（工具脚本类：.claude/ 下文件都是 dogfood 产物源在 templates/）
+
+## 2026-04-28 新增 slide-deck 项目类型 + /lfg-slide 入口（Issue #56 触发条件 1）
+
+- 需求：用户给 Issue #56（按 project_type 裁剪 skill 清单）→ push back 后用户改方向「加一个场景 slide-deck」→ 经 4 解读讨论选 A（最小占位）→ 经 push back 后增加独立入口 `/lfg-slide`（与 `/lfg-doc` 严格平行）
+- 做了什么：注册 `slide-deck` project_type；新建 conventions / lfg-profile / preset / lfg-slide.md.tmpl；skills-registry 注册 lfg-slide；15 条契约测试（评审 P1 补 2 条二级保险）；同步 README/CHANGELOG/docs 计数 42→43, 694→709；dogfood 同步
+- 关键决策：
+  - **D 方案精神**：只占位、不开底层 5 个 slide skill（lessons.md 2026-04-27「上层 skill 多场景化先走 D 方案」）
+  - **入口独立**：用户提出 `/lfg-slide` 入口的合理性（与 `/lfg-doc` 严格平行），AI 之前 push back 错估 D 方案边界——D 反对底层 skill 膨胀，不反对入口数量；入口是镜像非抽象
+  - **slide 特有提示位置**：写在 `/lfg-slide.md.tmpl` 注释里，**不**传 context 给 `/review-doc` / `/finalize-doc`（D 方案：先抄不动底层）
+  - **不实施 Issue #56 黑名单**：触发条件 2/3 未满足
+- 改了：
+  - `src/agent_harness/discovery.py:21` / `init_flow.py:21` — PROJECT_TYPES + PROJECT_TYPE_CHOICES 加 `"slide-deck"`
+  - 新建 `src/agent_harness/templates/slide-deck/.claude/rules/slide-conventions.md.tmpl`
+  - 新建 `src/agent_harness/templates/common/.agent-harness/lfg-profiles/slide-deck.yaml.tmpl`
+  - 新建 `src/agent_harness/templates/superpowers/.claude/commands/lfg-slide.md.tmpl`
+  - 新建 `src/agent_harness/presets/slide-deck.json`
+  - `src/agent_harness/templates/superpowers/skills-registry.json` 注册 lfg-slide（46→47）
+  - 新建 `tests/test_slide_deck_scenario_scaffold.py`（15 条契约测试）
+  - `tests/test_skills_registry.py` 46→47, 18→19
+  - dogfood 同步：`.claude/commands/{lfg-slide,lfg,which-skill,evolve}.md` + `superpowers-workflow.md`
+  - 文档同步（计数）：README / CHANGELOG / docs/architecture / docs/product / docs/usage-manual / docs/release / project.json
+  - 工作流引用：`superpowers-workflow.md.tmpl` / `evolve.md.tmpl` / `usage-manual.md` 加 `/lfg-slide`
+  - product.md 8.11 + architecture.md 模板列表
+- 完成标准：✅ harness init --project-type slide-deck 成功 / ✅ make ci 709 tests OK / ✅ harness lfg audit 14.85/15 / ✅ Issue #56 触发条件 1 满足；issue 仍 OPEN
+- 评审：multi-review 2 审查员（正确性 PASS / 测试完整性 PASS WITH CONDITIONS）；P1 2 条全接受；P2 1 条按 simplicity 拒绝
+- 用户验证：通过
+- commit: 1f497cd
+- branch: feat/slide-deck-project-type（未合并到 master）
