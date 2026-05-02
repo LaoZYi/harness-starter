@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-start.sh 2>/dev/null || true"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\" 2>/dev/null || true"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/context-monitor.sh 2>&1 || true"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-monitor.sh\" 2>&1 || true"
           }
         ]
       }
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/stop.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop.sh\""
           }
         ]
       }
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-compact.sh 2>&1 || true"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-compact.sh\" 2>&1 || true"
           }
         ]
       }

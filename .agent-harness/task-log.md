@@ -2006,6 +2006,7 @@
 - 沉淀:lessons.md 新增 1 条元教训「用内容形式识别捕获语义信号是元反模式 → 行为信号是唯一根治」;反模式 1 升级 5 案例 → 6 案例 + 增设「元反模式」节;前 5 次失败的根因从"白名单不够大"修正为"范式选错了"——任何"内容形式识别"都不能可靠捕获"语义信号"
 - 推迟项:无
 
+<<<<<<< HEAD
 ## 2026-04-27 通用文档场景脚手架（D 方案：先抄 + 留 B 位置）
 
 - **需求**：把"上面那层 skill 框架"从只服务"写代码"扩展到能服务"任意场景"，标书是首个验证场景但本期只搭通用文档骨架不写业务内容
@@ -2097,3 +2098,28 @@
 - 用户验证：通过
 - commit: 1f497cd
 - branch: feat/slide-deck-project-type（未合并到 master）
+
+## 2026-05-02 修复 stop hook 报 No such file or directory(hook 命令相对路径根因)
+
+- 需求:用户反馈"经常遇到" `Stop hook error: bash: .claude/hooks/stop.sh: No such file or directory`,要求分析代码并修复
+- 做了什么:
+  - 根因定位:`.claude/settings.json` 中 4 个 hook 命令均使用相对路径 `bash .claude/hooks/<x>.sh`,Claude Code 触发 hook 时若 cwd 不在项目根目录,bash 在脚本启动**之前**就找不到文件——脚本内部已写的 `PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"` 防御来不及
+  - 复现验证:`cd /tmp && bash -c 'bash .claude/hooks/stop.sh'` → exit=127, "No such file or directory"(精准复现用户报错)
+  - 修复:4 个 hook 命令统一改用 `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/<name>.sh"`,Claude Code 注入的标准环境变量保证绝对路径定位
+  - 验证修复:`cd /tmp && env CLAUDE_PROJECT_DIR=<项目根> bash -c '<settings.json 命令>'` → 4 个 hook 全部 exit=0
+- 关键决策:
+  - **A 方案(最小修复)优于 B 方案(加 fallback)**——Claude Code 文档明确会注入 `CLAUDE_PROJECT_DIR`,加 `${CLAUDE_PROJECT_DIR:-.}` fallback 是为不可能场景写代码,违反 simplicity 准则 1
+  - **不给 stop.sh 加 `|| true`**——其他 3 个辅助 hook 加 `|| true` 是因为失败可吞;stop.sh 是门禁,失败必须暴露——这次问题正是因为前 3 个 hook 静默失败,只有 stop 暴露才让用户看到机制失效。加 `|| true` 等于阉割整个保护机制
+  - **4 个 hook 一起改**——同源问题,按 safety.md "改一处查所有同类",避免下次再踩
+  - **不顺手改 hook 脚本内部**——按 simplicity 准则 2 Surgical Changes,本次任务只解决 settings.json 路径问题
+- 改了:3 文件 +48/-6 行
+  - `.claude/settings.json` 4 处 hook 命令(主修复)
+  - `.agent-harness/lessons.md` 新增 1 条架构设计 lesson + 索引同步
+  - `.agent-harness/current-task.md`(任务记录)
+- 完成标准:
+  - ✅ 4 处 hook 命令改用 `$CLAUDE_PROJECT_DIR` 绝对路径
+  - ✅ `/tmp` 下手动触发不再报 "No such file or directory"
+  - ✅ lesson 已沉淀(`2026-05-02 [架构设计] hook 命令字符串中的相对路径假设 cwd 是项目根`)
+  - ✅ 用户验证通过
+- 沉淀:lessons.md 新增 1 条架构设计 lesson;3 条规则——(1)所有 settings.json hook 命令必须用 `"$CLAUDE_PROJECT_DIR/..."` 而非相对路径;(2)门禁类 hook 不要加 `|| true`,否则机制静默失效用户看不到;(3)不要为 Claude Code 必注入的环境变量加 fallback
+- 推迟项:无
