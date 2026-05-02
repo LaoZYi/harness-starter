@@ -2122,3 +2122,9 @@
   - ✅ 用户验证通过
 - 沉淀:lessons.md 新增 1 条架构设计 lesson;3 条规则——(1)所有 settings.json hook 命令必须用 `"$CLAUDE_PROJECT_DIR/..."` 而非相对路径;(2)门禁类 hook 不要加 `|| true`,否则机制静默失效用户看不到;(3)不要为 Claude Code 必注入的环境变量加 fallback
 - 推迟项:无
+- **返工记录(2026-05-02)**:
+  - 用户反馈:无(自检在 push 后 grep 验证时发现)
+  - 根因:rebase 解决 task-log.md 冲突时漏删 `<<<<<<< HEAD` 标记 + 把之前 grep 命中误判为 stale 缓存(双重失误)。详见 lesson `2026-05-02 [流程] rebase 冲突解决后必须全文件 grep 三类标记归零...`
+  - 修复内容:补充 commit b5ea407 删除 task-log.md:2009 残留的 `<<<<<<< HEAD` 行
+  - 影响范围:残留标记仅在 task-log.md 末尾区域,不影响其它文件;远端 master 已修复
+  - 防再犯:lesson 沉淀 + 4 条规则(双重 grep 检查 / 多 Edit 高风险警示 / grep 命中绝不当缓存 / rebase --continue 不是验证)
